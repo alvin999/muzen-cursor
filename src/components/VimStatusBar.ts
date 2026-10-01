@@ -1,4 +1,5 @@
 import { cursorStore, CursorState } from '../core/cursorStore';
+import { LOCALES } from '../i18n/locales';
 
 /**
  * 底部沉浸式 Vim 狀態列 (Shadow DOM 內部渲染)
@@ -78,7 +79,8 @@ export class VimStatusBar {
     if (!state.visible) {
       this.modeEl.textContent = 'MUZEN';
       this.modeEl.style.color = '#fe8019';
-      this.infoEl.textContent = '點擊文字或按 j 開始';
+      const dict = LOCALES[state.locale || 'zh-TW'] || LOCALES['zh-TW'];
+      this.infoEl.textContent = dict.statusStartPrompt;
       return;
     }
 

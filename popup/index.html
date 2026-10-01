@@ -15,7 +15,7 @@
         <span class="icon">⛩️</span>
         <div>
           <h1 class="title">Muzen Cursor</h1>
-          <p class="subtitle">霧前禪夢，見字如初</p>
+          <p class="subtitle" data-i18n="appSubtitle">霧前禪夢，見字如初</p>
         </div>
       </div>
       <label class="switch">
@@ -27,59 +27,70 @@
     <div class="divider"></div>
 
     <section class="section">
-      <label class="section-label" for="theme-select">色彩主題</label>
+      <div class="row-between">
+        <label class="section-label" for="locale-select" data-i18n="languageLabel">介面語言</label>
+        <select id="locale-select" class="select-input-sm">
+          <option value="zh-TW">繁體中文</option>
+          <option value="en">English</option>
+          <option value="ja">日本語</option>
+        </select>
+      </div>
+    </section>
+
+    <section class="section">
+      <label class="section-label" for="theme-select" data-i18n="themeLabel">色彩主題</label>
       <select id="theme-select" class="select-input">
-        <option value="gruvbox-dark">Gruvbox Dark (經典琥珀)</option>
-        <option value="gruvbox-light">Gruvbox Light (淡雅暖白)</option>
-        <option value="tokyo-night">Tokyo Night (東京暗夜)</option>
-        <option value="nord">Nord (北歐冰原)</option>
-        <option value="catppuccin">Catppuccin Mocha (典雅摩卡)</option>
-        <option value="everforest">Everforest (森野之境)</option>
+        <option value="gruvbox-dark" data-i18n="themeGruvboxDark">Gruvbox Dark (經典琥珀)</option>
+        <option value="gruvbox-light" data-i18n="themeGruvboxLight">Gruvbox Light (淡雅暖白)</option>
+        <option value="tokyo-night" data-i18n="themeTokyoNight">Tokyo Night (東京暗夜)</option>
+        <option value="nord" data-i18n="themeNord">Nord (北歐冰原)</option>
+        <option value="catppuccin" data-i18n="themeCatppuccin">Catppuccin Mocha (典雅摩卡)</option>
+        <option value="everforest" data-i18n="themeEverforest">Everforest (森野之境)</option>
       </select>
     </section>
 
     <section class="section">
-      <label class="section-label" for="shape-select">游標形態</label>
+      <label class="section-label" for="shape-select" data-i18n="shapeLabel">游標形態</label>
       <select id="shape-select" class="select-input">
-        <option value="block">實心方塊 (Block)</option>
-        <option value="hollow">空心外框 (Hollow)</option>
-        <option value="underline">閱讀底線 (Underline)</option>
+        <option value="block" data-i18n="shapeBlock">實心方塊 (Block)</option>
+        <option value="hollow" data-i18n="shapeHollow">空心外框 (Hollow)</option>
+        <option value="underline" data-i18n="shapeUnderline">閱讀底線 (Underline)</option>
       </select>
     </section>
 
     <section class="section">
-      <label class="section-label">動態特效 (可複選)</label>
+      <label class="section-label" data-i18n="effectsLabel">動態特效 (可複選)</label>
       <div class="effects-group">
         <label class="effect-chip">
           <input type="checkbox" id="effect-smooth" checked>
-          <span class="chip-label">平滑位移</span>
+          <span class="chip-label" data-i18n="effectSmooth">平滑位移</span>
         </label>
         <label class="effect-chip">
           <input type="checkbox" id="effect-breathe" checked>
-          <span class="chip-label">禪意呼吸</span>
+          <span class="chip-label" data-i18n="effectBreathe">禪意呼吸</span>
         </label>
         <label class="effect-chip">
           <input type="checkbox" id="effect-blink">
-          <span class="chip-label">經典閃爍</span>
+          <span class="chip-label" data-i18n="effectBlink">經典閃爍</span>
         </label>
       </div>
     </section>
 
     <section class="section status-section">
       <div class="row-between">
-        <label class="section-label" for="toggle-status-bar">顯示底部狀態列</label>
+        <label class="section-label" for="toggle-status-bar" data-i18n="statusBarSectionLabel">顯示底部狀態列</label>
         <label class="switch-small">
           <input type="checkbox" id="toggle-status-bar" checked>
           <span class="slider-small"></span>
         </label>
       </div>
-      <p class="section-desc">畫面右下角呈現目前 Vim 模式與文章進度</p>
+      <p class="section-desc" data-i18n="statusBarSectionDesc">畫面右下角呈現目前 Vim 模式與文章進度</p>
     </section>
 
     <section class="section blacklist-section">
       <div class="row-between">
         <div class="blacklist-title-area">
-          <label class="section-label" for="toggle-current-site">在此網站停用</label>
+          <label class="section-label" for="toggle-current-site" data-i18n="blacklistSectionLabel">在此網站停用</label>
           <span id="current-site-host" class="site-host-badge" title="當前網站網域">偵測中...</span>
         </div>
         <label class="switch-small">
@@ -87,68 +98,68 @@
           <span class="slider-small"></span>
         </label>
       </div>
-      <p class="section-desc">排除之網域將自動凍結游標，避免干擾編輯器或專用快捷鍵</p>
+      <p class="section-desc" data-i18n="blacklistSectionDesc">排除之網域將自動凍結游標，避免干擾編輯器或專用快捷鍵</p>
       
       <div class="blacklist-collapse">
         <button type="button" id="btn-toggle-blacklist-view" class="link-btn">
-          <span>⚙️ 管理排除名單 (<span id="blacklist-count">0</span>)</span>
+          <span><span id="blacklist-manage-label" data-i18n="blacklistManage">⚙️ 管理排除名單</span> (<span id="blacklist-count">0</span>)</span>
           <span id="collapse-arrow">▼</span>
         </button>
         <div id="blacklist-drawer" class="drawer hidden">
           <textarea id="blacklist-input" class="textarea-input" placeholder="每行輸入一個網域，例如：&#10;docs.google.com&#10;mail.google.com&#10;notion.so" rows="4"></textarea>
-          <button type="button" id="btn-save-blacklist" class="action-btn-sm">儲存排除名單</button>
+          <button type="button" id="btn-save-blacklist" class="action-btn-sm" data-i18n="blacklistSaveBtn">儲存排除名單</button>
         </div>
       </div>
     </section>
 
     <section class="section pdf-section">
       <div class="row-between">
-        <label class="section-label" for="toggle-pdf">PDF 閱讀接管 (PDF.js)</label>
+        <label class="section-label" for="toggle-pdf" data-i18n="pdfSectionLabel">PDF 閱讀接管 (PDF.js)</label>
         <label class="switch-small">
           <input type="checkbox" id="toggle-pdf" checked>
           <span class="slider-small"></span>
         </label>
       </div>
-      <p class="section-desc">開啟後，點擊 .pdf 網址將自動進入禪意閱讀器</p>
-      <button id="btn-open-pdf-viewer" class="action-btn">
+      <p class="section-desc" data-i18n="pdfSectionDesc">開啟後，點擊 .pdf 網址將自動進入禪意閱讀器</p>
+      <button id="btn-open-pdf-viewer" class="action-btn" data-i18n="pdfOpenBtn">
         📄 開啟 PDF 閱讀器
       </button>
     </section>
 
     <section class="shortcuts-guide">
-      <div class="guide-title">快捷鍵指引</div>
+      <div class="guide-title" data-i18n="shortcutsTitle">快捷鍵指引</div>
       <div class="shortcut-row">
         <span class="key-combo"><kbd>h</kbd> <kbd>j</kbd> <kbd>k</kbd> <kbd>l</kbd></span>
-        <span class="desc">字元 / 行 移動</span>
+        <span class="desc" data-i18n="shortcutHjkl">字元 / 行 移動</span>
       </div>
       <div class="shortcut-row">
         <span class="key-combo"><kbd>w</kbd> <kbd>b</kbd> <kbd>e</kbd></span>
-        <span class="desc">中英文智慧跳詞 / 詞尾</span>
+        <span class="desc" data-i18n="shortcutWbe">中英文智慧跳詞 / 詞尾</span>
       </div>
       <div class="shortcut-row">
         <span class="key-combo"><kbd>0</kbd> <kbd>$</kbd></span>
-        <span class="desc">跳至行首 / 行尾</span>
+        <span class="desc" data-i18n="shortcutLineBoundary">跳至行首 / 行尾</span>
       </div>
       <div class="shortcut-row">
         <span class="key-combo"><kbd>g</kbd><kbd>g</kbd> / <kbd>G</kbd></span>
-        <span class="desc">全文開頭 / 結尾</span>
+        <span class="desc" data-i18n="shortcutDocBoundary">全文開頭 / 結尾</span>
       </div>
       <div class="shortcut-row">
         <span class="key-combo"><kbd>v</kbd> / <kbd>y</kbd></span>
-        <span class="desc">Visual 選取 / 複製 (Yank)</span>
+        <span class="desc" data-i18n="shortcutVisual">Visual 選取 / 複製 (Yank)</span>
       </div>
       <div class="shortcut-row">
         <span class="key-combo"><kbd>Alt</kbd> + <kbd>v</kbd></span>
-        <span class="desc">快速啟動 / 凍結游標</span>
+        <span class="desc" data-i18n="shortcutToggle">快速啟動 / 凍結游標</span>
       </div>
       <div class="shortcut-row">
         <span class="key-combo"><kbd>Esc</kbd></span>
-        <span class="desc">取消選取 / 隱藏游標</span>
+        <span class="desc" data-i18n="shortcutEscape">取消選取 / 隱藏游標</span>
       </div>
     </section>
 
     <footer class="footer">
-      <span>點擊網頁文字即可立即錨定閱讀焦點</span>
+      <span data-i18n="footerTip">點擊網頁文字即可立即錨定閱讀焦點</span>
     </footer>
   </div>
 

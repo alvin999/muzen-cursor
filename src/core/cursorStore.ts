@@ -1,3 +1,5 @@
+import { Locale } from '../i18n/locales';
+
 /**
  * Muzen Cursor 全域輕量狀態管理庫 (Vanilla Store)
  */
@@ -22,6 +24,7 @@ export interface CursorRect {
 export interface CursorState {
   enabled: boolean;
   isExcluded: boolean;
+  locale: Locale;
   mode: CursorMode;
   theme: CursorTheme;
   shape: CursorShape;
@@ -39,6 +42,7 @@ class CursorStore {
   private state: CursorState = {
     enabled: true,
     isExcluded: false,
+    locale: 'zh-TW',
     mode: 'NORMAL',
     theme: 'gruvbox-dark',
     shape: 'block',

@@ -165,6 +165,22 @@ kbd {
   border-color: var(--accent-orange);
 }
 
+.select-input-sm {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--fg-color);
+  padding: 4px 8px;
+  font-size: 11px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.select-input-sm:focus {
+  border-color: var(--accent-orange);
+}
+
 .row-controls {
   display: flex;
   gap: 10px;

@@ -1,3 +1,5 @@
+import { LOCALES, Locale, Translations, detectDefaultLocale } from '../src/i18n/locales';
+
 /**
  * Popup 設定邏輯 (Vanilla TS)
  */
@@ -6,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const toggleEnabled = document.getElementById('toggle-enabled') as HTMLInputElement | null;
   const toggleStatusBar = document.getElementById('toggle-status-bar') as HTMLInputElement | null;
   const togglePdf = document.getElementById('toggle-pdf') as HTMLInputElement | null;
+  const localeSelect = document.getElementById('locale-select') as HTMLSelectElement | null;
   const themeSelect = document.getElementById('theme-select') as HTMLSelectElement | null;
   const shapeSelect = document.getElementById('shape-select') as HTMLSelectElement | null;
   const effectSmooth = document.getElementById('effect-smooth') as HTMLInputElement | null;
@@ -23,10 +26,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let currentHostname = '';
   let excludedSites: string[] = [];
+  let currentLocale: Locale = 'zh-TW';
 
   // 套用主題至 Popup 視窗
   const applyTheme = (theme: string) => {
     document.body.setAttribute('data-theme', theme || 'gruvbox-dark');
+  };
+
+  // 套用語言字典至 Popup 視窗
+  const applyLocale = (locale: Locale) => {
+    currentLocale = locale;
+    const dict = LOCALES[locale] || LOCALES['zh-TW'];
+
+    // 1. 替換所有帶有 data-i18n 屬性的文字
+    const i18nElements = document.querySelectorAll<HTMLElement>('[data-i18n]');
+    i18nElements.forEach((el) => {
+      const key = el.getAttribute('data-i18n') as keyof Translations;
+      if (key && dict[key]) {
+        el.textContent = dict[key];
+      }
+    });
+
+    // 2. 替換特定輸入框的 placeholder
+    if (blacklistInput) {
+      blacklistInput.placeholder = dict.blacklistPlaceholder;
+    }
+
+    // 3. 更新當前網域標籤預設文字（若未完成偵測）
+    if (currentSiteHostEl && (currentSiteHostEl.textContent === '偵測中...' || currentSiteHostEl.textContent === 'Detecting...' || currentSiteHostEl.textContent === '検出中...')) {
+      currentSiteHostEl.textContent = dict.blacklistDetecting;
+    }
   };
 
   // 比對網域是否被排除
@@ -42,7 +71,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 1. 初始化讀取設定
   if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
-    chrome.storage.sync.get(['muzen_enabled', 'muzen_theme', 'muzen_intercept_pdf', 'muzen_shape', 'muzen_effects', 'muzen_show_status_bar', 'muzen_excluded_sites', 'muzen_animation'], (data) => {
+    chrome.storage.sync.get(['muzen_enabled', 'muzen_locale', 'muzen_theme', 'muzen_intercept_pdf', 'muzen_shape', 'muzen_effects', 'muzen_show_status_bar', 'muzen_excluded_sites', 'muzen_animation'], (data) => {
+      // 載入語言設定
+      const savedLocale = (data.muzen_locale as Locale) || detectDefaultLocale();
+      if (localeSelect) {
+        localeSelect.value = savedLocale;
+      }
+      applyLocale(savedLocale);
+
       if (toggleEnabled && typeof data.muzen_enabled === 'boolean') {
         toggleEnabled.checked = data.muzen_enabled;
       }
@@ -208,13 +244,23 @@ document.addEventListener('DOMContentLoaded', () => {
     broadcastToActiveTab({ type: 'UPDATE_EXCLUDED_SITES', excludedSites });
 
     const originalText = btnSaveBlacklist.textContent;
-    btnSaveBlacklist.textContent = '✓ 已儲存';
+    btnSaveBlacklist.textContent = (LOCALES[currentLocale] || LOCALES['zh-TW']).blacklistSavedBtn;
     setTimeout(() => {
       btnSaveBlacklist.textContent = originalText;
     }, 1200);
   });
 
-  // 7. PDF 接管設定變更
+  // 7. 語言切換事件
+  localeSelect?.addEventListener('change', () => {
+    const newLocale = (localeSelect.value as Locale) || 'zh-TW';
+    applyLocale(newLocale);
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
+      chrome.storage.sync.set({ muzen_locale: newLocale });
+    }
+    broadcastToActiveTab({ type: 'SET_LOCALE', locale: newLocale });
+  });
+
+  // 8. PDF 接管設定變更
   togglePdf?.addEventListener('change', () => {
     const isPdfIntercept = togglePdf.checked;
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {

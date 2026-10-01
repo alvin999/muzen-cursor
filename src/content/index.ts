@@ -51,6 +51,9 @@ function main(): void {
       } else if (message.type === 'SET_STATUS_BAR') {
         cursorStore.setState({ showStatusBar: !!message.showStatusBar });
         sendResponse({ success: true });
+      } else if (message.type === 'SET_LOCALE') {
+        cursorStore.setState({ locale: message.locale });
+        sendResponse({ success: true });
       } else if (message.type === 'UPDATE_EXCLUDED_SITES') {
         const isExcluded = isHostnameExcluded(window.location.hostname, message.excludedSites || []);
         cursorStore.setState({ isExcluded, visible: !isExcluded && cursorStore.getState().visible });
@@ -81,9 +84,12 @@ function main(): void {
 
   // 4. 讀取持久化設定
   if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
-    chrome.storage.sync.get(['muzen_enabled', 'muzen_theme', 'muzen_shape', 'muzen_effects', 'muzen_show_status_bar', 'muzen_excluded_sites', 'muzen_animation'], (result) => {
+    chrome.storage.sync.get(['muzen_enabled', 'muzen_locale', 'muzen_theme', 'muzen_shape', 'muzen_effects', 'muzen_show_status_bar', 'muzen_excluded_sites', 'muzen_animation'], (result) => {
       if (typeof result.muzen_enabled === 'boolean') {
         cursorStore.setState({ enabled: result.muzen_enabled });
+      }
+      if (result.muzen_locale) {
+        cursorStore.setState({ locale: result.muzen_locale });
       }
       if (typeof result.muzen_show_status_bar === 'boolean') {
         cursorStore.setState({ showStatusBar: result.muzen_show_status_bar });
