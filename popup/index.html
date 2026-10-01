@@ -76,6 +76,31 @@
       <p class="section-desc">畫面右下角呈現目前 Vim 模式與文章進度</p>
     </section>
 
+    <section class="section blacklist-section">
+      <div class="row-between">
+        <div class="blacklist-title-area">
+          <label class="section-label" for="toggle-current-site">在此網站停用</label>
+          <span id="current-site-host" class="site-host-badge" title="當前網站網域">偵測中...</span>
+        </div>
+        <label class="switch-small">
+          <input type="checkbox" id="toggle-current-site">
+          <span class="slider-small"></span>
+        </label>
+      </div>
+      <p class="section-desc">排除之網域將自動凍結游標，避免干擾編輯器或專用快捷鍵</p>
+      
+      <div class="blacklist-collapse">
+        <button type="button" id="btn-toggle-blacklist-view" class="link-btn">
+          <span>⚙️ 管理排除名單 (<span id="blacklist-count">0</span>)</span>
+          <span id="collapse-arrow">▼</span>
+        </button>
+        <div id="blacklist-drawer" class="drawer hidden">
+          <textarea id="blacklist-input" class="textarea-input" placeholder="每行輸入一個網域，例如：&#10;docs.google.com&#10;mail.google.com&#10;notion.so" rows="4"></textarea>
+          <button type="button" id="btn-save-blacklist" class="action-btn-sm">儲存排除名單</button>
+        </div>
+      </div>
+    </section>
+
     <section class="section pdf-section">
       <div class="row-between">
         <label class="section-label" for="toggle-pdf">PDF 閱讀接管 (PDF.js)</label>

@@ -95,7 +95,7 @@ export class VimCursorOverlay {
   }
 
   private render(state: CursorState): void {
-    if (!state.enabled || !state.visible) {
+    if (!state.enabled || !state.visible || state.isExcluded) {
       this.element.style.opacity = '0';
       this.element.style.display = 'none';
       return;

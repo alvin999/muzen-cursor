@@ -3,6 +3,19 @@ import { CursorController } from '../core/cursorController';
 import { cursorStore } from '../core/cursorStore';
 
 /**
+ * 判斷當前網域名稱是否命中排除名單 (支援子網域比對)
+ */
+function isHostnameExcluded(hostname: string, excludedList: string[]): boolean {
+  if (!hostname || !excludedList || !Array.isArray(excludedList)) return false;
+  const current = hostname.toLowerCase();
+  return excludedList.some((item) => {
+    const pattern = item.trim().toLowerCase();
+    if (!pattern) return false;
+    return current === pattern || current.endsWith('.' + pattern);
+  });
+}
+
+/**
  * Muzen Cursor Content Script 入口點
  */
 function main(): void {
@@ -38,6 +51,17 @@ function main(): void {
       } else if (message.type === 'SET_STATUS_BAR') {
         cursorStore.setState({ showStatusBar: !!message.showStatusBar });
         sendResponse({ success: true });
+      } else if (message.type === 'UPDATE_EXCLUDED_SITES') {
+        const isExcluded = isHostnameExcluded(window.location.hostname, message.excludedSites || []);
+        cursorStore.setState({ isExcluded, visible: !isExcluded && cursorStore.getState().visible });
+        sendResponse({ success: true, isExcluded });
+      } else if (message.type === 'GET_SITE_STATUS') {
+        sendResponse({
+          success: true,
+          hostname: window.location.hostname,
+          isExcluded: cursorStore.getState().isExcluded,
+          state: cursorStore.getState()
+        });
       } else if (message.type === 'SET_ANIMATION') {
         // 向下相容舊版單選訊息
         if (message.animation === 'smooth') {
@@ -57,7 +81,7 @@ function main(): void {
 
   // 4. 讀取持久化設定
   if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
-    chrome.storage.sync.get(['muzen_enabled', 'muzen_theme', 'muzen_shape', 'muzen_effects', 'muzen_show_status_bar', 'muzen_animation'], (result) => {
+    chrome.storage.sync.get(['muzen_enabled', 'muzen_theme', 'muzen_shape', 'muzen_effects', 'muzen_show_status_bar', 'muzen_excluded_sites', 'muzen_animation'], (result) => {
       if (typeof result.muzen_enabled === 'boolean') {
         cursorStore.setState({ enabled: result.muzen_enabled });
       }
@@ -72,6 +96,10 @@ function main(): void {
       }
       if (result.muzen_effects) {
         cursorStore.setState({ effects: result.muzen_effects });
+      }
+      if (result.muzen_excluded_sites && Array.isArray(result.muzen_excluded_sites)) {
+        const isExcluded = isHostnameExcluded(window.location.hostname, result.muzen_excluded_sites);
+        cursorStore.setState({ isExcluded });
       } else if (result.muzen_animation) {
         if (result.muzen_animation === 'smooth') {
           cursorStore.setState({ effects: { smooth: true, breathe: false, blink: false } });

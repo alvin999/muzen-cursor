@@ -253,14 +253,106 @@ kbd {
   padding-top: 2px;
 }
 
-/* 狀態列與 PDF 控制項卡片樣式 */
+/* 狀態列、排除名單與 PDF 控制項卡片樣式 */
 .status-section,
+.blacklist-section,
 .pdf-section {
   background: var(--bg-card);
   padding: 10px 12px;
   border-radius: 6px;
   border: 1px solid var(--border-color);
   gap: 6px;
+}
+
+.blacklist-title-area {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 220px;
+}
+
+.site-host-badge {
+  font-size: 11px;
+  font-family: monospace, monospace;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border-color);
+  color: var(--accent-orange);
+  padding: 1px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 130px;
+}
+
+.blacklist-collapse {
+  margin-top: 4px;
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  color: var(--fg-muted);
+  font-size: 11px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 2px 0;
+  transition: color 0.2s;
+}
+
+.link-btn:hover {
+  color: var(--fg-color);
+}
+
+.drawer {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.drawer.hidden {
+  display: none;
+}
+
+.textarea-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--fg-color);
+  font-family: monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  padding: 6px 8px;
+  resize: vertical;
+  outline: none;
+}
+
+.textarea-input:focus {
+  border-color: var(--accent-orange);
+}
+
+.action-btn-sm {
+  background: var(--bg-card);
+  border: 1px solid var(--accent-orange);
+  color: var(--accent-orange);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  align-self: flex-end;
+  transition: all 0.2s ease;
+}
+
+.action-btn-sm:hover {
+  background: var(--accent-orange);
+  color: #1d2021;
 }
 
 .row-between {

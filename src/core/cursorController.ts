@@ -68,7 +68,7 @@ export class CursorController {
    */
   private handleClick(e: MouseEvent): void {
     this.preferredX = null;
-    if (isTypingContext(e)) {
+    if (isTypingContext(e) || cursorStore.getState().isExcluded) {
       return;
     }
 
@@ -183,8 +183,8 @@ export class CursorController {
   }
 
   private handleKeyDown(e: KeyboardEvent): void {
-    // 1. 若處於輸入模式（輸入框、編輯器），完全不攔截
-    if (isTypingContext(e)) return;
+    // 1. 若處於輸入模式（輸入框、編輯器）或當前網站已被排除，完全不攔截
+    if (isTypingContext(e) || cursorStore.getState().isExcluded) return;
 
     // 2. Alt + V: 切換啟用狀態
     if (e.altKey && (e.key === 'v' || e.key === 'V')) {

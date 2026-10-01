@@ -21,6 +21,7 @@ export interface CursorRect {
 
 export interface CursorState {
   enabled: boolean;
+  isExcluded: boolean;
   mode: CursorMode;
   theme: CursorTheme;
   shape: CursorShape;
@@ -37,6 +38,7 @@ type Listener = (state: CursorState) => void;
 class CursorStore {
   private state: CursorState = {
     enabled: true,
+    isExcluded: false,
     mode: 'NORMAL',
     theme: 'gruvbox-dark',
     shape: 'block',
