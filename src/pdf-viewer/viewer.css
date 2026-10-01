@@ -40,6 +40,8 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 0 16px;
+  gap: 16px;
+  flex-shrink: 0;
   z-index: 100;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
@@ -48,6 +50,7 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-shrink: 0;
 }
 
 .toolbar-logo {
@@ -133,11 +136,11 @@ body {
 /* 主畫布區 */
 .main-content {
   flex: 1;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: auto;
   position: relative;
   background: var(--bg-primary);
-  display: flex;
-  justify-content: center;
+  width: 100%;
 }
 
 /* 拖放區卡片 */
@@ -204,6 +207,9 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 24px;
+  width: 100%;
+  min-height: 100%;
+  box-sizing: border-box;
   user-select: text; /* 允許文字選取以利 Range 測量與 Visual 模式 */
 }
 
@@ -213,6 +219,8 @@ body {
   border-radius: 4px;
   background: #ffffff;
   overflow: hidden;
+  flex-shrink: 0; /* 禁止被 Flexbox 壓縮高度 */
+  margin: 0 auto;
 }
 
 .pdf-page-wrapper canvas {

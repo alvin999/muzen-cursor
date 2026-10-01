@@ -100,8 +100,9 @@ function setupEventListeners(): void {
   btnZoomOut.addEventListener('click', () => changeScale(Math.max(0.5, state.scale - 0.15)));
   btnZoomFit.addEventListener('click', fitToWidth);
 
-  // 監聽滾動以自動更新當前頁碼
-  viewerContainer.addEventListener('scroll', handleScrollDebounced);
+  // 監聽主滾動容器以自動更新當前頁碼
+  const mainContent = document.getElementById('main-content');
+  mainContent?.addEventListener('scroll', handleScrollDebounced);
 }
 
 /**
@@ -189,6 +190,7 @@ async function renderPage(pageNum: number): Promise<void> {
   pageWrapper.dataset.pageNumber = pageNum.toString();
   pageWrapper.style.width = `${viewport.width}px`;
   pageWrapper.style.height = `${viewport.height}px`;
+  pageWrapper.style.flexShrink = '0';
 
   // 2. 底層 Canvas (像素渲染)
   const canvas = document.createElement('canvas');
@@ -290,9 +292,12 @@ function handleScrollDebounced(): void {
  * 依據滾動位置偵測目前主要可見頁面
  */
 function updateCurrentPageFromScroll(): void {
+  const mainContent = document.getElementById('main-content');
+  if (!mainContent) return;
+
   const pages = viewerContainer.querySelectorAll<HTMLElement>('.pdf-page-wrapper');
-  const containerTop = viewerContainer.scrollTop;
-  const containerHeight = viewerContainer.clientHeight;
+  const containerTop = mainContent.scrollTop;
+  const containerHeight = mainContent.clientHeight;
   const middleY = containerTop + containerHeight / 3;
 
   for (const page of Array.from(pages)) {

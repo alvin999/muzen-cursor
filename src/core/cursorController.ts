@@ -963,18 +963,48 @@ export class CursorController {
         this.syncNativeSelection();
       }
 
-      // 只有在鍵盤主動導航且明確要求跟隨時才執行自動平滑捲動，絕不在滾輪監聽中反向拉扯
+      // 只有在鍵盤主動導航且明確要求跟隨時才執行自動平滑捲動，相容獨立閱讀容器與 PDF 檢視器
       if (scrollIntoView) {
         const buffer = 80;
-        if (rect.bottom > window.innerHeight - buffer) {
-          window.scrollBy({ top: 120, behavior: 'smooth' });
-        } else if (rect.top < buffer) {
-          window.scrollBy({ top: -120, behavior: 'smooth' });
+        const scrollParent = this.getScrollParent(node);
+        if (scrollParent) {
+          const parentRect = scrollParent.getBoundingClientRect();
+          if (rect.bottom > parentRect.bottom - buffer) {
+            scrollParent.scrollBy({ top: 120, behavior: 'smooth' });
+          } else if (rect.top < parentRect.top + buffer) {
+            scrollParent.scrollBy({ top: -120, behavior: 'smooth' });
+          }
+        } else {
+          if (rect.bottom > window.innerHeight - buffer) {
+            window.scrollBy({ top: 120, behavior: 'smooth' });
+          } else if (rect.top < buffer) {
+            window.scrollBy({ top: -120, behavior: 'smooth' });
+          }
         }
       }
     } catch (err) {
       console.warn('[Muzen Cursor] updateCursorPosition error:', err);
     }
+  }
+
+  /**
+   * 偵測當前文字節點最近的可滾動容器（相容獨立閱讀窗格與 PDF 檢視器）
+   */
+  private getScrollParent(node: Node | null): HTMLElement | null {
+    let el = node instanceof HTMLElement ? node : node?.parentElement;
+    while (el && el !== document.body && el !== document.documentElement) {
+      try {
+        const style = window.getComputedStyle(el);
+        const overflowY = style.overflowY;
+        if ((overflowY === 'auto' || overflowY === 'scroll') && el.scrollHeight > el.clientHeight + 10) {
+          return el;
+        }
+      } catch {
+        // 忽略跨域樣式讀取異常
+      }
+      el = el.parentElement;
+    }
+    return null;
   }
 
   private findNextTextNode(current: Text): Text | null {
