@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Muzen Cursor 設定</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-card">
+    <header class="header">
+      <div class="logo-area">
+        <span class="icon">⛩️</span>
+        <div>
+          <h1 class="title">Muzen Cursor</h1>
+          <p class="subtitle">霧前禪夢，見字如初</p>
+        </div>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="toggle-enabled" checked>
+        <span class="slider"></span>
+      </label>
+    </header>
+
+    <div class="divider"></div>
+
+    <section class="section">
+      <label class="section-label" for="theme-select">色彩主題</label>
+      <select id="theme-select" class="select-input">
+        <option value="gruvbox-dark">Gruvbox Dark (經典琥珀)</option>
+        <option value="gruvbox-light">Gruvbox Light (淡雅暖白)</option>
+        <option value="tokyo-night">Tokyo Night (東京暗夜)</option>
+        <option value="nord">Nord (北歐冰原)</option>
+      </select>
+    </section>
+
+    <section class="section pdf-section">
+      <div class="row-between">
+        <label class="section-label" for="toggle-pdf">PDF 閱讀接管 (PDF.js)</label>
+        <label class="switch-small">
+          <input type="checkbox" id="toggle-pdf" checked>
+          <span class="slider-small"></span>
+        </label>
+      </div>
+      <p class="section-desc">開啟後，點擊 .pdf 網址將自動進入禪意閱讀器</p>
+      <button id="btn-open-pdf-viewer" class="action-btn">
+        📄 開啟 PDF 閱讀器
+      </button>
+    </section>
+
+    <section class="shortcuts-guide">
+      <div class="guide-title">快捷鍵指引</div>
+      <div class="shortcut-row">
+        <span class="key-combo"><kbd>h</kbd> <kbd>j</kbd> <kbd>k</kbd> <kbd>l</kbd></span>
+        <span class="desc">字元 / 行 移動</span>
+      </div>
+      <div class="shortcut-row">
+        <span class="key-combo"><kbd>w</kbd> <kbd>b</kbd> <kbd>e</kbd></span>
+        <span class="desc">中英文智慧跳詞 / 詞尾</span>
+      </div>
+      <div class="shortcut-row">
+        <span class="key-combo"><kbd>0</kbd> <kbd>$</kbd></span>
+        <span class="desc">跳至行首 / 行尾</span>
+      </div>
+      <div class="shortcut-row">
+        <span class="key-combo"><kbd>g</kbd><kbd>g</kbd> / <kbd>G</kbd></span>
+        <span class="desc">全文開頭 / 結尾</span>
+      </div>
+      <div class="shortcut-row">
+        <span class="key-combo"><kbd>v</kbd> / <kbd>y</kbd></span>
+        <span class="desc">Visual 選取 / 複製 (Yank)</span>
+      </div>
+      <div class="shortcut-row">
+        <span class="key-combo"><kbd>Alt</kbd> + <kbd>V</kbd></span>
+        <span class="desc">快速啟動 / 凍結游標</span>
+      </div>
+      <div class="shortcut-row">
+        <span class="key-combo"><kbd>Esc</kbd></span>
+        <span class="desc">取消選取 / 隱藏游標</span>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <span>點擊網頁文字即可立即錨定閱讀焦點</span>
+    </footer>
+  </div>
+
+  <script type="module" src="popup.ts"></script>
+</body>
+</html>

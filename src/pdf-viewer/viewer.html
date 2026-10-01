@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Muzen PDF 檢視器 - 霧前禪夢</title>
+  <link rel="stylesheet" href="viewer.css">
+</head>
+<body>
+  <!-- 頂部沉浸式工具列 -->
+  <header class="toolbar">
+    <div class="toolbar-left">
+      <span class="toolbar-logo">⛩️ Muzen PDF</span>
+      <span id="doc-title" class="doc-title">未開啟文件</span>
+    </div>
+
+    <div class="toolbar-center">
+      <button id="btn-prev-page" class="tool-btn" title="上一頁 (k)">◀</button>
+      <span class="page-indicator">
+        <input type="number" id="page-num-input" value="1" min="1" max="1" />
+        <span class="page-slash">/</span>
+        <span id="page-count">0</span>
+      </span>
+      <button id="btn-next-page" class="tool-btn" title="下一頁 (j)">▶</button>
+    </div>
+
+    <div class="toolbar-right">
+      <button id="btn-zoom-out" class="tool-btn" title="縮小 (-)">−</button>
+      <span id="zoom-level" class="zoom-level">100%</span>
+      <button id="btn-zoom-in" class="tool-btn" title="放大 (+)">+</button>
+      <button id="btn-zoom-fit" class="tool-btn" title="適應寬度">適應寬度</button>
+      <label class="tool-btn open-file-label" title="開啟本機 PDF 檔案">
+        📂 開啟檔案
+        <input type="file" id="file-input" accept="application/pdf" style="display: none;" />
+      </label>
+    </div>
+  </header>
+
+  <!-- 拖曳區 / 初始引導面板 -->
+  <main id="main-content" class="main-content">
+    <div id="drop-zone" class="drop-zone">
+      <div class="drop-card">
+        <div class="drop-icon">📄</div>
+        <h2>將 PDF 檔案拖放至此處</h2>
+        <p>或點擊上方「📂 開啟檔案」按鈕選取本機文件</p>
+        <div class="drop-hint">
+          支援標準 Vim 快捷鍵（<code>j/k</code> 換行、<code>h/l</code> 字元、<code>w/b</code> 跳詞、<code>v/y</code> 複製）
+        </div>
+      </div>
+    </div>
+
+    <!-- PDF 頁面連續渲染容器 -->
+    <div id="viewer-container" class="viewer-container" style="display: none;"></div>
+  </main>
+
+  <script type="module" src="viewer.ts"></script>
+</body>
+</html>

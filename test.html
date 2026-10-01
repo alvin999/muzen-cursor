@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Muzen Cursor 測試頁面</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang TC", "Microsoft JhengHei", sans-serif;
+      line-height: 1.8;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 0 20px;
+      color: #2c3e50;
+      background-color: #fdfbf7;
+    }
+    h1 {
+      color: #d35400;
+      border-bottom: 2px solid #e67e22;
+      padding-bottom: 8px;
+    }
+    h2 {
+      color: #e67e22;
+      margin-top: 30px;
+    }
+    p {
+      margin: 16px 0;
+      font-size: 17px;
+    }
+    .quote {
+      background: #f7ede2;
+      border-left: 4px solid #e67e22;
+      padding: 12px 18px;
+      margin: 20px 0;
+      font-style: italic;
+    }
+    .guide-box {
+      background: #ebf5fb;
+      border: 1px solid #aed6f1;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 30px;
+    }
+    code {
+      background: #eee;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+      color: #c0392b;
+    }
+  </style>
+</head>
+<body>
+  <div class="guide-box">
+    <h3>⛩️ Muzen Cursor 測試指南</h3>
+    <p>1. 請確認已在 <code>chrome://extensions/</code> 重新載入未封裝項目。</p>
+    <p>2. 點擊下方任意文字段落，畫面右下角將呈現狀態列，且文字上方會出現 Gruvbox 琥珀色游標。</p>
+    <p>3. 使用鍵盤 <code>h</code> (左)、<code>j</code> (下)、<code>k</code> (上)、<code>l</code> (右) 進行移動；按 <code>v</code> 可切換 Visual 模式。</p>
+  </div>
+
+  <h1>霧前禪夢，見字如初</h1>
+  <div class="quote">
+    「文字如泉，靜謐而流。在喧囂的網路世界中，為心靈保留一方專注閱讀的淨土。」
+  </div>
+
+  <h2>一、 設計理念</h2>
+  <p>
+    現代網頁長文閱讀中，傳統滑鼠滾輪滾動容易使視線迷失。瀏覽器原生的游標瀏覽功能（F7）僅提供細微的閃爍垂直直線，缺乏段落吸附與物理動態回饋。
+  </p>
+  <p>
+    Muzen Cursor（霧前游標）承襲 Gruvbox 高對比配色與 Vim 經典按鍵動力學，將文字行/字元級別的視線錨點帶入任意網頁中。透過純鍵盤控制，手部無需離開鍵盤，即可享受極致流暢的沉浸式閱讀體驗。
+  </p>
+
+  <h2>二、 技術核心突破</h2>
+  <p>
+    為了達到最高相容性與零執行期負擔，我們捨棄了龐大的前端框架執行期，全面採用 Vanilla TypeScript 配合原生 Web Components (Shadow DOM)。
+  </p>
+  <p>
+    每個字元的螢幕座標皆透過 DOM Range 與 TreeWalker 精確度量，並透過 GPU 硬體加速（CSS <code>translate3d</code>）實現 120fps 的平滑吸附與阻尼動畫。
+  </p>
+
+  <h2>三、 操作體驗驗證</h2>
+  <p>
+    請嘗試直接點選這一行文字，或是使用鍵盤快捷鍵進行測試：
+  </p>
+  <ul>
+    <li><strong>水平移動</strong>：使用 <code>h</code> 向左一個字元，使用 <code>l</code> 向右一個字元。</li>
+    <li><strong>垂直跨行</strong>：使用 <code>j</code> 移動至下一行，使用 <code>k</code> 移動至上一行。</li>
+    <li><strong>模式切換</strong>：按下 <code>v</code> 進入 VISUAL 模式（狀態列與游標將切換為金黃色高對比主題）。</li>
+    <li><strong>凍結/喚醒</strong>：按下 <code>Alt + V</code> 可隨時啟動或關閉指標。</li>
+  </ul>
+
+  <h2>四、 英文長句混排測試</h2>
+  <p>
+    Antigravity and Vim bring profound simplicity to complex web typography. 
+    Every single glyph, word boundary, and line box is mapped with mathematical precision.
+    Visit the <a href="https://github.com">GitHub Repository</a> to learn more about the project.
+  </p>
+
+  <h2>五、 程式碼區塊 (pre / code) 跨行測試</h2>
+  <pre><code>// 這是一段示範程式碼
+function zenReading() {
+  const focus = true;
+
+  // 包含空行與縮排
+  if (focus) {
+    console.log("沉浸式閱讀體驗");
+  }
+  return focus;
+}</code></pre>
+
+  <h2>使用 Rebase 或 filter-branch 指令來整理</h2>
+  <p>如果 Commit 的數量小，使用 Rebase 應該就足以進行編輯、重整。在「<a href="https://gitbook.tw/chapters/faq/remove-sensitive-data.html">【狀況題】不小心把帳號密碼放在 Git 裡了，想把它刪掉…</a>」章節也曾介紹過 <code>filter-branch</code> 指令，它可以大範圍的對每個 Commit 執行某個指令，並於修改完成後會自動再重新 Commit。所以如果是要把檔案從 Git 裡拔掉，用 <code>filter-branch</code> 指令應該是相對較方便的。</p>
+  <p>舉例來說，目前的 Commit 紀錄是這樣：</p>
+  <p>我想要把所有 Commit 的 <code>config/database.yml</code> 這個檔案刪掉：</p>
+  <pre><code>$ git filter-branch --tree-filter &quot;rm -f config/database.yml&quot;
+Rewrite 27f6ed6da50dbee5adbb68102266a91dc097ad3f (7/7) (0 seconds passed, remaining 0 predicted)
+Ref 'refs/heads/master' was rewritten
+</code></pre>
+  <p>這樣看起來好像刪掉了...假的，其實那些東西都還在，隨時都可以取消剛剛這個指令，把剛剛被刪的檔案救回來：</p>
+  <pre><code>$ git reset refs/original/refs/heads/master --hard
+HEAD is now at 27f6ed6 add dog 2
+</code></pre>
+  <h2>全部斷乾淨！</h2>
+  <script type="module" src="./dist/content/index.js"></script>
+</body>
+</html>

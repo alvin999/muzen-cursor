@@ -1,0 +1,254 @@
+/* ==========================================================================
+   Muzen PDF 檢視器樣式 (Gruvbox 禪意深色主題)
+   ========================================================================== */
+
+:root {
+  --bg-primary: #1d2021;
+  --bg-secondary: #282828;
+  --bg-tertiary: #3c3836;
+  --fg-primary: #ebdbb2;
+  --fg-secondary: #a89984;
+  --accent: #fe8019;
+  --accent-hover: #fabd2f;
+  --border-color: #504945;
+  --shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang TC", "Microsoft JhengHei", sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--fg-primary);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* 頂部工具列 */
+.toolbar {
+  height: 48px;
+  background-color: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.toolbar-left, .toolbar-center, .toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.toolbar-logo {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--accent);
+  letter-spacing: 0.5px;
+}
+
+.doc-title {
+  font-size: 13px;
+  color: var(--fg-secondary);
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tool-btn {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  color: var(--fg-primary);
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+}
+
+.tool-btn:hover {
+  background: var(--border-color);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.open-file-label {
+  background: rgba(254, 128, 25, 0.15);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.open-file-label:hover {
+  background: var(--accent);
+  color: var(--bg-primary);
+}
+
+.page-indicator {
+  display: inline-flex;
+  align-items: center;
+  font-size: 13px;
+  color: var(--fg-secondary);
+  gap: 4px;
+}
+
+#page-num-input {
+  width: 44px;
+  height: 26px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  color: var(--fg-primary);
+  text-align: center;
+  font-size: 13px;
+}
+
+#page-num-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.zoom-level {
+  font-size: 12px;
+  color: var(--fg-secondary);
+  min-width: 42px;
+  text-align: center;
+}
+
+/* 主畫布區 */
+.main-content {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+  background: var(--bg-primary);
+  display: flex;
+  justify-content: center;
+}
+
+/* 拖放區卡片 */
+.drop-zone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.drop-card {
+  border: 2px dashed var(--border-color);
+  border-radius: 12px;
+  padding: 48px 60px;
+  text-align: center;
+  background: var(--bg-secondary);
+  max-width: 520px;
+  transition: all 0.2s ease;
+}
+
+.drop-card.drag-over {
+  border-color: var(--accent);
+  background: rgba(254, 128, 25, 0.05);
+}
+
+.drop-icon {
+  font-size: 54px;
+  margin-bottom: 16px;
+}
+
+.drop-card h2 {
+  font-size: 20px;
+  color: var(--fg-primary);
+  margin-bottom: 8px;
+}
+
+.drop-card p {
+  font-size: 14px;
+  color: var(--fg-secondary);
+  margin-bottom: 20px;
+}
+
+.drop-hint {
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: 12px;
+  color: var(--accent);
+  border: 1px solid rgba(254, 128, 25, 0.2);
+}
+
+.drop-hint code {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 2px 4px;
+  border-radius: 3px;
+  color: var(--accent-hover);
+}
+
+/* PDF 頁面容器 */
+.viewer-container {
+  padding: 30px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  user-select: text; /* 允許文字選取以利 Range 測量與 Visual 模式 */
+}
+
+.pdf-page-wrapper {
+  position: relative;
+  box-shadow: var(--shadow);
+  border-radius: 4px;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.pdf-page-wrapper canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* ==========================================================================
+   PDF.js TextLayer 標準規範樣式 (極致對齊文字層)
+   ========================================================================== */
+.textLayer {
+  position: absolute;
+  text-align: initial;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  opacity: 1;
+  line-height: 1;
+  text-size-adjust: none;
+  forced-color-adjust: none;
+  transform-origin: 0 0;
+  z-index: 2;
+}
+
+.textLayer span,
+.textLayer br {
+  color: transparent;
+  position: absolute;
+  white-space: pre;
+  cursor: text;
+  transform-origin: 0% 0%;
+}
+
+.textLayer ::selection {
+  background: rgba(254, 128, 25, 0.35);
+}

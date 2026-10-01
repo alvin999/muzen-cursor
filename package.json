@@ -1,0 +1,29 @@
+{
+  "name": "muzen-cursor",
+  "displayName": "Muzen Cursor",
+  "version": "0.1.0",
+  "description": "Vim-style distraction-free reading cursor for web pages and PDFs",
+  "type": "module",
+  "scripts": {
+    "dev": "vite build --watch --mode development",
+    "build": "tsc --noEmit && vite build"
+  },
+  "keywords": [
+    "vim",
+    "cursor",
+    "reading",
+    "chrome-extension",
+    "focus"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/chrome": "^0.0.308",
+    "@types/node": "^22.13.0",
+    "typescript": "^5.7.3",
+    "vite": "^6.1.0"
+  },
+  "dependencies": {
+    "pdfjs-dist": "^6.3.289"
+  }
+}

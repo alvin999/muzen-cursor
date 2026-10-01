@@ -1,0 +1,45 @@
+{
+  "manifest_version": 3,
+  "name": "Muzen Cursor 霧前游標",
+  "version": "0.1.0",
+  "description": "Vim 風格沉浸式輔助閱讀指標 - 霧前禪夢，見字如初",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "tabs"
+  ],
+  "background": {
+    "service_worker": "background/index.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/index.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup/index.html",
+    "default_title": "Muzen Cursor 設定",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "src/pdf-viewer/*",
+        "pdf-viewer/*"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
