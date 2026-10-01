@@ -66,7 +66,7 @@ export class VimStatusBar {
   }
 
   private render(state: CursorState): void {
-    if (!state.enabled) {
+    if (!state.enabled || state.showStatusBar === false) {
       this.element.style.opacity = '0';
       this.element.style.transform = 'translateY(4px)';
       return;

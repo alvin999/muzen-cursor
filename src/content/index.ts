@@ -35,6 +35,9 @@ function main(): void {
       } else if (message.type === 'SET_EFFECTS') {
         cursorStore.setState({ effects: message.effects });
         sendResponse({ success: true });
+      } else if (message.type === 'SET_STATUS_BAR') {
+        cursorStore.setState({ showStatusBar: !!message.showStatusBar });
+        sendResponse({ success: true });
       } else if (message.type === 'SET_ANIMATION') {
         // 向下相容舊版單選訊息
         if (message.animation === 'smooth') {
@@ -54,9 +57,12 @@ function main(): void {
 
   // 4. 讀取持久化設定
   if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
-    chrome.storage.sync.get(['muzen_enabled', 'muzen_theme', 'muzen_shape', 'muzen_effects', 'muzen_animation'], (result) => {
+    chrome.storage.sync.get(['muzen_enabled', 'muzen_theme', 'muzen_shape', 'muzen_effects', 'muzen_show_status_bar', 'muzen_animation'], (result) => {
       if (typeof result.muzen_enabled === 'boolean') {
         cursorStore.setState({ enabled: result.muzen_enabled });
+      }
+      if (typeof result.muzen_show_status_bar === 'boolean') {
+        cursorStore.setState({ showStatusBar: result.muzen_show_status_bar });
       }
       if (result.muzen_theme) {
         cursorStore.setState({ theme: result.muzen_theme });

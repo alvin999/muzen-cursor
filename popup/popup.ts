@@ -4,6 +4,7 @@
 
 document.addEventListener('DOMContentLoaded', () => {
   const toggleEnabled = document.getElementById('toggle-enabled') as HTMLInputElement | null;
+  const toggleStatusBar = document.getElementById('toggle-status-bar') as HTMLInputElement | null;
   const togglePdf = document.getElementById('toggle-pdf') as HTMLInputElement | null;
   const themeSelect = document.getElementById('theme-select') as HTMLSelectElement | null;
   const shapeSelect = document.getElementById('shape-select') as HTMLSelectElement | null;
@@ -14,9 +15,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 1. 初始化讀取設定
   if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
-    chrome.storage.sync.get(['muzen_enabled', 'muzen_theme', 'muzen_intercept_pdf', 'muzen_shape', 'muzen_effects', 'muzen_animation'], (data) => {
+    chrome.storage.sync.get(['muzen_enabled', 'muzen_theme', 'muzen_intercept_pdf', 'muzen_shape', 'muzen_effects', 'muzen_show_status_bar', 'muzen_animation'], (data) => {
       if (toggleEnabled && typeof data.muzen_enabled === 'boolean') {
         toggleEnabled.checked = data.muzen_enabled;
+      }
+      if (toggleStatusBar && typeof data.muzen_show_status_bar === 'boolean') {
+        toggleStatusBar.checked = data.muzen_show_status_bar;
       }
       if (togglePdf && typeof data.muzen_intercept_pdf === 'boolean') {
         togglePdf.checked = data.muzen_intercept_pdf;
@@ -57,6 +61,15 @@ document.addEventListener('DOMContentLoaded', () => {
       chrome.storage.sync.set({ muzen_enabled: isEnabled });
     }
     broadcastToActiveTab({ type: 'TOGGLE_CURSOR', enabled: isEnabled });
+  });
+
+  // 3. 狀態列顯示開關變更事件
+  toggleStatusBar?.addEventListener('change', () => {
+    const isShow = toggleStatusBar.checked;
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
+      chrome.storage.sync.set({ muzen_show_status_bar: isShow });
+    }
+    broadcastToActiveTab({ type: 'SET_STATUS_BAR', showStatusBar: isShow });
   });
 
   // 3. PDF 接管設定變更

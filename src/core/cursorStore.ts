@@ -25,6 +25,7 @@ export interface CursorState {
   theme: CursorTheme;
   shape: CursorShape;
   effects: CursorEffects;
+  showStatusBar: boolean;
   rect: CursorRect;
   visible: boolean;
   readingProgress: number; // 0 - 100
@@ -44,6 +45,7 @@ class CursorStore {
       breathe: true,
       blink: false
     },
+    showStatusBar: true,
     rect: { x: 0, y: 0, width: 10, height: 20 },
     visible: false,
     readingProgress: 0,

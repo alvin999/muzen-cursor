@@ -253,7 +253,8 @@ kbd {
   padding-top: 2px;
 }
 
-/* PDF 控制項與按鈕樣式 */
+/* 狀態列與 PDF 控制項卡片樣式 */
+.status-section,
 .pdf-section {
   background: var(--bg-card);
   padding: 10px 12px;

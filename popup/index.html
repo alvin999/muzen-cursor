@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Muzen Cursor 設定</title>
   <link rel="stylesheet" href="popup.css">
 </head>
+
 <body>
   <div class="popup-card">
     <header class="header">
@@ -63,6 +65,17 @@
       </div>
     </section>
 
+    <section class="section status-section">
+      <div class="row-between">
+        <label class="section-label" for="toggle-status-bar">顯示底部狀態列</label>
+        <label class="switch-small">
+          <input type="checkbox" id="toggle-status-bar" checked>
+          <span class="slider-small"></span>
+        </label>
+      </div>
+      <p class="section-desc">畫面右下角呈現目前 Vim 模式與文章進度</p>
+    </section>
+
     <section class="section pdf-section">
       <div class="row-between">
         <label class="section-label" for="toggle-pdf">PDF 閱讀接管 (PDF.js)</label>
@@ -100,7 +113,7 @@
         <span class="desc">Visual 選取 / 複製 (Yank)</span>
       </div>
       <div class="shortcut-row">
-        <span class="key-combo"><kbd>Alt</kbd> + <kbd>V</kbd></span>
+        <span class="key-combo"><kbd>Alt</kbd> + <kbd>v</kbd></span>
         <span class="desc">快速啟動 / 凍結游標</span>
       </div>
       <div class="shortcut-row">
@@ -116,4 +129,5 @@
 
   <script type="module" src="popup.ts"></script>
 </body>
+
 </html>
