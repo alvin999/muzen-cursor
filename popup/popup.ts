@@ -24,6 +24,11 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentHostname = '';
   let excludedSites: string[] = [];
 
+  // 套用主題至 Popup 視窗
+  const applyTheme = (theme: string) => {
+    document.body.setAttribute('data-theme', theme || 'gruvbox-dark');
+  };
+
   // 比對網域是否被排除
   const isExcluded = (host: string, list: string[]): boolean => {
     if (!host || !list) return false;
@@ -49,6 +54,9 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       if (themeSelect && data.muzen_theme) {
         themeSelect.value = data.muzen_theme;
+        applyTheme(data.muzen_theme);
+      } else {
+        applyTheme('gruvbox-dark');
       }
       if (shapeSelect && data.muzen_shape) {
         shapeSelect.value = data.muzen_shape;
@@ -226,6 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // 9. 主題變更事件
   themeSelect?.addEventListener('change', () => {
     const theme = themeSelect.value;
+    applyTheme(theme);
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
       chrome.storage.sync.set({ muzen_theme: theme });
     }
