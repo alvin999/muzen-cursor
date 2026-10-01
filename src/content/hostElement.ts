@@ -31,6 +31,7 @@ export class MuzenCursorHost {
     this.overlay = new VimCursorOverlay();
     this.statusBar = new VimStatusBar();
 
+    this.shadow.appendChild(this.overlay.getStyleSheet());
     this.shadow.appendChild(this.overlay.getElement());
     this.shadow.appendChild(this.statusBar.getElement());
   }

@@ -31,7 +31,36 @@
         <option value="gruvbox-light">Gruvbox Light (淡雅暖白)</option>
         <option value="tokyo-night">Tokyo Night (東京暗夜)</option>
         <option value="nord">Nord (北歐冰原)</option>
+        <option value="catppuccin">Catppuccin Mocha (典雅摩卡)</option>
+        <option value="everforest">Everforest (森野之境)</option>
       </select>
+    </section>
+
+    <section class="section">
+      <label class="section-label" for="shape-select">游標形態</label>
+      <select id="shape-select" class="select-input">
+        <option value="block">實心方塊 (Block)</option>
+        <option value="hollow">空心外框 (Hollow)</option>
+        <option value="underline">閱讀底線 (Underline)</option>
+      </select>
+    </section>
+
+    <section class="section">
+      <label class="section-label">動態特效 (可複選)</label>
+      <div class="effects-group">
+        <label class="effect-chip">
+          <input type="checkbox" id="effect-smooth" checked>
+          <span class="chip-label">平滑位移</span>
+        </label>
+        <label class="effect-chip">
+          <input type="checkbox" id="effect-breathe" checked>
+          <span class="chip-label">禪意呼吸</span>
+        </label>
+        <label class="effect-chip">
+          <input type="checkbox" id="effect-blink">
+          <span class="chip-label">經典閃爍</span>
+        </label>
+      </div>
     </section>
 
     <section class="section pdf-section">

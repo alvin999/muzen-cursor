@@ -26,6 +26,25 @@ function main(): void {
         const current = cursorStore.getState().enabled;
         cursorStore.setState({ enabled: !current });
         sendResponse({ success: true, enabled: !current });
+      } else if (message.type === 'SET_THEME') {
+        cursorStore.setState({ theme: message.theme });
+        sendResponse({ success: true });
+      } else if (message.type === 'SET_SHAPE') {
+        cursorStore.setState({ shape: message.shape });
+        sendResponse({ success: true });
+      } else if (message.type === 'SET_EFFECTS') {
+        cursorStore.setState({ effects: message.effects });
+        sendResponse({ success: true });
+      } else if (message.type === 'SET_ANIMATION') {
+        // 向下相容舊版單選訊息
+        if (message.animation === 'smooth') {
+          cursorStore.setState({ effects: { smooth: true, breathe: false, blink: false } });
+        } else if (message.animation === 'breathe') {
+          cursorStore.setState({ effects: { smooth: true, breathe: true, blink: false } });
+        } else if (message.animation === 'blink') {
+          cursorStore.setState({ effects: { smooth: false, breathe: false, blink: true } });
+        }
+        sendResponse({ success: true });
       } else if (message.type === 'GET_STATUS') {
         sendResponse({ success: true, state: cursorStore.getState() });
       }
@@ -35,12 +54,26 @@ function main(): void {
 
   // 4. 讀取持久化設定
   if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
-    chrome.storage.sync.get(['muzen_enabled', 'muzen_theme'], (result) => {
+    chrome.storage.sync.get(['muzen_enabled', 'muzen_theme', 'muzen_shape', 'muzen_effects', 'muzen_animation'], (result) => {
       if (typeof result.muzen_enabled === 'boolean') {
         cursorStore.setState({ enabled: result.muzen_enabled });
       }
       if (result.muzen_theme) {
         cursorStore.setState({ theme: result.muzen_theme });
+      }
+      if (result.muzen_shape) {
+        cursorStore.setState({ shape: result.muzen_shape });
+      }
+      if (result.muzen_effects) {
+        cursorStore.setState({ effects: result.muzen_effects });
+      } else if (result.muzen_animation) {
+        if (result.muzen_animation === 'smooth') {
+          cursorStore.setState({ effects: { smooth: true, breathe: false, blink: false } });
+        } else if (result.muzen_animation === 'breathe') {
+          cursorStore.setState({ effects: { smooth: true, breathe: true, blink: false } });
+        } else if (result.muzen_animation === 'blink') {
+          cursorStore.setState({ effects: { smooth: false, breathe: false, blink: true } });
+        }
       }
     });
   }

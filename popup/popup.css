@@ -93,6 +93,65 @@ body {
   border-color: var(--accent-orange);
 }
 
+.row-controls {
+  display: flex;
+  gap: 10px;
+}
+
+.control-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* 多選特效標籤 (Chips / Pills) */
+.effects-group {
+  display: flex;
+  gap: 8px;
+}
+
+.effect-chip {
+  flex: 1;
+  position: relative;
+  cursor: pointer;
+}
+
+.effect-chip input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+.chip-label {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 7px 4px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--fg-muted);
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+  text-align: center;
+}
+
+.effect-chip:hover .chip-label {
+  border-color: var(--accent-orange);
+  color: var(--fg-color);
+}
+
+.effect-chip input:checked + .chip-label {
+  background: rgba(254, 128, 25, 0.15);
+  border-color: var(--accent-orange);
+  color: var(--accent-orange);
+  font-weight: 600;
+  box-shadow: 0 0 8px rgba(254, 128, 25, 0.25);
+}
+
 /* 開關 Toggle Switch */
 .switch {
   position: relative;

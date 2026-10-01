@@ -6,11 +6,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const toggleEnabled = document.getElementById('toggle-enabled') as HTMLInputElement | null;
   const togglePdf = document.getElementById('toggle-pdf') as HTMLInputElement | null;
   const themeSelect = document.getElementById('theme-select') as HTMLSelectElement | null;
+  const shapeSelect = document.getElementById('shape-select') as HTMLSelectElement | null;
+  const effectSmooth = document.getElementById('effect-smooth') as HTMLInputElement | null;
+  const effectBreathe = document.getElementById('effect-breathe') as HTMLInputElement | null;
+  const effectBlink = document.getElementById('effect-blink') as HTMLInputElement | null;
   const btnOpenPdf = document.getElementById('btn-open-pdf-viewer') as HTMLButtonElement | null;
 
   // 1. 初始化讀取設定
   if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
-    chrome.storage.sync.get(['muzen_enabled', 'muzen_theme', 'muzen_intercept_pdf'], (data) => {
+    chrome.storage.sync.get(['muzen_enabled', 'muzen_theme', 'muzen_intercept_pdf', 'muzen_shape', 'muzen_effects', 'muzen_animation'], (data) => {
       if (toggleEnabled && typeof data.muzen_enabled === 'boolean') {
         toggleEnabled.checked = data.muzen_enabled;
       }
@@ -20,8 +24,31 @@ document.addEventListener('DOMContentLoaded', () => {
       if (themeSelect && data.muzen_theme) {
         themeSelect.value = data.muzen_theme;
       }
+      if (shapeSelect && data.muzen_shape) {
+        shapeSelect.value = data.muzen_shape;
+      }
+      if (data.muzen_effects) {
+        if (effectSmooth) effectSmooth.checked = !!data.muzen_effects.smooth;
+        if (effectBreathe) effectBreathe.checked = !!data.muzen_effects.breathe;
+        if (effectBlink) effectBlink.checked = !!data.muzen_effects.blink;
+      } else if (data.muzen_animation) {
+        // 向下相容
+        if (effectSmooth) effectSmooth.checked = data.muzen_animation === 'smooth' || data.muzen_animation === 'breathe';
+        if (effectBreathe) effectBreathe.checked = data.muzen_animation === 'breathe';
+        if (effectBlink) effectBlink.checked = data.muzen_animation === 'blink';
+      }
     });
   }
+
+  // 輔助函式：發送訊息至當前分頁以即時熱更新
+  const broadcastToActiveTab = (message: Record<string, unknown>) => {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      const activeTab = tabs[0];
+      if (activeTab?.id) {
+        chrome.tabs.sendMessage(activeTab.id, message);
+      }
+    });
+  };
 
   // 2. 開關變更事件 (主游標)
   toggleEnabled?.addEventListener('change', () => {
@@ -29,17 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
       chrome.storage.sync.set({ muzen_enabled: isEnabled });
     }
-
-    // 發送訊息給當前活躍分頁
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      const activeTab = tabs[0];
-      if (activeTab?.id) {
-        chrome.tabs.sendMessage(activeTab.id, {
-          type: 'TOGGLE_CURSOR',
-          enabled: isEnabled
-        });
-      }
-    });
+    broadcastToActiveTab({ type: 'TOGGLE_CURSOR', enabled: isEnabled });
   });
 
   // 3. PDF 接管設定變更
@@ -65,5 +82,33 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
       chrome.storage.sync.set({ muzen_theme: theme });
     }
+    broadcastToActiveTab({ type: 'SET_THEME', theme });
   });
+
+  // 6. 游標形態變更事件 (Block / Hollow / Underline)
+  shapeSelect?.addEventListener('change', () => {
+    const shape = shapeSelect.value;
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
+      chrome.storage.sync.set({ muzen_shape: shape });
+    }
+    broadcastToActiveTab({ type: 'SET_SHAPE', shape });
+  });
+
+  // 7. 動態特效變更事件 (多選：Smooth / Breathe / Blink)
+  const onEffectsChanged = () => {
+    const effects = {
+      smooth: effectSmooth ? effectSmooth.checked : true,
+      breathe: effectBreathe ? effectBreathe.checked : false,
+      blink: effectBlink ? effectBlink.checked : false
+    };
+
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
+      chrome.storage.sync.set({ muzen_effects: effects });
+    }
+    broadcastToActiveTab({ type: 'SET_EFFECTS', effects });
+  };
+
+  effectSmooth?.addEventListener('change', onEffectsChanged);
+  effectBreathe?.addEventListener('change', onEffectsChanged);
+  effectBlink?.addEventListener('change', onEffectsChanged);
 });

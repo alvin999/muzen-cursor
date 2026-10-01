@@ -3,7 +3,14 @@
  */
 
 export type CursorMode = 'NORMAL' | 'VISUAL';
-export type CursorTheme = 'gruvbox-dark' | 'gruvbox-light' | 'tokyo-night' | 'nord';
+export type CursorTheme = 'gruvbox-dark' | 'gruvbox-light' | 'tokyo-night' | 'nord' | 'catppuccin' | 'everforest';
+export type CursorShape = 'block' | 'hollow' | 'underline';
+
+export interface CursorEffects {
+  smooth: boolean;  // 平滑物理位移 (Smooth Transition)
+  breathe: boolean; // 禪意呼吸燈 (Breathing Pulse Glow)
+  blink: boolean;   // 經典閃爍 (Terminal Blink)
+}
 
 export interface CursorRect {
   x: number;
@@ -16,6 +23,8 @@ export interface CursorState {
   enabled: boolean;
   mode: CursorMode;
   theme: CursorTheme;
+  shape: CursorShape;
+  effects: CursorEffects;
   rect: CursorRect;
   visible: boolean;
   readingProgress: number; // 0 - 100
@@ -29,6 +38,12 @@ class CursorStore {
     enabled: true,
     mode: 'NORMAL',
     theme: 'gruvbox-dark',
+    shape: 'block',
+    effects: {
+      smooth: true,
+      breathe: true,
+      blink: false
+    },
     rect: { x: 0, y: 0, width: 10, height: 20 },
     visible: false,
     readingProgress: 0,
