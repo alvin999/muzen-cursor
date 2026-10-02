@@ -9,9 +9,10 @@ export type CursorTheme = 'gruvbox-dark' | 'gruvbox-light' | 'tokyo-night' | 'no
 export type CursorShape = 'block' | 'hollow' | 'underline';
 
 export interface CursorEffects {
-  smooth: boolean;  // 平滑物理位移 (Smooth Transition)
-  breathe: boolean; // 禪意呼吸燈 (Breathing Pulse Glow)
-  blink: boolean;   // 經典閃爍 (Terminal Blink)
+  smooth: boolean;       // 平滑物理位移 (Smooth Transition)
+  smoothScroll: boolean; // 平滑視窗捲動 (Smooth Page Scrolling)
+  breathe: boolean;      // 禪意呼吸燈 (Breathing Pulse Glow)
+  blink: boolean;        // 經典閃爍 (Terminal Blink)
 }
 
 export interface CursorRect {
@@ -48,6 +49,7 @@ class CursorStore {
     shape: 'block',
     effects: {
       smooth: true,
+      smoothScroll: true,
       breathe: true,
       blink: false
     },

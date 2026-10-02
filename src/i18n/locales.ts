@@ -21,6 +21,7 @@ export interface Translations {
   shapeUnderline: string;
   effectsLabel: string;
   effectSmooth: string;
+  effectSmoothScroll: string;
   effectBreathe: string;
   effectBlink: string;
   statusBarSectionLabel: string;
@@ -38,6 +39,7 @@ export interface Translations {
   pdfOpenBtn: string;
   shortcutsTitle: string;
   shortcutHjkl: string;
+  shortcutHalfPage: string;
   shortcutWbe: string;
   shortcutLineBoundary: string;
   shortcutDocBoundary: string;
@@ -66,6 +68,7 @@ export const LOCALES: Record<Locale, Translations> = {
     shapeUnderline: '閱讀底線 (Underline)',
     effectsLabel: '動態特效 (可複選)',
     effectSmooth: '平滑位移',
+    effectSmoothScroll: '平滑捲動',
     effectBreathe: '禪意呼吸',
     effectBlink: '經典閃爍',
     statusBarSectionLabel: '顯示底部狀態列',
@@ -83,6 +86,7 @@ export const LOCALES: Record<Locale, Translations> = {
     pdfOpenBtn: '📄 開啟 PDF 閱讀器',
     shortcutsTitle: '快捷鍵指引',
     shortcutHjkl: '字元 / 行 移動',
+    shortcutHalfPage: '向下 / 向上半頁跳轉',
     shortcutWbe: '中英文智慧跳詞 / 詞尾',
     shortcutLineBoundary: '跳至行首 / 行尾',
     shortcutDocBoundary: '全文開頭 / 結尾',
@@ -109,6 +113,7 @@ export const LOCALES: Record<Locale, Translations> = {
     shapeUnderline: 'Reading Underline',
     effectsLabel: 'Motion Effects (Multi-select)',
     effectSmooth: 'Smooth Motion',
+    effectSmoothScroll: 'Smooth Scroll',
     effectBreathe: 'Zen Pulse',
     effectBlink: 'Classic Blink',
     statusBarSectionLabel: 'Show Status Bar',
@@ -126,6 +131,7 @@ export const LOCALES: Record<Locale, Translations> = {
     pdfOpenBtn: '📄 Open PDF Viewer',
     shortcutsTitle: 'Keyboard Shortcuts',
     shortcutHjkl: 'Char / Line Navigation',
+    shortcutHalfPage: 'Half-page Down / Up',
     shortcutWbe: 'Smart Word Navigation (w/b/e)',
     shortcutLineBoundary: 'Line Start / End',
     shortcutDocBoundary: 'Document Start / End',
@@ -152,6 +158,7 @@ export const LOCALES: Record<Locale, Translations> = {
     shapeUnderline: 'アンダーライン (Underline)',
     effectsLabel: 'モーション効果 (複数選択可)',
     effectSmooth: 'スムーズ移動',
+    effectSmoothScroll: 'スムーズスクロール',
     effectBreathe: '禅の呼吸',
     effectBlink: 'クラシック点滅',
     statusBarSectionLabel: 'ステータスバーを表示',
@@ -169,6 +176,7 @@ export const LOCALES: Record<Locale, Translations> = {
     pdfOpenBtn: '📄 PDFリーダーを開く',
     shortcutsTitle: 'ショートカット案内',
     shortcutHjkl: '文字 / 行 移動',
+    shortcutHalfPage: '半ページ下 / 上移動',
     shortcutWbe: '単語移動 / 語尾へ',
     shortcutLineBoundary: '行頭 / 行末へジャンプ',
     shortcutDocBoundary: '文書の先頭 / 末尾',

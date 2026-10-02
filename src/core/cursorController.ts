@@ -2,6 +2,73 @@ import { cursorStore } from './cursorStore';
 import { isTypingContext } from '../utils/domUtils';
 import { WordNavigator, TextTarget } from './wordNavigator';
 
+let activeScrollRafId: number | null = null;
+
+/**
+ * 具有物理阻尼感之 Ease-Out Cubic 平滑捲動引擎 (移植自 mugen-yomu 核心演算法)
+ */
+function animateScrollTo(
+  target: HTMLElement | Window,
+  targetTop: number,
+  duration = 380
+): void {
+  if (activeScrollRafId !== null) {
+    cancelAnimationFrame(activeScrollRafId);
+    activeScrollRafId = null;
+  }
+
+  const isWin = target === window || !(target instanceof HTMLElement);
+  const startTop = isWin
+    ? (window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0)
+    : (target as HTMLElement).scrollTop;
+
+  const maxScroll = isWin
+    ? Math.max(0, Math.max(document.body.scrollHeight, document.documentElement.scrollHeight) - window.innerHeight)
+    : Math.max(0, (target as HTMLElement).scrollHeight - (target as HTMLElement).clientHeight);
+
+  const clampedTarget = Math.max(0, Math.min(maxScroll, targetTop));
+  const distance = clampedTarget - startTop;
+
+  const isSmooth = cursorStore.getState().effects?.smoothScroll ?? true;
+  if (!isSmooth || Math.abs(distance) < 2) {
+    if (isWin) {
+      window.scrollTo(0, clampedTarget);
+    } else {
+      (target as HTMLElement).scrollTop = clampedTarget;
+    }
+    return;
+  }
+
+  const startTime = performance.now();
+
+  function step(currentTime: number) {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(1, elapsed / duration);
+    // Ease-Out Cubic: mugen-yomu 招牌物理阻尼曲線，確保極致絲滑
+    const ease = 1 - Math.pow(1 - progress, 3);
+    const currentPos = startTop + distance * ease;
+
+    if (isWin) {
+      window.scrollTo(0, currentPos);
+    } else {
+      (target as HTMLElement).scrollTop = currentPos;
+    }
+
+    if (progress < 1) {
+      activeScrollRafId = requestAnimationFrame(step);
+    } else {
+      if (isWin) {
+        window.scrollTo(0, clampedTarget);
+      } else {
+        (target as HTMLElement).scrollTop = clampedTarget;
+      }
+      activeScrollRafId = null;
+    }
+  }
+
+  activeScrollRafId = requestAnimationFrame(step);
+}
+
 /**
  * Vim 核心游標控制器 (純邏輯運算，解除業務綁定)
  */
@@ -26,7 +93,7 @@ export class CursorController {
     const requestUpdate = () => {
       if (!ticking) {
         window.requestAnimationFrame(() => {
-          if (this.currentTarget && cursorStore.getState().visible) {
+          if (this.currentTarget && cursorStore.getState().enabled && !cursorStore.getState().isExcluded) {
             this.updateCursorPosition();
           }
           ticking = false;
@@ -41,7 +108,7 @@ export class CursorController {
     window.addEventListener('keydown', this.keydownHandler, true);
     window.addEventListener('click', this.clickHandler, true);
     window.addEventListener('resize', this.resizeHandler, { passive: true });
-    window.addEventListener('scroll', this.scrollHandler, { passive: true });
+    window.addEventListener('scroll', this.scrollHandler, { passive: true, capture: true });
   }
 
   public destroy(): void {
@@ -58,7 +125,7 @@ export class CursorController {
       this.resizeHandler = null;
     }
     if (this.scrollHandler) {
-      window.removeEventListener('scroll', this.scrollHandler);
+      window.removeEventListener('scroll', this.scrollHandler, { capture: true } as EventListenerOptions);
       this.scrollHandler = null;
     }
   }
@@ -296,6 +363,20 @@ export class CursorController {
         if (!e.ctrlKey && !e.metaKey) {
           e.preventDefault();
           this.jumpToLineBoundary(false);
+        }
+        break;
+
+      case 'd': // 單鍵向下半頁 (Half-page down)
+        if (!e.ctrlKey && !e.altKey && !e.metaKey) {
+          e.preventDefault();
+          this.moveHalfPage(true);
+        }
+        break;
+
+      case 'u': // 單鍵向上半頁 (Half-page up)
+        if (!e.ctrlKey && !e.altKey && !e.metaKey) {
+          e.preventDefault();
+          this.moveHalfPage(false);
         }
         break;
 
@@ -703,7 +784,7 @@ export class CursorController {
       if (n.textContent && n.textContent.trim().length > 0) {
         this.currentTarget = { node: n as Text, offset: 0 };
         this.updateCursorPosition();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        animateScrollTo(window, 0, 420);
         return;
       }
       n = walker.nextNode();
@@ -730,7 +811,8 @@ export class CursorController {
         offset: lastTextNode.textContent?.length || 0
       };
       this.updateCursorPosition();
-      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+      const maxScroll = Math.max(0, Math.max(document.body.scrollHeight, document.documentElement.scrollHeight) - window.innerHeight);
+      animateScrollTo(window, maxScroll, 420);
     }
   }
 
@@ -944,7 +1026,8 @@ export class CursorController {
       ) - window.innerHeight;
       const progress = totalHeight > 0 ? Math.min(100, Math.max(0, (scrollY / totalHeight) * 100)) : 100;
 
-      const isVisibleInViewport = rect.bottom >= 0 && rect.top <= window.innerHeight;
+      // 容許適度邊界緩衝，避免邊界滾動時游標閃現閃退
+      const isVisibleInViewport = rect.bottom >= -80 && rect.top <= window.innerHeight + 80;
 
       cursorStore.setState({
         visible: isVisibleInViewport,
@@ -963,28 +1046,122 @@ export class CursorController {
         this.syncNativeSelection();
       }
 
-      // 只有在鍵盤主動導航且明確要求跟隨時才執行自動平滑捲動，相容獨立閱讀容器與 PDF 檢視器
+      // 只有在鍵盤主動導航且明確要求跟隨時才執行自動捲動 (移植自 mugen-yomu 舒適黃金視野區間演算法)
       if (scrollIntoView) {
-        const buffer = 80;
         const scrollParent = this.getScrollParent(node);
-        if (scrollParent) {
-          const parentRect = scrollParent.getBoundingClientRect();
-          if (rect.bottom > parentRect.bottom - buffer) {
-            scrollParent.scrollBy({ top: 120, behavior: 'smooth' });
-          } else if (rect.top < parentRect.top + buffer) {
-            scrollParent.scrollBy({ top: -120, behavior: 'smooth' });
-          }
-        } else {
-          if (rect.bottom > window.innerHeight - buffer) {
-            window.scrollBy({ top: 120, behavior: 'smooth' });
-          } else if (rect.top < buffer) {
-            window.scrollBy({ top: -120, behavior: 'smooth' });
-          }
+        const viewHeight = scrollParent ? scrollParent.clientHeight : window.innerHeight;
+        const curTop = rect.top;
+        const curBottom = rect.bottom;
+        const currentScroll = scrollParent
+          ? scrollParent.scrollTop
+          : (window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0);
+
+        // 向下閱讀超過視野 58% 時，平滑將文字推進至 45% 舒適閱讀視野
+        if (curBottom > viewHeight * 0.58) {
+          const targetScroll = currentScroll + curBottom - viewHeight * 0.45;
+          animateScrollTo(scrollParent || window, targetScroll, 320);
+        } else if (curTop < viewHeight * 0.18) {
+          // 向上閱讀低於 18% 時，平滑回推至 28%
+          const targetScroll = Math.max(0, currentScroll + curTop - viewHeight * 0.28);
+          animateScrollTo(scrollParent || window, targetScroll, 320);
         }
       }
     } catch (err) {
       console.warn('[Muzen Cursor] updateCursorPosition error:', err);
     }
+  }
+
+
+  /**
+   * 半頁跳轉 (d 向下 / u 向上) - 保證實體翻動 50% 視窗高度並精準重錨定目標行
+   */
+  private moveHalfPage(isDownward: boolean): void {
+    if (!this.currentTarget) {
+      this.findInitialTarget();
+      return;
+    }
+
+    const { node, offset } = this.currentTarget;
+    const len = node.textContent?.length || 0;
+    if (len === 0) return;
+
+    // 1. 取得當前真實字元的螢幕基準座標
+    const baseRange = document.createRange();
+    const safeFrom = Math.min(offset, Math.max(0, len - 1));
+    baseRange.setStart(node, safeFrom);
+    baseRange.setEnd(node, Math.min(safeFrom + 1, len));
+    const baseRect = baseRange.getBoundingClientRect();
+    const charHeight = baseRect.height > 0 ? baseRect.height : 22;
+    const lineThreshold = charHeight * 0.65;
+
+    if (this.preferredX === null) {
+      this.preferredX = baseRect.left;
+    }
+    const targetX = this.preferredX;
+
+    // 2. 計算目標跳轉高度 (保證為視窗或滾動容器的 50%)
+    const scrollParent = this.getScrollParent(node);
+    const viewportHeight = scrollParent ? scrollParent.clientHeight : window.innerHeight;
+    const jumpDistance = Math.max(viewportHeight * 0.5, charHeight * 3);
+    const scrollAmount = Math.round(jumpDistance) * (isDownward ? 1 : -1);
+
+    let foundTarget: { node: Text; offset: number } | null = null;
+    let accumulatedDistance = 0;
+    let lastFound = this.currentTarget;
+    let steps = 0;
+    const maxSteps = 80;
+
+    // 3. 連續向下或向上推進視覺行，尋找垂直位移達約半頁之最佳目標行
+    while (accumulatedDistance < jumpDistance && steps < maxSteps) {
+      steps++;
+      const curLen = lastFound.node.textContent?.length || 0;
+      const curSafe = Math.min(lastFound.offset, Math.max(0, curLen - 1));
+      const r = document.createRange();
+      r.setStart(lastFound.node, curSafe);
+      r.setEnd(lastFound.node, Math.min(curSafe + 1, curLen));
+      const curRect = r.getBoundingClientRect();
+
+      const nextTarget = isDownward
+        ? this.searchDownwardNextLine(lastFound.node, lastFound.offset, curRect.top, lineThreshold, charHeight, targetX)
+        : this.searchUpwardPrevLine(lastFound.node, lastFound.offset, curRect.top, lineThreshold, charHeight, targetX);
+
+      if (!nextTarget) break;
+
+      const nextLen = nextTarget.node.textContent?.length || 0;
+      const nextSafe = Math.min(nextTarget.offset, Math.max(0, nextLen - 1));
+      r.setStart(nextTarget.node, nextSafe);
+      r.setEnd(nextTarget.node, Math.min(nextSafe + 1, nextLen));
+      const nextRect = r.getBoundingClientRect();
+
+      const stepDist = Math.abs(nextRect.top - curRect.top);
+      accumulatedDistance += stepDist > 0 ? stepDist : charHeight;
+      lastFound = nextTarget;
+      foundTarget = nextTarget;
+    }
+
+    // 若已無後續行可跳轉，優雅回退至全文首尾
+    if (!foundTarget) {
+      if (isDownward) {
+        this.jumpToDocumentEnd();
+      } else {
+        this.jumpToDocumentStart();
+      }
+      return;
+    }
+
+    this.currentTarget = foundTarget;
+
+    // 4. 執行保證幅度的 mugen-yomu Ease-Out Cubic 物理阻尼平滑滾動
+    const currentScrollTop = scrollParent
+      ? scrollParent.scrollTop
+      : (window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0);
+    const targetScrollTop = currentScrollTop + scrollAmount;
+
+    animateScrollTo(scrollParent || window, targetScrollTop, 380);
+
+    // 5. 強制保持游標可見並同步更新位置
+    cursorStore.setState({ visible: true });
+    this.updateCursorPosition(false);
   }
 
   /**

@@ -46,7 +46,13 @@ function main(): void {
         cursorStore.setState({ shape: message.shape });
         sendResponse({ success: true });
       } else if (message.type === 'SET_EFFECTS') {
-        cursorStore.setState({ effects: message.effects });
+        const currentEffects = cursorStore.getState().effects;
+        cursorStore.setState({
+          effects: {
+            ...currentEffects,
+            ...message.effects
+          }
+        });
         sendResponse({ success: true });
       } else if (message.type === 'SET_STATUS_BAR') {
         cursorStore.setState({ showStatusBar: !!message.showStatusBar });
@@ -68,11 +74,11 @@ function main(): void {
       } else if (message.type === 'SET_ANIMATION') {
         // 向下相容舊版單選訊息
         if (message.animation === 'smooth') {
-          cursorStore.setState({ effects: { smooth: true, breathe: false, blink: false } });
+          cursorStore.setState({ effects: { smooth: true, smoothScroll: true, breathe: false, blink: false } });
         } else if (message.animation === 'breathe') {
-          cursorStore.setState({ effects: { smooth: true, breathe: true, blink: false } });
+          cursorStore.setState({ effects: { smooth: true, smoothScroll: true, breathe: true, blink: false } });
         } else if (message.animation === 'blink') {
-          cursorStore.setState({ effects: { smooth: false, breathe: false, blink: true } });
+          cursorStore.setState({ effects: { smooth: false, smoothScroll: true, breathe: false, blink: true } });
         }
         sendResponse({ success: true });
       } else if (message.type === 'GET_STATUS') {
@@ -101,18 +107,25 @@ function main(): void {
         cursorStore.setState({ shape: result.muzen_shape });
       }
       if (result.muzen_effects) {
-        cursorStore.setState({ effects: result.muzen_effects });
+        cursorStore.setState({
+          effects: {
+            smooth: result.muzen_effects.smooth ?? true,
+            smoothScroll: result.muzen_effects.smoothScroll ?? true,
+            breathe: result.muzen_effects.breathe ?? true,
+            blink: result.muzen_effects.blink ?? false
+          }
+        });
       }
       if (result.muzen_excluded_sites && Array.isArray(result.muzen_excluded_sites)) {
         const isExcluded = isHostnameExcluded(window.location.hostname, result.muzen_excluded_sites);
         cursorStore.setState({ isExcluded });
       } else if (result.muzen_animation) {
         if (result.muzen_animation === 'smooth') {
-          cursorStore.setState({ effects: { smooth: true, breathe: false, blink: false } });
+          cursorStore.setState({ effects: { smooth: true, smoothScroll: true, breathe: false, blink: false } });
         } else if (result.muzen_animation === 'breathe') {
-          cursorStore.setState({ effects: { smooth: true, breathe: true, blink: false } });
+          cursorStore.setState({ effects: { smooth: true, smoothScroll: true, breathe: true, blink: false } });
         } else if (result.muzen_animation === 'blink') {
-          cursorStore.setState({ effects: { smooth: false, breathe: false, blink: true } });
+          cursorStore.setState({ effects: { smooth: false, smoothScroll: true, breathe: false, blink: true } });
         }
       }
     });

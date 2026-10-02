@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const themeSelect = document.getElementById('theme-select') as HTMLSelectElement | null;
   const shapeSelect = document.getElementById('shape-select') as HTMLSelectElement | null;
   const effectSmooth = document.getElementById('effect-smooth') as HTMLInputElement | null;
+  const effectSmoothScroll = document.getElementById('effect-smooth-scroll') as HTMLInputElement | null;
   const effectBreathe = document.getElementById('effect-breathe') as HTMLInputElement | null;
   const effectBlink = document.getElementById('effect-blink') as HTMLInputElement | null;
   const btnOpenPdf = document.getElementById('btn-open-pdf-viewer') as HTMLButtonElement | null;
@@ -98,12 +99,14 @@ document.addEventListener('DOMContentLoaded', () => {
         shapeSelect.value = data.muzen_shape;
       }
       if (data.muzen_effects) {
-        if (effectSmooth) effectSmooth.checked = !!data.muzen_effects.smooth;
+        if (effectSmooth) effectSmooth.checked = data.muzen_effects.smooth !== undefined ? !!data.muzen_effects.smooth : true;
+        if (effectSmoothScroll) effectSmoothScroll.checked = data.muzen_effects.smoothScroll !== undefined ? !!data.muzen_effects.smoothScroll : true;
         if (effectBreathe) effectBreathe.checked = !!data.muzen_effects.breathe;
         if (effectBlink) effectBlink.checked = !!data.muzen_effects.blink;
       } else if (data.muzen_animation) {
         // 向下相容
         if (effectSmooth) effectSmooth.checked = data.muzen_animation === 'smooth' || data.muzen_animation === 'breathe';
+        if (effectSmoothScroll) effectSmoothScroll.checked = true;
         if (effectBreathe) effectBreathe.checked = data.muzen_animation === 'breathe';
         if (effectBlink) effectBlink.checked = data.muzen_animation === 'blink';
       }
@@ -296,10 +299,11 @@ document.addEventListener('DOMContentLoaded', () => {
     broadcastToActiveTab({ type: 'SET_SHAPE', shape });
   });
 
-  // 11. 動態特效變更事件 (多選：Smooth / Breathe / Blink)
+  // 11. 動態特效變更事件 (多選：Smooth / SmoothScroll / Breathe / Blink)
   const onEffectsChanged = () => {
     const effects = {
       smooth: effectSmooth ? effectSmooth.checked : true,
+      smoothScroll: effectSmoothScroll ? effectSmoothScroll.checked : true,
       breathe: effectBreathe ? effectBreathe.checked : false,
       blink: effectBlink ? effectBlink.checked : false
     };
@@ -311,6 +315,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   effectSmooth?.addEventListener('change', onEffectsChanged);
+  effectSmoothScroll?.addEventListener('change', onEffectsChanged);
   effectBreathe?.addEventListener('change', onEffectsChanged);
   effectBlink?.addEventListener('change', onEffectsChanged);
 });
