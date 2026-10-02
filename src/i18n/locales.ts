@@ -27,6 +27,12 @@ export interface Translations {
   shapeBlock: string;
   shapeHollow: string;
   shapeUnderline: string;
+  thicknessLabel: string;
+  thicknessPresetThin: string;
+  thicknessPresetMedium: string;
+  thicknessPresetThick: string;
+  glowLabel: string;
+  glowOff: string;
   effectsLabel: string;
   effectSmooth: string;
   effectSmoothScroll: string;
@@ -82,6 +88,12 @@ export const LOCALES: Record<Locale, Translations> = {
     shapeBlock: '實心方塊 (Block)',
     shapeHollow: '空心外框 (Hollow)',
     shapeUnderline: '閱讀底線 (Underline)',
+    thicknessLabel: '游標粗細',
+    thicknessPresetThin: '1px 細',
+    thicknessPresetMedium: '2px 標準',
+    thicknessPresetThick: '4px 粗',
+    glowLabel: '游標光暈 (0 為無光暈)',
+    glowOff: '無',
     effectsLabel: '動態特效 (可複選)',
     effectSmooth: '平滑位移',
     effectSmoothScroll: '平滑捲動',
@@ -135,6 +147,12 @@ export const LOCALES: Record<Locale, Translations> = {
     shapeBlock: 'Solid Block',
     shapeHollow: 'Hollow Outline',
     shapeUnderline: 'Reading Underline',
+    thicknessLabel: 'Cursor Thickness',
+    thicknessPresetThin: '1px Thin',
+    thicknessPresetMedium: '2px Medium',
+    thicknessPresetThick: '4px Thick',
+    glowLabel: 'Cursor Glow (0 is Off)',
+    glowOff: 'Off',
     effectsLabel: 'Motion Effects (Multi-select)',
     effectSmooth: 'Smooth Motion',
     effectSmoothScroll: 'Smooth Scroll',
@@ -188,6 +206,12 @@ export const LOCALES: Record<Locale, Translations> = {
     shapeBlock: 'ソリッドブロック (Block)',
     shapeHollow: 'ホローアウトライン (Hollow)',
     shapeUnderline: 'アンダーライン (Underline)',
+    thicknessLabel: 'カーソルの太さ',
+    thicknessPresetThin: '1px 細',
+    thicknessPresetMedium: '2px 標準',
+    thicknessPresetThick: '4px 太',
+    glowLabel: 'カーソル光彩（0で無効）',
+    glowOff: 'なし',
     effectsLabel: 'モーション効果 (複数選択可)',
     effectSmooth: 'スムーズ移動',
     effectSmoothScroll: 'スムーズスクロール',

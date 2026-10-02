@@ -67,6 +67,31 @@
     </section>
 
     <section class="section">
+      <div class="row-between">
+        <label class="section-label" for="thickness-slider" data-i18n="thicknessLabel">游標粗細</label>
+        <span id="thickness-val" class="value-badge">2px</span>
+      </div>
+      <div class="preset-group">
+        <button type="button" class="preset-btn" data-thickness="1" data-i18n="thicknessPresetThin">1px 細</button>
+        <button type="button" class="preset-btn active" data-thickness="2" data-i18n="thicknessPresetMedium">2px 標準</button>
+        <button type="button" class="preset-btn" data-thickness="4" data-i18n="thicknessPresetThick">4px 粗</button>
+      </div>
+      <div class="slider-wrapper">
+        <input type="range" id="thickness-slider" class="range-slider" min="1" max="8" step="1" value="2">
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="row-between">
+        <label class="section-label" for="glow-slider" data-i18n="glowLabel">游標光暈 (0 為無光暈)</label>
+        <span id="glow-val" class="value-badge">6px</span>
+      </div>
+      <div class="slider-wrapper">
+        <input type="range" id="glow-slider" class="range-slider" min="0" max="12" step="1" value="6">
+      </div>
+    </section>
+
+    <section class="section">
       <label class="section-label" data-i18n="effectsLabel">動態特效 (可複選)</label>
       <div class="effects-group">
         <label class="effect-chip">

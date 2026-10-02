@@ -45,6 +45,12 @@ function main(): void {
       } else if (message.type === 'SET_SHAPE') {
         cursorStore.setState({ shape: message.shape });
         sendResponse({ success: true });
+      } else if (message.type === 'SET_THICKNESS') {
+        cursorStore.setState({ thickness: Number(message.thickness) || 2 });
+        sendResponse({ success: true });
+      } else if (message.type === 'SET_GLOW') {
+        cursorStore.setState({ glow: typeof message.glow === 'number' ? message.glow : 6 });
+        sendResponse({ success: true });
       } else if (message.type === 'SET_EFFECTS') {
         const currentEffects = cursorStore.getState().effects;
         cursorStore.setState({
@@ -90,7 +96,7 @@ function main(): void {
 
   // 4. 讀取持久化設定
   if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
-    chrome.storage.sync.get(['muzen_enabled', 'muzen_locale', 'muzen_theme', 'muzen_shape', 'muzen_effects', 'muzen_show_status_bar', 'muzen_excluded_sites', 'muzen_animation'], (result) => {
+    chrome.storage.sync.get(['muzen_enabled', 'muzen_locale', 'muzen_theme', 'muzen_shape', 'muzen_thickness', 'muzen_glow', 'muzen_effects', 'muzen_show_status_bar', 'muzen_excluded_sites', 'muzen_animation'], (result) => {
       if (typeof result.muzen_enabled === 'boolean') {
         cursorStore.setState({ enabled: result.muzen_enabled });
       }
@@ -105,6 +111,12 @@ function main(): void {
       }
       if (result.muzen_shape) {
         cursorStore.setState({ shape: result.muzen_shape });
+      }
+      if (typeof result.muzen_thickness === 'number') {
+        cursorStore.setState({ thickness: result.muzen_thickness });
+      }
+      if (typeof result.muzen_glow === 'number') {
+        cursorStore.setState({ glow: result.muzen_glow });
       }
       if (result.muzen_effects) {
         cursorStore.setState({

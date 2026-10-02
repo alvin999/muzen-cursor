@@ -81,11 +81,11 @@ export class VimCursorOverlay {
       @keyframes muzen-breathe {
         0%, 100% {
           opacity: 0.92;
-          filter: drop-shadow(0 0 3px var(--muzen-glow, rgba(254, 128, 25, 0.6)));
+          filter: var(--muzen-breathe-filter-min, drop-shadow(0 0 3px var(--muzen-glow, rgba(254, 128, 25, 0.6))));
         }
         50% {
           opacity: 0.38;
-          filter: drop-shadow(0 0 12px var(--muzen-glow, rgba(254, 128, 25, 0.8)));
+          filter: var(--muzen-breathe-filter-max, drop-shadow(0 0 12px var(--muzen-glow, rgba(254, 128, 25, 0.8))));
         }
       }
       @keyframes muzen-blink {
@@ -143,8 +143,22 @@ export class VimCursorOverlay {
     // 設定 CSS 變數供呼吸動畫引用
     this.element.style.setProperty('--muzen-glow', `rgba(${color.r}, ${color.g}, ${color.b}, 0.8)`);
 
-    // 2. 依據游標形態 (Shape) 調整幾何與渲染
+    // 處理光暈 (Glow Intensity: 0 為無光暈)
+    const glow = typeof state.glow === 'number' ? Math.max(0, state.glow) : 6;
+    if (glow <= 0) {
+      this.element.style.setProperty('--muzen-breathe-filter-min', 'none');
+      this.element.style.setProperty('--muzen-breathe-filter-max', 'none');
+    } else {
+      const minBlur = Math.max(1, Math.round(glow * 0.5));
+      const maxBlur = Math.round(glow * 1.8);
+      this.element.style.setProperty('--muzen-breathe-filter-min', `drop-shadow(0 0 ${minBlur}px var(--muzen-glow))`);
+      this.element.style.setProperty('--muzen-breathe-filter-max', `drop-shadow(0 0 ${maxBlur}px var(--muzen-glow))`);
+    }
+
+    // 2. 依據游標形態 (Shape) 與粗細 (Thickness) 調整幾何與渲染
     const shape = state.shape || 'block';
+    const thickness = typeof state.thickness === 'number' ? Math.max(1, state.thickness) : 2;
+
     let targetX = state.rect.x;
     let targetY = state.rect.y;
     let targetW = Math.max(state.rect.width, 2);
@@ -153,16 +167,20 @@ export class VimCursorOverlay {
     switch (shape) {
       case 'hollow': // 空心外框：文字完全清晰可見，高對比外框錨定
         this.element.style.background = `rgba(${color.r}, ${color.g}, ${color.b}, 0.05)`;
-        this.element.style.border = `2px solid ${color.hex}`;
-        this.element.style.boxShadow = `0 0 6px rgba(${color.r}, ${color.g}, ${color.b}, 0.5)`;
+        this.element.style.border = `${thickness}px solid ${color.hex}`;
+        this.element.style.boxShadow = glow > 0
+          ? `0 0 ${glow}px rgba(${color.r}, ${color.g}, ${color.b}, 0.5)`
+          : 'none';
         break;
 
-      case 'underline': // 閱讀底線：高度 3px 貼齊文字基線底部
+      case 'underline': // 閱讀底線：高度依據 thickness 貼齊文字基線底部
         this.element.style.background = color.hex;
         this.element.style.border = 'none';
-        this.element.style.boxShadow = `0 0 6px rgba(${color.r}, ${color.g}, ${color.b}, 0.7)`;
-        targetH = 3;
-        targetY = state.rect.y + state.rect.height - 3;
+        this.element.style.boxShadow = glow > 0
+          ? `0 0 ${glow}px rgba(${color.r}, ${color.g}, ${color.b}, 0.7)`
+          : 'none';
+        targetH = thickness;
+        targetY = state.rect.y + state.rect.height - thickness;
         break;
 
       case 'block': // 經典實心方塊
@@ -170,8 +188,11 @@ export class VimCursorOverlay {
         this.element.style.background = state.mode === 'VISUAL'
           ? `rgba(${color.r}, ${color.g}, ${color.b}, 0.4)`
           : `rgba(${color.r}, ${color.g}, ${color.b}, 0.75)`;
-        this.element.style.border = `1px solid ${color.hex}`;
-        this.element.style.boxShadow = `0 0 8px rgba(${color.r}, ${color.g}, ${color.b}, 0.6)`;
+        const blockBorderWidth = Math.max(1, Math.min(thickness, 3));
+        this.element.style.border = `${blockBorderWidth}px solid ${color.hex}`;
+        this.element.style.boxShadow = glow > 0
+          ? `0 0 ${Math.round(glow * 1.2)}px rgba(${color.r}, ${color.g}, ${color.b}, 0.6)`
+          : 'none';
         break;
     }
 

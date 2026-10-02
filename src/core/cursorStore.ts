@@ -43,6 +43,8 @@ export interface CursorState {
   mode: CursorMode;
   theme: CursorTheme;
   shape: CursorShape;
+  thickness: number;     // 游標粗細/線寬 (1 - 8 px，預設 2)
+  glow: number;          // 游標光暈強度 (0 - 12 px，0 為無光暈，預設 6)
   effects: CursorEffects;
   showStatusBar: boolean;
   rect: CursorRect;
@@ -61,6 +63,8 @@ class CursorStore {
     mode: 'NORMAL',
     theme: 'gruvbox-dark',
     shape: 'block',
+    thickness: 2,
+    glow: 6,
     effects: {
       smooth: true,
       smoothScroll: true,

@@ -11,6 +11,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const localeSelect = document.getElementById('locale-select') as HTMLSelectElement | null;
   const themeSelect = document.getElementById('theme-select') as HTMLSelectElement | null;
   const shapeSelect = document.getElementById('shape-select') as HTMLSelectElement | null;
+  const thicknessSlider = document.getElementById('thickness-slider') as HTMLInputElement | null;
+  const thicknessVal = document.getElementById('thickness-val');
+  const presetBtns = document.querySelectorAll<HTMLButtonElement>('.preset-btn');
+  const glowSlider = document.getElementById('glow-slider') as HTMLInputElement | null;
+  const glowVal = document.getElementById('glow-val');
   const effectSmooth = document.getElementById('effect-smooth') as HTMLInputElement | null;
   const effectSmoothScroll = document.getElementById('effect-smooth-scroll') as HTMLInputElement | null;
   const effectBreathe = document.getElementById('effect-breathe') as HTMLInputElement | null;
@@ -28,6 +33,27 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentHostname = '';
   let excludedSites: string[] = [];
   let currentLocale: Locale = 'zh-TW';
+  let currentGlow = 6;
+
+  // 更新粗細 UI
+  const updateThicknessUI = (val: number) => {
+    if (thicknessSlider) thicknessSlider.value = String(val);
+    if (thicknessVal) thicknessVal.textContent = `${val}px`;
+    presetBtns.forEach((btn) => {
+      const btnVal = Number(btn.getAttribute('data-thickness'));
+      btn.classList.toggle('active', btnVal === val);
+    });
+  };
+
+  // 更新光暈 UI
+  const updateGlowUI = (val: number) => {
+    currentGlow = val;
+    if (glowSlider) glowSlider.value = String(val);
+    if (glowVal) {
+      const dict = LOCALES[currentLocale] || LOCALES['zh-TW'];
+      glowVal.textContent = val <= 0 ? dict.glowOff : `${val}px`;
+    }
+  };
 
   // 套用主題至 Popup 視窗
   const applyTheme = (theme: string) => {
@@ -57,6 +83,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (currentSiteHostEl && (currentSiteHostEl.textContent === '偵測中...' || currentSiteHostEl.textContent === 'Detecting...' || currentSiteHostEl.textContent === '検出中...')) {
       currentSiteHostEl.textContent = dict.blacklistDetecting;
     }
+
+    // 4. 更新光暈數值顯示
+    updateGlowUI(currentGlow);
   };
 
   // 比對網域是否被排除
@@ -72,7 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 1. 初始化讀取設定
   if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
-    chrome.storage.sync.get(['muzen_enabled', 'muzen_locale', 'muzen_theme', 'muzen_intercept_pdf', 'muzen_shape', 'muzen_effects', 'muzen_show_status_bar', 'muzen_excluded_sites', 'muzen_animation'], (data) => {
+    chrome.storage.sync.get(['muzen_enabled', 'muzen_locale', 'muzen_theme', 'muzen_intercept_pdf', 'muzen_shape', 'muzen_thickness', 'muzen_glow', 'muzen_effects', 'muzen_show_status_bar', 'muzen_excluded_sites', 'muzen_animation'], (data) => {
       // 載入語言設定
       const savedLocale = (data.muzen_locale as Locale) || detectDefaultLocale();
       if (localeSelect) {
@@ -97,6 +126,16 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       if (shapeSelect && data.muzen_shape) {
         shapeSelect.value = data.muzen_shape;
+      }
+      if (typeof data.muzen_thickness === 'number') {
+        updateThicknessUI(data.muzen_thickness);
+      } else {
+        updateThicknessUI(2);
+      }
+      if (typeof data.muzen_glow === 'number') {
+        updateGlowUI(data.muzen_glow);
+      } else {
+        updateGlowUI(6);
       }
       if (data.muzen_effects) {
         if (effectSmooth) effectSmooth.checked = data.muzen_effects.smooth !== undefined ? !!data.muzen_effects.smooth : true;
@@ -299,7 +338,39 @@ document.addEventListener('DOMContentLoaded', () => {
     broadcastToActiveTab({ type: 'SET_SHAPE', shape });
   });
 
-  // 11. 動態特效變更事件 (多選：Smooth / SmoothScroll / Breathe / Blink)
+  // 11. 粗細 Preset 快速切換
+  presetBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const val = Number(btn.getAttribute('data-thickness')) || 2;
+      updateThicknessUI(val);
+      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
+        chrome.storage.sync.set({ muzen_thickness: val });
+      }
+      broadcastToActiveTab({ type: 'SET_THICKNESS', thickness: val });
+    });
+  });
+
+  // 12. 粗細 Slider 滑桿調整
+  thicknessSlider?.addEventListener('input', () => {
+    const val = Number(thicknessSlider.value) || 2;
+    updateThicknessUI(val);
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
+      chrome.storage.sync.set({ muzen_thickness: val });
+    }
+    broadcastToActiveTab({ type: 'SET_THICKNESS', thickness: val });
+  });
+
+  // 13. 光暈強度 Slider 滑桿調整 (0 為無光暈)
+  glowSlider?.addEventListener('input', () => {
+    const val = Number(glowSlider.value);
+    updateGlowUI(val);
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
+      chrome.storage.sync.set({ muzen_glow: val });
+    }
+    broadcastToActiveTab({ type: 'SET_GLOW', glow: val });
+  });
+
+  // 14. 動態特效變更事件 (多選：Smooth / SmoothScroll / Breathe / Blink)
   const onEffectsChanged = () => {
     const effects = {
       smooth: effectSmooth ? effectSmooth.checked : true,

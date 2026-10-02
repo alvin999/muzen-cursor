@@ -607,3 +607,107 @@ input:checked + .slider-small:before {
   transform: translateX(16px);
 }
 
+/* 數值指示 Badge */
+.value-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--accent-orange) 15%, transparent);
+  color: var(--accent-orange);
+  border: 1px solid color-mix(in srgb, var(--accent-orange) 30%, transparent);
+  letter-spacing: 0.5px;
+}
+
+/* 預設段位按鈕 (Preset Buttons) */
+.preset-group {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.preset-btn {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--fg-muted);
+  border-radius: 6px;
+  padding: 6px 4px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+  text-align: center;
+}
+
+.preset-btn:hover {
+  border-color: var(--accent-orange);
+  color: var(--fg-color);
+}
+
+.preset-btn.active {
+  background: color-mix(in srgb, var(--accent-orange) 18%, transparent);
+  border-color: var(--accent-orange);
+  color: var(--accent-orange);
+  font-weight: 600;
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent-orange) 28%, transparent);
+}
+
+/* 微調滑桿 (Range Slider) */
+.slider-wrapper {
+  display: flex;
+  align-items: center;
+  margin-top: 4px;
+  padding: 2px 0;
+}
+
+.range-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.range-slider:hover {
+  border-color: var(--accent-orange);
+}
+
+.range-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--accent-orange);
+  cursor: pointer;
+  box-shadow: 0 0 6px color-mix(in srgb, var(--accent-orange) 45%, transparent);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.range-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 0 10px var(--accent-orange);
+}
+
+.range-slider::-moz-range-thumb {
+  width: 15px;
+  height: 15px;
+  border: none;
+  border-radius: 50%;
+  background: var(--accent-orange);
+  cursor: pointer;
+  box-shadow: 0 0 6px color-mix(in srgb, var(--accent-orange) 45%, transparent);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.range-slider::-moz-range-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 0 10px var(--accent-orange);
+}
+
