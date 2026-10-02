@@ -65,6 +65,94 @@ body[data-theme='everforest'] {
   --kbd-bg: #232a2e;
 }
 
+body[data-theme='intellij-darcula'] {
+  --bg-color: #2b2b2b;
+  --bg-card: #3c3f41;
+  --fg-color: #a9b7c6;
+  --fg-muted: #808080;
+  --accent-orange: #389fd6;
+  --accent-green: #6a8759;
+  --border-color: #515151;
+  --kbd-bg: #232525;
+}
+
+body[data-theme='intellij-light'] {
+  --bg-color: #f7f8fa;
+  --bg-card: #ebedf2;
+  --fg-color: #27282c;
+  --fg-muted: #70727b;
+  --accent-orange: #3574f0;
+  --accent-green: #36a445;
+  --border-color: #d3d5db;
+  --kbd-bg: #dfe1e6;
+}
+
+body[data-theme='dracula'] {
+  --bg-color: #282a36;
+  --bg-card: #343746;
+  --fg-color: #f8f8f2;
+  --fg-muted: #6272a4;
+  --accent-orange: #bd93f9;
+  --accent-green: #50fa7b;
+  --border-color: #44475a;
+  --kbd-bg: #1e1f29;
+}
+
+body[data-theme='monokai'] {
+  --bg-color: #272822;
+  --bg-card: #34352d;
+  --fg-color: #f8f8f2;
+  --fg-muted: #75715e;
+  --accent-orange: #f92672;
+  --accent-green: #a6e22e;
+  --border-color: #49483e;
+  --kbd-bg: #1e1f1c;
+}
+
+body[data-theme='one-dark'] {
+  --bg-color: #282c34;
+  --bg-card: #313640;
+  --fg-color: #abb2bf;
+  --fg-muted: #5c6370;
+  --accent-orange: #61afef;
+  --accent-green: #98c379;
+  --border-color: #3e4451;
+  --kbd-bg: #21252b;
+}
+
+body[data-theme='solarized-dark'] {
+  --bg-color: #002b36;
+  --bg-card: #073642;
+  --fg-color: #93a1a1;
+  --fg-muted: #586e75;
+  --accent-orange: #2aa198;
+  --accent-green: #859900;
+  --border-color: #1a4f5c;
+  --kbd-bg: #00212b;
+}
+
+body[data-theme='rose-pine'] {
+  --bg-color: #191724;
+  --bg-card: #211f30;
+  --fg-color: #e0def4;
+  --fg-muted: #908caa;
+  --accent-orange: #eb6f92;
+  --accent-green: #9ccfd8;
+  --border-color: #26233a;
+  --kbd-bg: #14121d;
+}
+
+body[data-theme='cyberpunk'] {
+  --bg-color: #120e24;
+  --bg-card: #1c163a;
+  --fg-color: #00f0ff;
+  --fg-muted: #ff007f;
+  --accent-orange: #ff007f;
+  --accent-green: #00f0ff;
+  --border-color: rgba(255, 0, 127, 0.4);
+  --kbd-bg: #0a0715;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;

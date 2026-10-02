@@ -5,7 +5,21 @@ import { Locale } from '../i18n/locales';
  */
 
 export type CursorMode = 'NORMAL' | 'VISUAL';
-export type CursorTheme = 'gruvbox-dark' | 'gruvbox-light' | 'tokyo-night' | 'nord' | 'catppuccin' | 'everforest';
+export type CursorTheme =
+  | 'gruvbox-dark'
+  | 'gruvbox-light'
+  | 'tokyo-night'
+  | 'nord'
+  | 'catppuccin'
+  | 'everforest'
+  | 'intellij-darcula'
+  | 'intellij-light'
+  | 'dracula'
+  | 'monokai'
+  | 'one-dark'
+  | 'solarized-dark'
+  | 'rose-pine'
+  | 'cyberpunk';
 export type CursorShape = 'block' | 'hollow' | 'underline';
 
 export interface CursorEffects {

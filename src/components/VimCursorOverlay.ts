@@ -29,6 +29,38 @@ const THEME_PALETTES: Record<CursorTheme, ThemeColorSet> = {
   'everforest': {
     normal: { r: 167, g: 192, b: 128, hex: '#a7c080' }, // Everforest Green
     visual: { r: 219, g: 188, b: 127, hex: '#dbbc7f' }  // Everforest Gold
+  },
+  'intellij-darcula': {
+    normal: { r: 56, g: 159, b: 214, hex: '#389fd6' },  // IntelliJ Blue
+    visual: { r: 255, g: 198, b: 109, hex: '#ffc66d' }  // Darcula Amber Yellow
+  },
+  'intellij-light': {
+    normal: { r: 53, g: 116, b: 240, hex: '#3574f0' },  // IntelliJ Accent Blue
+    visual: { r: 229, g: 168, b: 75, hex: '#e5a84b' }   // Warm Amber Gold
+  },
+  'dracula': {
+    normal: { r: 189, g: 147, b: 249, hex: '#bd93f9' }, // Dracula Purple
+    visual: { r: 80, g: 250, b: 123, hex: '#50fa7b' }   // Dracula Green
+  },
+  'monokai': {
+    normal: { r: 249, g: 38, b: 114, hex: '#f92672' },  // Monokai Pink
+    visual: { r: 230, g: 219, b: 116, hex: '#e6db74' }  // Monokai Yellow
+  },
+  'one-dark': {
+    normal: { r: 97, g: 175, b: 239, hex: '#61afef' },  // One Dark Blue
+    visual: { r: 229, g: 192, b: 123, hex: '#e5c07b' }  // One Dark Gold
+  },
+  'solarized-dark': {
+    normal: { r: 42, g: 161, b: 152, hex: '#2aa198' },  // Solarized Cyan
+    visual: { r: 181, g: 137, b: 0, hex: '#b58900' }    // Solarized Yellow
+  },
+  'rose-pine': {
+    normal: { r: 235, g: 111, b: 146, hex: '#eb6f92' }, // Rosé Rose Pink
+    visual: { r: 246, g: 193, b: 119, hex: '#f6c177' }  // Rosé Gold
+  },
+  'cyberpunk': {
+    normal: { r: 0, g: 240, b: 255, hex: '#00f0ff' },   // Cyberpunk Neon Cyan
+    visual: { r: 255, g: 230, b: 0, hex: '#ffe600' }    // Cyberpunk Neon Yellow
   }
 };
 

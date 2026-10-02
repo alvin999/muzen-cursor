@@ -15,6 +15,14 @@ export interface Translations {
   themeNord: string;
   themeCatppuccin: string;
   themeEverforest: string;
+  themeIntellijDarcula: string;
+  themeIntellijLight: string;
+  themeDracula: string;
+  themeMonokai: string;
+  themeOneDark: string;
+  themeSolarizedDark: string;
+  themeRosePine: string;
+  themeCyberpunk: string;
   shapeLabel: string;
   shapeBlock: string;
   shapeHollow: string;
@@ -62,6 +70,14 @@ export const LOCALES: Record<Locale, Translations> = {
     themeNord: 'Nord (北歐冰原)',
     themeCatppuccin: 'Catppuccin Mocha (典雅摩卡)',
     themeEverforest: 'Everforest (森野之境)',
+    themeIntellijDarcula: 'IntelliJ Darcula (極客暗灰)',
+    themeIntellijLight: 'IntelliJ Light (皓白純粹)',
+    themeDracula: 'Dracula (幽冥吸血鬼)',
+    themeMonokai: 'Monokai Pro (經典霓光)',
+    themeOneDark: 'One Dark (晨星深藍)',
+    themeSolarizedDark: 'Solarized Dark (晴翠深碧)',
+    themeRosePine: 'Rosé Pine (復古微醺)',
+    themeCyberpunk: 'Cyberpunk (霓虹幻夜)',
     shapeLabel: '游標形態',
     shapeBlock: '實心方塊 (Block)',
     shapeHollow: '空心外框 (Hollow)',
@@ -107,6 +123,14 @@ export const LOCALES: Record<Locale, Translations> = {
     themeNord: 'Nord (Arctic Frost)',
     themeCatppuccin: 'Catppuccin Mocha (Pastel Mauve)',
     themeEverforest: 'Everforest (Deep Forest)',
+    themeIntellijDarcula: 'IntelliJ Darcula (Geek Gray)',
+    themeIntellijLight: 'IntelliJ Light (Clean White)',
+    themeDracula: 'Dracula (Vampire Purple)',
+    themeMonokai: 'Monokai Pro (Neon Classic)',
+    themeOneDark: 'One Dark (Atom Navy)',
+    themeSolarizedDark: 'Solarized Dark (Solar Cyan)',
+    themeRosePine: 'Rosé Pine (Vintage Bloom)',
+    themeCyberpunk: 'Cyberpunk (Neon Mirage)',
     shapeLabel: 'Cursor Shape',
     shapeBlock: 'Solid Block',
     shapeHollow: 'Hollow Outline',
@@ -152,6 +176,14 @@ export const LOCALES: Record<Locale, Translations> = {
     themeNord: 'Nord（極北氷原）',
     themeCatppuccin: 'Catppuccin Mocha（薄紅藤）',
     themeEverforest: 'Everforest（常盤森）',
+    themeIntellijDarcula: 'IntelliJ Darcula（漆黒）',
+    themeIntellijLight: 'IntelliJ Light（純白）',
+    themeDracula: 'Dracula（吸血鬼）',
+    themeMonokai: 'Monokai Pro（電光）',
+    themeOneDark: 'One Dark（星夜藍）',
+    themeSolarizedDark: 'Solarized Dark（深碧）',
+    themeRosePine: 'Rosé Pine（微睡み薔薇）',
+    themeCyberpunk: 'Cyberpunk（電脳幻夜）',
     shapeLabel: 'カーソル形状',
     shapeBlock: 'ソリッドブロック (Block)',
     shapeHollow: 'ホローアウトライン (Hollow)',
