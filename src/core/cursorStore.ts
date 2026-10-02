@@ -49,6 +49,7 @@ export interface CursorState {
   showStatusBar: boolean;
   rect: CursorRect;
   visible: boolean;
+  isMoving: boolean;      // 是否正在連續鍵盤移動或定位 (移動時常亮不閃爍)
   readingProgress: number; // 0 - 100
   charOffset: number;
 }
@@ -74,6 +75,7 @@ class CursorStore {
     showStatusBar: true,
     rect: { x: 0, y: 0, width: 10, height: 20 },
     visible: false,
+    isMoving: false,
     readingProgress: 0,
     charOffset: 0
   };

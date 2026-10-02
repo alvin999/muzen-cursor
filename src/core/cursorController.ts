@@ -78,6 +78,7 @@ export class CursorController {
   private preferredX: number | null = null;
   private lastKeyTime = 0;
   private lastKey = '';
+  private moveTimer: any = null;
 
   private keydownHandler: ((e: KeyboardEvent) => void) | null = null;
   private clickHandler: ((e: MouseEvent) => void) | null = null;
@@ -127,6 +128,10 @@ export class CursorController {
     if (this.scrollHandler) {
       window.removeEventListener('scroll', this.scrollHandler, { capture: true } as EventListenerOptions);
       this.scrollHandler = null;
+    }
+    if (this.moveTimer) {
+      clearTimeout(this.moveTimer);
+      this.moveTimer = null;
     }
   }
 
@@ -1029,8 +1034,15 @@ export class CursorController {
       // 容許適度邊界緩衝，避免邊界滾動時游標閃現閃退
       const isVisibleInViewport = rect.bottom >= -80 && rect.top <= window.innerHeight + 80;
 
+      // mugen-yomu 招牌移動避震機制：位移時保持常亮不閃爍，靜止 400ms 後平滑恢復閃爍
+      if (this.moveTimer) clearTimeout(this.moveTimer);
+      this.moveTimer = setTimeout(() => {
+        cursorStore.setState({ isMoving: false });
+      }, 400);
+
       cursorStore.setState({
         visible: isVisibleInViewport,
+        isMoving: true,
         rect: {
           x: rect.left,
           y: rect.top,

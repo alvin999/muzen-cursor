@@ -237,20 +237,24 @@ export class VimCursorOverlay {
       this.element.style.transition = 'none';
     }
 
-    // 複合動畫組合 (breathe, blink)
+    // 複合動畫組合 (breathe, blink)：mugen-yomu 招牌機制——移動中保持常亮，不閃爍
     const animList: string[] = [];
-    if (effects.breathe) {
-      animList.push('muzen-breathe 3s cubic-bezier(0.4, 0, 0.2, 1) infinite');
-    }
-    if (effects.blink) {
-      animList.push('muzen-blink 1.1s ease-in-out infinite');
+    const isMoving = !!state.isMoving;
+
+    if (!isMoving) {
+      if (effects.breathe) {
+        animList.push('muzen-breathe 3s cubic-bezier(0.4, 0, 0.2, 1) infinite');
+      }
+      if (effects.blink) {
+        animList.push('muzen-blink 1.1s ease-in-out infinite');
+      }
     }
 
     if (animList.length > 0) {
       this.element.style.animation = animList.join(', ');
     } else {
       this.element.style.animation = 'none';
-      this.element.style.opacity = '0.9';
+      this.element.style.opacity = '1'; // 移動中或無動畫時維持 100% 滿格全亮常駐
     }
 
     // 4. 利用 translate3d 走 GPU 合成層渲染
