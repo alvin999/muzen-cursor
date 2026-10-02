@@ -49,7 +49,8 @@
 - ⌨️ **正統 Vim 鍵盤動力學**：雙手不離鍵盤，隨心所欲進行字元、行級、單字邊界與全文頂底跳轉。
 - 🀄 **原生 CJK 智慧斷詞**：結合瀏覽器原生 `Intl.Segmenter` 演算法，中日韓繁簡文字與英數混排時皆能智慧感知詞彙邊界（`w / b / e`）。
 - 📑 **內建 PDF 閱讀器整合**：無縫接管 `.pdf` 檔案閱讀，與 Mozilla PDF.js `TextLayer` 深度對齊，實現學術論文與電子書的行級導航。
-- 🚫 **智慧排除名單 (Blacklist)**：支援子網域繼承與當前網站一鍵停用，在線上編輯器（Notion、Google Docs、CodeSandbox）中自動靜默凍結，互不干擾。
+- ✍️ **輸入情境自動避讓**：智慧偵測 `<input>`、`<textarea>`、`contenteditable` 與富文本編輯區塊，打字時自動放行，絕不攔截使用者的正常輸入。
+- 🚫 **自訂網域排除名單 (Blacklist)**：支援子網域繼承與自訂黑名單，可在彈出設定面板一鍵停用當前網站，保持閱讀與工作切換自如。
 - 🎨 **14 大沉浸式風格主題與複合特效**：涵蓋 Gruvbox、IntelliJ Darcula / Light、Dracula、Monokai Pro、One Dark、Tokyo Night、Nord、Catppuccin、Everforest、Solarized Dark、Rosé Pine、Cyberpunk，並可複合勾選平滑位移、心流呼吸光暈與經典跳動。
 - 🌐 **多國語言介面 (i18n)**：完整支援 **繁體中文 (zh-TW)**、**English (en)** 與 **日本語 (ja)**，包含介面標籤與下拉選項即時熱切換。
 - 🛡️ **Shadow DOM 絕對隔離**：完全以 Web Components (Shadow DOM) 渲染，與目標網頁的 CSS/JavaScript 執行期 0 衝突、0 汙染。

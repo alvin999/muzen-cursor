@@ -6,9 +6,6 @@ node_modules/
 # Production Build Output
 dist/
 
-# Project Planning (Internal)
-PROJECT_PLAN.md
-
 # Logs
 npm-debug.log*
 yarn-debug.log*
