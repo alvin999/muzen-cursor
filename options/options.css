@@ -1,0 +1,548 @@
+/* Muzen Cursor 進階設定頁面 - 霧前禪夢 Gruvbox 現代極簡奢華風格 */
+
+:root {
+  --bg-darkest: #18191a;
+  --bg-primary: #1d2021;
+  --bg-card: #282828;
+  --bg-card-hover: #32302f;
+  --bg-input: #1a1b1c;
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-focus: #fe8019;
+  --text-main: #ebdbb2;
+  --text-muted: #a89984;
+  --text-dim: #7c6f64;
+  --accent-orange: #fe8019;
+  --accent-gold: #fabd2f;
+  --accent-cyan: #8ec07c;
+  --accent-red: #fb4934;
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.35);
+  --shadow-glow: 0 0 16px rgba(254, 128, 25, 0.25);
+  --transition-fast: 0.15s ease;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-darkest);
+  color: var(--text-main);
+  font-family: var(--font-family);
+  line-height: 1.5;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 32px 28px;
+}
+
+/* 頂部導覽列 */
+.options-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 24px;
+  margin-bottom: 28px;
+  border-bottom: 1px solid var(--border-subtle);
+  flex-wrap: wrap;
+  gap: 18px;
+}
+
+.header-branding {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.brand-icon {
+  font-size: 2.4rem;
+  line-height: 1;
+  filter: drop-shadow(0 2px 8px rgba(254, 128, 25, 0.3));
+}
+
+.brand-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--accent-orange);
+  letter-spacing: -0.5px;
+  margin-bottom: 2px;
+}
+
+.brand-subtitle {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  border: 1px solid transparent;
+}
+
+.btn-secondary {
+  background: var(--bg-card);
+  color: var(--text-main);
+  border-color: var(--border-subtle);
+}
+
+.btn-secondary:hover {
+  background: var(--bg-card-hover);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+.btn-danger {
+  background: rgba(251, 73, 52, 0.12);
+  color: #fb4934;
+  border-color: rgba(251, 73, 52, 0.3);
+}
+
+.btn-danger:hover {
+  background: rgba(251, 73, 52, 0.22);
+  border-color: #fb4934;
+}
+
+/* 提示訊息條 */
+.toast {
+  position: fixed;
+  top: 24px;
+  right: 28px;
+  background: #282828;
+  color: var(--accent-gold);
+  border: 1px solid var(--accent-orange);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  padding: 10px 18px;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-weight: 600;
+  z-index: 9999;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.toast.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-8px);
+}
+
+/* 主體雙欄佈局 */
+.options-main {
+  display: grid;
+  grid-template-columns: 1fr 440px;
+  gap: 32px;
+  align-items: start;
+}
+
+@media (max-width: 1100px) {
+  .options-main {
+    grid-template-columns: 1fr;
+  }
+  .sandbox-panel {
+    position: static !important;
+  }
+}
+
+/* 左側：設定模組分組 */
+.settings-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.setting-group {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 24px 22px;
+  box-shadow: var(--shadow-card);
+}
+
+.group-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.group-icon {
+  font-size: 1.5rem;
+  line-height: 1.2;
+}
+
+.group-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: -0.3px;
+}
+
+.group-desc {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-top: 3px;
+}
+
+.group-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+/* 欄位卡片 (Field Card) */
+.field-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: all var(--transition-fast);
+}
+
+.field-card:hover,
+.field-card.is-previewing {
+  background: var(--bg-card-hover);
+  border-color: var(--accent-orange);
+  box-shadow: 0 0 16px rgba(254, 128, 25, 0.25);
+  transform: translateY(-2px);
+}
+
+.field-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.field-label {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-main);
+  cursor: pointer;
+}
+
+.btn-field-reset {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-size: 0.95rem;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  line-height: 1;
+  transition: all var(--transition-fast);
+}
+
+.btn-field-reset:hover {
+  color: var(--accent-gold);
+  background: rgba(250, 189, 47, 0.12);
+}
+
+.field-hint {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  margin-top: 3px;
+  margin-bottom: 12px;
+  min-height: 1.8em;
+}
+
+.input-with-unit {
+  display: flex;
+  align-items: center;
+  background: var(--bg-input);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.input-with-unit:focus-within {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 2px rgba(254, 128, 25, 0.2);
+}
+
+.input-with-unit input[type="number"] {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 8px 10px;
+  outline: none;
+}
+
+.input-with-unit input[type="number"]::-webkit-inner-spin-button,
+.input-with-unit input[type="number"]::-webkit-outer-spin-button {
+  opacity: 0.6;
+}
+
+.unit-badge {
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 600;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  user-select: none;
+  white-space: nowrap;
+}
+
+/* 右側：即時沙盒面板 (Sticky) */
+.sandbox-panel {
+  position: sticky;
+  top: 24px;
+}
+
+.sandbox-card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 22px;
+  box-shadow: var(--shadow-card);
+}
+
+.sandbox-header {
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.sandbox-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.sandbox-badge {
+  background: rgba(254, 128, 25, 0.16);
+  color: var(--accent-orange);
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+
+.sandbox-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.sandbox-desc {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.sandbox-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.control-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.control-label {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  font-weight: 600;
+}
+
+.sandbox-select {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-main);
+  padding: 6px 10px;
+  font-size: 0.82rem;
+  outline: none;
+  cursor: pointer;
+}
+
+.sandbox-select:focus {
+  border-color: var(--border-focus);
+}
+
+/* 互動方向按鈕 */
+.motion-pad {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 16px;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: var(--radius-md);
+  border: 1px dashed rgba(255, 255, 255, 0.08);
+}
+
+.pad-row {
+  display: flex;
+  gap: 8px;
+}
+
+.pad-btn {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-main);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.pad-btn:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--accent-orange);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.pad-jump {
+  color: var(--accent-gold);
+}
+
+/* 沙盒段落文章容器 (具備獨立平滑捲動視窗) */
+.sandbox-article-container {
+  position: relative;
+  background: #141516;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-md);
+  padding: 18px 16px;
+  height: 260px;
+  max-height: 260px;
+  cursor: text;
+  user-select: none;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.sandbox-article-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sandbox-article-container::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 3px;
+}
+
+.sandbox-article-container::-webkit-scrollbar-thumb {
+  background: rgba(254, 128, 25, 0.35);
+  border-radius: 3px;
+}
+
+.sandbox-article-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(254, 128, 25, 0.75);
+}
+
+.sandbox-article {
+  outline: none;
+}
+
+.sandbox-para {
+  font-size: 0.95rem;
+  line-height: 1.85;
+  color: #d5c4a1;
+  margin-bottom: 12px;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+}
+
+.sandbox-para:last-child {
+  margin-bottom: 0;
+}
+
+/* 沙盒模擬游標 */
+.sandbox-cursor {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  box-sizing: border-box;
+  will-change: transform, width, height, opacity;
+  z-index: 20;
+  display: block;
+}
+
+@keyframes sandbox-breathe {
+  0%, 100% {
+    opacity: 0.15;
+  }
+  50% {
+    opacity: var(--sandbox-peak-opacity, 0.96);
+  }
+}
+
+@keyframes sandbox-blink {
+  0%, 48% {
+    opacity: 1;
+  }
+  50%, 96% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* 診斷列 */
+.sandbox-diagnostics {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+}
+
+.diag-item {
+  display: flex;
+  gap: 4px;
+}
+
+.diag-key {
+  color: var(--text-dim);
+}
+
+.diag-val {
+  color: var(--accent-cyan);
+  font-weight: 600;
+}

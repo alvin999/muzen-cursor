@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Muzen Cursor - 進階設定與數值調校</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+
+<body>
+  <div class="page-container">
+    <!-- 頂部頁首導覽 -->
+    <header class="options-header">
+      <div class="header-branding">
+        <span class="brand-icon">⛩️</span>
+        <div>
+          <h1 class="brand-title" data-i18n="optionsTitle">Muzen Cursor 進階數值調校</h1>
+          <p class="brand-subtitle" data-i18n="optionsSubtitle">自由輸入精確數值，客製化物理阻尼、梯形形變與視覺筆觸</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <select id="options-locale-select" class="sandbox-select" style="min-width: 110px;">
+          <option value="zh-TW">繁體中文</option>
+          <option value="en">English</option>
+          <option value="ja">日本語</option>
+        </select>
+        <button type="button" id="btn-export-json" class="btn btn-secondary">
+          <span data-i18n="exportJsonBtn">📤 匯出 JSON</span>
+        </button>
+        <button type="button" id="btn-import-json" class="btn btn-secondary">
+          <span data-i18n="importJsonBtn">📥 匯入 JSON</span>
+        </button>
+        <input type="file" id="file-import-input" accept=".json" style="display: none;">
+        <button type="button" id="btn-reset-all" class="btn btn-danger">
+          <span data-i18n="resetAllBtn">↺ 全部回復預設值</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- 儲存反饋提示條 -->
+    <div id="save-toast" class="toast hidden">✓ 數值已更新並同步至全部分頁</div>
+
+    <!-- 主體雙欄工作區 -->
+    <main class="options-main">
+      <!-- 左側：各項數值輸入表單 -->
+      <section class="settings-panel">
+        
+        <!-- 模組 1: 幾何外觀與筆觸 -->
+        <div class="setting-group">
+          <div class="group-header">
+            <span class="group-icon">📐</span>
+            <div class="group-title-wrap">
+              <h2 class="group-title" data-i18n="groupGeometryTitle">幾何外觀與筆觸 (Geometry & Appearance)</h2>
+              <p class="group-desc" data-i18n="groupGeometryDesc">控制游標輪廓線條、圓角弧度與色彩半透明度</p>
+            </div>
+          </div>
+          <div class="group-grid">
+            
+            <div class="field-card">
+              <div class="field-label-row">
+                <label for="adv-thickness" class="field-label" data-i18n="fieldThickness">游標粗細/線寬 (Thickness)</label>
+                <button type="button" class="btn-field-reset" data-key="thickness" title="還原預設值">↺</button>
+              </div>
+              <p class="field-hint" data-i18n="hintThickness">外框線寬或底線高度</p>
+              <div class="input-with-unit">
+                <input type="number" id="adv-thickness" data-key="thickness" min="0.5" max="12" step="0.1" value="1.5">
+                <span class="unit-badge">px</span>
+              </div>
+            </div>
+
+            <div class="field-card">
+              <div class="field-label-row">
+                <label for="adv-borderRadius" class="field-label" data-i18n="fieldBorderRadius">圓角半徑 (Border Radius)</label>
+                <button type="button" class="btn-field-reset" data-key="borderRadius" title="還原預設值">↺</button>
+              </div>
+              <p class="field-hint" data-i18n="hintBorderRadius">方塊與外框角落平滑度</p>
+              <div class="input-with-unit">
+                <input type="number" id="adv-borderRadius" data-key="borderRadius" min="0" max="24" step="0.5" value="1.5">
+                <span class="unit-badge">px</span>
+              </div>
+            </div>
+
+            <div class="field-card">
+              <div class="field-label-row">
+                <label for="adv-outlineOffset" class="field-label" data-i18n="fieldOutlineOffset">外框外擴偏移 (Outline Offset)</label>
+                <button type="button" class="btn-field-reset" data-key="outlineOffset" title="還原預設值">↺</button>
+              </div>
+              <p class="field-hint" data-i18n="hintOutlineOffset">實心方塊輪廓向外或向內偏移</p>
+              <div class="input-with-unit">
+                <input type="number" id="adv-outlineOffset" data-key="outlineOffset" min="-6" max="10" step="1" value="-1">
+                <span class="unit-badge">px</span>
+              </div>
+            </div>
+
+            <div class="field-card">
+              <div class="field-label-row">
+                <label for="adv-glowRadius" class="field-label" data-i18n="fieldGlowRadius">光暈擴散半徑 (Glow Radius)</label>
+                <button type="button" class="btn-field-reset" data-key="glowRadius" title="還原預設值">↺</button>
+              </div>
+              <p class="field-hint" data-i18n="hintGlowRadius">周邊陰影發光半徑 (0 為關閉)</p>
+              <div class="input-with-unit">
+                <input type="number" id="adv-glowRadius" data-key="glowRadius" min="0" max="30" step="1" value="0">
+                <span class="unit-badge">px</span>
+              </div>
+            </div>
+
+            <div class="field-card">
+              <div class="field-label-row">
+                <label for="adv-blockBgOpacity" class="field-label" data-i18n="fieldBlockBgOpacity">NORMAL 方塊背景透明度</label>
+                <button type="button" class="btn-field-reset" data-key="blockBgOpacity" title="還原預設值">↺</button>
+              </div>
+              <p class="field-hint" data-i18n="hintBlockBgOpacity">實心方塊底色填充不透明度 (0 ~ 1)</p>
+              <div class="input-with-unit">
+                <input type="number" id="adv-blockBgOpacity" data-key="blockBgOpacity" min="0" max="1" step="0.01" value="0.22">
+                <span class="unit-badge">α</span>
+              </div>
+            </div>
+
+            <div class="field-card">
+              <div class="field-label-row">
+                <label for="adv-visualBgOpacity" class="field-label" data-i18n="fieldVisualBgOpacity">VISUAL 選取背景透明度</label>
+                <button type="button" class="btn-field-reset" data-key="visualBgOpacity" title="還原預設值">↺</button>
+              </div>
+              <p class="field-hint" data-i18n="hintVisualBgOpacity">選取反白高亮不透明度 (0 ~ 1)</p>
+              <div class="input-with-unit">
+                <input type="number" id="adv-visualBgOpacity" data-key="visualBgOpacity" min="0.05" max="1" step="0.01" value="0.35">
+                <span class="unit-badge">α</span>
+              </div>
+            </div>
+
+            <div class="field-card">
+              <div class="field-label-row">
+                <label for="adv-hollowBgOpacity" class="field-label" data-i18n="fieldHollowBgOpacity">空心內部底色透明度</label>
+                <button type="button" class="btn-field-reset" data-key="hollowBgOpacity" title="還原預設值">↺</button>
+              </div>
+              <p class="field-hint" data-i18n="hintHollowBgOpacity">空心外框形態內部淡彩 (0 ~ 1)</p>
+              <div class="input-with-unit">
+                <input type="number" id="adv-hollowBgOpacity" data-key="hollowBgOpacity" min="0" max="0.5" step="0.01" value="0.05">
+                <span class="unit-badge">α</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- 模組 2: 梯形彈跳與 3D 透視物理 -->
+        <div class="setting-group">
+          <div class="group-header">
+            <span class="group-icon">⚡</span>
+            <div class="group-title-wrap">
+              <h2 class="group-title" data-i18n="groupPhysicsTitle">梯形彈跳與 3D 透視物理 (Trapezoid & 3D Deformation)</h2>
+              <p class="group-desc" data-i18n="groupPhysicsDesc">mugen-yomu 招牌梯形回彈與立體果凍形變數值</p>
+            </div>
+          </div>
+          <div class="group-grid">
+
+            <div class="field-card">
+              <div class="field-label-row">
+                <label for="adv-perspective" class="field-label" data-i18n="fieldPerspective">3D 透視景深 (Perspective)</label>
+                <button type="button" class="btn-field-reset" data-key="perspective" title="還原預設值">↺</button>
+              </div>
+              <p class="field-hint" data-i18n="hintPerspective">3D 視角距離，數值愈小立體傾角愈強烈</p>
+              <div class="input-with-unit">
+                <input type="number" id="adv-perspective" data-key="perspective" min="80" max="1200" step="10" value="320">
+                <span class="unit-badge">px</span>
+              </div>
+            </div>
+
+            <div class="field-card">
+              <div class="field-label-row">
+                <label for="adv-tiltAngleX" class="field-label" data-i18n="fieldTiltAngleX">水平跳字傾斜角 (Tilt Angle X)</label>
+                <button type="button" class="btn-field-reset" data-key="tiltAngleX" title="還原預設值">↺</button>
+              </div>
+              <p class="field-hint" data-i18n="hintTiltAngleX">左右移動 (h/l/w/b) rotateY 梯形旋轉角度</p>
+              <div class="input-with-unit">
+                <input type="number" id="adv-tiltAngleX" data-key="tiltAngleX" min="0" max="50" step="1" value="18">
+                <span class="unit-badge">deg</span>
+              </div>
+            </div>
+
+            <div class="field-card">
+              <div class="field-label-row">
+                <label for="adv-tiltAngleY" class="field-label" data-i18n="fieldTiltAngleY">垂直跳行傾斜角 (Tilt Angle Y)</label>
+                <button type="button" class="btn-field-reset" data-key="tiltAngleY" title="還原預設值">↺</button>
+              </div>
+              <p class="field-hint" data-i18n="hintTiltAngleY">上下換行 (j/k) rotateX 梯形旋轉角度</p>
+              <div class="input-with-unit">
+                <input type="number" id="adv-tiltAngleY" data-key="tiltAngleY" min="0" max="50" step="1" value="18">
+                <span class="unit-badge">deg</span>
+              </div>
+            </div>
+
+            <div class="field-card">
+              <div class="field-label-row">
+                <label for="adv-scaleStretchX" class="field-label" data-i18n="fieldScaleStretchX">橫向衝刺伸展倍率 (Stretch X)</label>
+                <button type="button" class="btn-field-reset" data-key="scaleStretchX" title="還原預設值">↺</button>
+              </div>
+              <p class="field-hint" data-i18n="hintScaleStretchX">左右跳字瞬間水平方向拉伸比例</p>
+              <div class="input-with-unit">
+                <input type="number" id="adv-scaleStretchX" data-key="scaleStretchX" min="1.0" max="2.0" step="0.01" value="1.15">
+                <span class="unit-badge">x</span>
+              </div>
+            </div>
+
+            <div class="field-card">
+              <div class="field-label-row">
+                <label for="adv-scaleSquishY" class="field-label" data-i18n="fieldScaleSquishY">橫向抗積擠壓比例 (Squish Y)</label>
+                <button type="button" class="btn-field-reset" data-key="scaleSquishY" title="還原預設值">↺</button>
+              </div>
+              <p class="field-hint" data-i18n="hintScaleSquishY">左右跳字瞬間垂直方向擠壓比例</p>
+              <div class="input-with-unit">
+                <input type="number" id="adv-scaleSquishY" data-key="scaleSquishY" min="0.5" max="1.0" step="0.01" value="0.94">
+                <span class="unit-badge">x</span>
+              </div>
+            </div>
+
+            <div class="field-card">
+              <div class="field-label-row">
+                <label for="adv-scaleStretchY" class="field-label" data-i18n="fieldScaleStretchY">垂直換行伸展倍率 (Stretch Y)</label>
+                <button type="button" class="btn-field-reset" data-key="scaleStretchY" title="還原預設值">↺</button>
+              </div>
+              <p class="field-hint" data-i18n="hintScaleStretchY">上下跳行瞬間垂直方向拉長比例</p>
+              <div class="input-with-unit">
+                <input type="number" id="adv-scaleStretchY" data-key="scaleStretchY" min="1.0" max="2.0" step="0.01" value="1.10">
+                <span class="unit-badge">x</span>
+              </div>
+            </div>
+
+            <div class="field-card">
+              <div class="field-label-row">
+                <label for="adv-scaleSquishX" class="field-label" data-i18n="fieldScaleSquishX">垂直換行擠壓比例 (Squish X)</label>
+                <button type="button" class="btn-field-reset" data-key="scaleSquishX" title="還原預設值">↺</button>
+              </div>
+              <p class="field-hint" data-i18n="hintScaleSquishX">上下跳行瞬間水平方向微縮比例</p>
+              <div class="input-with-unit">
+                <input type="number" id="adv-scaleSquishX" data-key="scaleSquishX" min="0.5" max="1.0" step="0.01" value="0.90">
+                <span class="unit-badge">x</span>
+              </div>
+            </div>
+
+            <div class="field-card">
+              <div class="field-label-row">
+                <label for="adv-deformSettleMs" class="field-label" data-i18n="fieldDeformSettleMs">形變回彈復原時間 (Settle Time)</label>
+                <button type="button" class="btn-field-reset" data-key="deformSettleMs" title="還原預設值">↺</button>
+              </div>
+              <p class="field-hint" data-i18n="hintDeformSettleMs">梯形瞬間恢復為常規矩形的延遲時長</p>
+              <div class="input-with-unit">
+                <input type="number" id="adv-deformSettleMs" data-key="deformSettleMs" min="20" max="350" step="5" value="75">
+                <span class="unit-badge">ms</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- 模組 3: 平滑過渡與阻尼時間 -->
+        <div class="setting-group">
+          <div class="group-header">
+            <span class="group-icon">🌀</span>
+            <div class="group-title-wrap">
+              <h2 class="group-title" data-i18n="groupTransitionTitle">平滑過渡與阻尼時間 (Transition & Spring Physics)</h2>
+              <p class="group-desc" data-i18n="groupTransitionDesc">位移過渡曲線與超調回彈彈力</p>
+            </div>
+          </div>
+          <div class="group-grid">
+
+            <div class="field-card">
+              <div class="field-label-row">
+                <label for="adv-smoothDurationMs" class="field-label" data-i18n="fieldSmoothDurationMs">純平滑位移時長 (Smooth Duration)</label>
+                <button type="button" class="btn-field-reset" data-key="smoothDurationMs" title="還原預設值">↺</button>
+              </div>
+              <p class="field-hint" data-i18n="hintSmoothDurationMs">未開啟彈簧回彈時之基礎平滑位移耗時</p>
+              <div class="input-with-unit">
+                <input type="number" id="adv-smoothDurationMs" data-key="smoothDurationMs" min="10" max="400" step="5" value="80">
+                <span class="unit-badge">ms</span>
+              </div>
+            </div>
+
+            <div class="field-card">
+              <div class="field-label-row">
+                <label for="adv-springDurationMs" class="field-label" data-i18n="fieldSpringDurationMs">彈簧回彈過渡時長 (Spring Duration)</label>
+                <button type="button" class="btn-field-reset" data-key="springDurationMs" title="還原預設值">↺</button>
+              </div>
+              <p class="field-hint" data-i18n="hintSpringDurationMs">開啟彈跳時之衝刺與回彈動畫時長</p>
+              <div class="input-with-unit">
+                <input type="number" id="adv-springDurationMs" data-key="springDurationMs" min="20" max="500" step="5" value="110">
+                <span class="unit-badge">ms</span>
+              </div>
+            </div>
+
+            <div class="field-card">
+              <div class="field-label-row">
+                <label for="adv-springOvershoot" class="field-label" data-i18n="fieldSpringOvershoot">彈簧超調張力係數 (Overshoot)</label>
+                <button type="button" class="btn-field-reset" data-key="springOvershoot" title="還原預設值">↺</button>
+              </div>
+              <p class="field-hint" data-i18n="hintSpringOvershoot">Cubic-bezier(0.34, X, 0.64, 1) 彈力超調值</p>
+              <div class="input-with-unit">
+                <input type="number" id="adv-springOvershoot" data-key="springOvershoot" min="1.0" max="2.5" step="0.05" value="1.45">
+                <span class="unit-badge" data-i18n="unitTension">張力</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- 模組 4: 動態節奏與計時器 -->
+        <div class="setting-group">
+          <div class="group-header">
+            <span class="group-icon">🪷</span>
+            <div class="group-title-wrap">
+              <h2 class="group-title" data-i18n="groupAnimationTitle">動態節奏與避震計時器 (Animation & Rhythm)</h2>
+              <p class="group-desc" data-i18n="groupAnimationDesc">控制呼吸燈律動、閃爍循環與移動停止後的避震恢復</p>
+            </div>
+          </div>
+          <div class="group-grid">
+
+            <div class="field-card">
+              <div class="field-label-row">
+                <label for="adv-breatheDuration" class="field-label" data-i18n="fieldBreatheDuration">呼吸燈完整週期 (Breathe Duration)</label>
+                <button type="button" class="btn-field-reset" data-key="breatheDuration" title="還原預設值">↺</button>
+              </div>
+              <p class="field-hint" data-i18n="hintBreatheDuration">吸氣至頂峰再呼氣之完整循環時長</p>
+              <div class="input-with-unit">
+                <input type="number" id="adv-breatheDuration" data-key="breatheDuration" min="0.5" max="10.0" step="0.1" value="3.0">
+                <span class="unit-badge" data-i18n="unitSeconds">秒 (s)</span>
+              </div>
+            </div>
+
+            <div class="field-card">
+              <div class="field-label-row">
+                <label for="adv-breathePeakOpacity" class="field-label" data-i18n="fieldBreathePeakOpacity">呼吸燈頂峰不透明度 (Peak Opacity)</label>
+                <button type="button" class="btn-field-reset" data-key="breathePeakOpacity" title="還原預設值">↺</button>
+              </div>
+              <p class="field-hint" data-i18n="hintBreathePeakOpacity">吸氣至最亮頂峰時的不透明度 (0 ~ 1)</p>
+              <div class="input-with-unit">
+                <input type="number" id="adv-breathePeakOpacity" data-key="breathePeakOpacity" min="0.2" max="1.0" step="0.02" value="0.96">
+                <span class="unit-badge">α</span>
+              </div>
+            </div>
+
+            <div class="field-card">
+              <div class="field-label-row">
+                <label for="adv-blinkDuration" class="field-label" data-i18n="fieldBlinkDuration">經典閃爍循環週期 (Blink Duration)</label>
+                <button type="button" class="btn-field-reset" data-key="blinkDuration" title="還原預設值">↺</button>
+              </div>
+              <p class="field-hint" data-i18n="hintBlinkDuration">終端機閃爍完整亮滅週期時長</p>
+              <div class="input-with-unit">
+                <input type="number" id="adv-blinkDuration" data-key="blinkDuration" min="0.3" max="3.0" step="0.1" value="1.1">
+                <span class="unit-badge" data-i18n="unitSeconds">秒 (s)</span>
+              </div>
+            </div>
+
+            <div class="field-card">
+              <div class="field-label-row">
+                <label for="adv-moveSettleDelayMs" class="field-label" data-i18n="fieldMoveSettleDelayMs">移動避震恢復延遲 (Move Settle Delay)</label>
+                <button type="button" class="btn-field-reset" data-key="moveSettleDelayMs" title="還原預設值">↺</button>
+              </div>
+              <p class="field-hint" data-i18n="hintMoveSettleDelayMs">停止打字移動後，恢復閃爍/呼吸之延遲</p>
+              <div class="input-with-unit">
+                <input type="number" id="adv-moveSettleDelayMs" data-key="moveSettleDelayMs" min="50" max="1200" step="25" value="400">
+                <span class="unit-badge">ms</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- 模組 5: 平滑捲動與視窗視野 -->
+        <div class="setting-group">
+          <div class="group-header">
+            <span class="group-icon">📜</span>
+            <div class="group-title-wrap">
+              <h2 class="group-title" data-i18n="groupScrollTitle">平滑捲動與黃金視野 (Scrolling & Viewport)</h2>
+              <p class="group-desc" data-i18n="groupScrollDesc">Ease-Out Cubic 視窗阻尼捲動與黃金閱讀邊界</p>
+            </div>
+          </div>
+          <div class="group-grid">
+
+            <div class="field-card">
+              <div class="field-label-row">
+                <label for="adv-scrollDurationMs" class="field-label" data-i18n="fieldScrollDurationMs">視窗平滑捲動時長 (Scroll Duration)</label>
+                <button type="button" class="btn-field-reset" data-key="scrollDurationMs" title="還原預設值">↺</button>
+              </div>
+              <p class="field-hint" data-i18n="hintScrollDurationMs">Ease-Out Cubic 物理平滑捲動之總耗時</p>
+              <div class="input-with-unit">
+                <input type="number" id="adv-scrollDurationMs" data-key="scrollDurationMs" min="80" max="1200" step="20" value="380">
+                <span class="unit-badge">ms</span>
+              </div>
+            </div>
+
+            <div class="field-card">
+              <div class="field-label-row">
+                <label for="adv-viewportPaddingTop" class="field-label" data-i18n="fieldViewportPaddingTop">視窗頂部安全邊距 (Padding Top)</label>
+                <button type="button" class="btn-field-reset" data-key="viewportPaddingTop" title="還原預設值">↺</button>
+              </div>
+              <p class="field-hint" data-i18n="hintViewportPaddingTop">游標向上接近頂部多少像素時自動推動頁面</p>
+              <div class="input-with-unit">
+                <input type="number" id="adv-viewportPaddingTop" data-key="viewportPaddingTop" min="0" max="400" step="10" value="120">
+                <span class="unit-badge">px</span>
+              </div>
+            </div>
+
+            <div class="field-card">
+              <div class="field-label-row">
+                <label for="adv-viewportPaddingBottom" class="field-label" data-i18n="fieldViewportPaddingBottom">視窗底部安全邊距 (Padding Bottom)</label>
+                <button type="button" class="btn-field-reset" data-key="viewportPaddingBottom" title="還原預設值">↺</button>
+              </div>
+              <p class="field-hint" data-i18n="hintViewportPaddingBottom">游標向下接近底部多少像素時自動推動頁面</p>
+              <div class="input-with-unit">
+                <input type="number" id="adv-viewportPaddingBottom" data-key="viewportPaddingBottom" min="0" max="400" step="10" value="160">
+                <span class="unit-badge">px</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </section>
+
+      <!-- 右側：即時互動物理沙盒 -->
+      <aside class="sandbox-panel">
+        <div class="sandbox-card">
+          <div class="sandbox-header">
+            <div class="sandbox-title-wrap">
+              <span class="sandbox-badge">LIVE SANDBOX</span>
+              <h3 class="sandbox-title" data-i18n="sandboxTitle">即時物理互動沙盒</h3>
+            </div>
+            <p class="sandbox-desc" data-i18n="sandboxDesc">輸入左側任意數值即可即時反映。支援鍵盤 h / j / k / l 或點擊下方按鈕進行測試：</p>
+          </div>
+
+          <!-- 快速控制條 -->
+          <div class="sandbox-controls">
+            <div class="control-row">
+              <span class="control-label" data-i18n="sandboxThemeLabel">主題切換：</span>
+              <select id="sandbox-theme" class="sandbox-select">
+                <option value="gruvbox-dark" data-i18n="themeGruvboxDark">Gruvbox Dark (經典琥珀)</option>
+                <option value="gruvbox-light" data-i18n="themeGruvboxLight">Gruvbox Light (淡雅暖白)</option>
+                <option value="tokyo-night" data-i18n="themeTokyoNight">Tokyo Night (東京暗夜)</option>
+                <option value="nord" data-i18n="themeNord">Nord (北歐冰原)</option>
+                <option value="catppuccin" data-i18n="themeCatppuccin">Catppuccin Mocha (典雅摩卡)</option>
+                <option value="everforest" data-i18n="themeEverforest">Everforest (森野之境)</option>
+                <option value="intellij-darcula" data-i18n="themeIntellijDarcula">IntelliJ Darcula (極客暗灰)</option>
+                <option value="dracula" data-i18n="themeDracula">Dracula (幽冥吸血鬼)</option>
+                <option value="cyberpunk" data-i18n="themeCyberpunk">Cyberpunk (霓虹幻夜)</option>
+              </select>
+            </div>
+            <div class="control-row">
+              <span class="control-label" data-i18n="sandboxShapeLabel">游標形態：</span>
+              <select id="sandbox-shape" class="sandbox-select">
+                <option value="block" data-i18n="shapeBlock">實心方塊 (Block)</option>
+                <option value="hollow" data-i18n="shapeHollow">空心外框 (Hollow)</option>
+                <option value="underline" data-i18n="shapeUnderline">閱讀底線 (Underline)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- 互動按鈕群 -->
+          <div class="motion-pad">
+            <div class="pad-row">
+              <button type="button" class="pad-btn" id="pad-up" title="向上跳行 (k)" data-i18n="padUpBtn">↑ k (上行)</button>
+            </div>
+            <div class="pad-row pad-middle">
+              <button type="button" class="pad-btn" id="pad-left" title="向左移動 (h)" data-i18n="padLeftBtn">← h (左字)</button>
+              <button type="button" class="pad-btn pad-jump" id="pad-word-fwd" title="智慧跳詞 (w)" data-i18n="padJumpBtn">w (跳詞)</button>
+              <button type="button" class="pad-btn" id="pad-right" title="向右移動 (l)" data-i18n="padRightBtn">l (右字) →</button>
+            </div>
+            <div class="pad-row">
+              <button type="button" class="pad-btn" id="pad-down" title="向下跳行 (j)" data-i18n="padDownBtn">↓ j (下行)</button>
+            </div>
+            <div class="pad-row" style="margin-top: 6px; display: flex; gap: 8px;">
+              <button type="button" class="pad-btn" id="pad-v" title="切換 VISUAL 模式 (v)" data-i18n="padVisualBtn" style="flex: 1;">v (選取)</button>
+              <button type="button" class="pad-btn" id="pad-yank" title="複製選取字元 (y)" data-i18n="padYankBtn" style="flex: 1;">y (複製)</button>
+              <button type="button" class="pad-btn" id="pad-esc" title="取消選取 (Escape)" data-i18n="padEscBtn" style="flex: 1;">Esc (取消)</button>
+            </div>
+          </div>
+
+          <!-- 互動文字沙盒區 -->
+          <div class="sandbox-article-container" id="sandbox-article-container">
+            <div class="sandbox-article" id="sandbox-article" tabindex="0">
+              <p class="sandbox-para" data-line="0" data-i18n="sandboxPara1">霧前禪夢，見字如初。當字元在深沉的黑色底蘊中漸次浮現，梯形物理的彈性回彈賦予每一個跳躍溫潤的生命力。</p>
+              <p class="sandbox-para" data-line="1" data-i18n="sandboxPara2">在喧囂繁複的網路時代，回歸純粹的 Vim 鍵位導航，以最少的手部位移沉浸於文字之美。輕觸 h、j、k、l 感受極致絲滑的阻尼。</p>
+              <p class="sandbox-para" data-line="2" data-i18n="sandboxPara3">每一道微光呼吸皆在靜默中守候，於移動瞬間常駐光明，於佇足之時安詳吐納。自由調配專屬數值，找回屬於您的閱讀專注力。</p>
+              <p class="sandbox-para" data-line="3" data-i18n="sandboxPara4">黃金視野邊距隨時守候，當游標向下接近底緣或向上逼近頂端，Ease-Out Cubic 物理平滑推動視窗，令目光恆常平靜安歇。</p>
+              <p class="sandbox-para" data-line="4" data-i18n="sandboxPara5">輕按 v 鍵進入 Visual 選取模式，字句反白隨心所欲；按 y 複製智慧存檔，Esc 還原沉浸節奏，行雲流水不著痕跡。</p>
+              <p class="sandbox-para" data-line="5" data-i18n="sandboxPara6">長文深處，一念清寂。上下翻飛間，阻尼與彈力在此交會，讓每一次指尖的輕敲，皆成為閱讀旅途中的極致享受。</p>
+            </div>
+          </div>
+
+          <!-- 即時參數診斷列 -->
+          <div class="sandbox-diagnostics">
+            <div class="diag-item">
+              <span class="diag-key" data-i18n="diagPerspective">透視景深:</span>
+              <span class="diag-val" id="diag-persp">320px</span>
+            </div>
+            <div class="diag-item">
+              <span class="diag-key" data-i18n="diagTilt">傾斜角度:</span>
+              <span class="diag-val" id="diag-tilt">18°</span>
+            </div>
+            <div class="diag-item">
+              <span class="diag-key" data-i18n="diagSettleTime">回彈時間:</span>
+              <span class="diag-val" id="diag-settle">75ms</span>
+            </div>
+          </div>
+
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <script type="module" src="options.ts"></script>
+</body>
+
+</html>

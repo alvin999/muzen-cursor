@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const effectSmoothScroll = document.getElementById('effect-smooth-scroll') as HTMLInputElement | null;
   const pulseRadios = document.querySelectorAll<HTMLInputElement>('input[name="muzen-pulse"]');
   const btnResetDefaults = document.getElementById('btn-reset-defaults') as HTMLButtonElement | null;
+  const btnOpenOptions = document.getElementById('btn-open-options') as HTMLButtonElement | null;
   const btnOpenPdf = document.getElementById('btn-open-pdf-viewer') as HTMLButtonElement | null;
   const currentSiteHostEl = document.getElementById('current-site-host');
   const toggleCurrentSite = document.getElementById('toggle-current-site') as HTMLInputElement | null;
@@ -401,6 +402,15 @@ document.addEventListener('DOMContentLoaded', () => {
   effectBounce?.addEventListener('change', onEffectsChanged);
   effectSmoothScroll?.addEventListener('change', onEffectsChanged);
   pulseRadios.forEach((r) => r.addEventListener('change', onEffectsChanged));
+
+  // 14.5 開啟進階設定頁面
+  btnOpenOptions?.addEventListener('click', () => {
+    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.openOptionsPage) {
+      chrome.runtime.openOptionsPage();
+    } else {
+      window.open('../options/index.html', '_blank');
+    }
+  });
 
   // 15. 回復 mugen-yomu 預設值事件
   btnResetDefaults?.addEventListener('click', () => {

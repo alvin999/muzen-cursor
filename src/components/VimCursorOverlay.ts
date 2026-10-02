@@ -1,4 +1,4 @@
-import { cursorStore, CursorState, CursorTheme } from '../core/cursorStore';
+import { cursorStore, CursorState, CursorTheme, DEFAULT_ADVANCED_CONFIG } from '../core/cursorStore';
 
 interface ThemeColorSet {
   normal: { r: number; g: number; b: number; hex: string };
@@ -86,11 +86,11 @@ export class VimCursorOverlay {
           filter: none;
         }
         40% {
-          opacity: 0.96;
+          opacity: var(--muzen-breathe-peak-opacity, 0.96);
           filter: var(--muzen-breathe-filter-max, none);
         }
         50% {
-          opacity: 0.93;
+          opacity: calc(var(--muzen-breathe-peak-opacity, 0.96) * 0.97);
           filter: var(--muzen-breathe-filter-peak, none);
         }
         85% {
@@ -149,25 +149,29 @@ export class VimCursorOverlay {
 
     this.element.style.display = 'block';
 
+    const adv = state.advanced || DEFAULT_ADVANCED_CONFIG;
+
     // 1. 取得配色票券
     const themeKey = state.theme || 'gruvbox-dark';
     const palette = THEME_PALETTES[themeKey] || THEME_PALETTES['gruvbox-dark'];
     const color = state.mode === 'VISUAL' ? palette.visual : palette.normal;
 
-    // 同步 mugen-yomu 主題選取透明效果 (35% 半透明高對比底色)
+    // 同步主題選取透明效果 (自訂 visualBgOpacity，預設 0.35)
     const visualColor = palette.visual;
+    const visualBgOpacity = typeof adv.visualBgOpacity === 'number' ? adv.visualBgOpacity : 0.35;
     document.documentElement.style.setProperty(
       '--muzen-selection-bg',
-      `rgba(${visualColor.r}, ${visualColor.g}, ${visualColor.b}, 0.35)`
+      `rgba(${visualColor.r}, ${visualColor.g}, ${visualColor.b}, ${visualBgOpacity})`
     );
 
     // 設定 CSS 變數供呼吸動畫引用
     this.element.style.setProperty('--muzen-glow', `rgba(${color.r}, ${color.g}, ${color.b}, 0.8)`);
     this.element.style.setProperty('--muzen-glow-core', `rgba(${color.r}, ${color.g}, ${color.b}, 0.85)`);
     this.element.style.setProperty('--muzen-glow-halo', `rgba(${color.r}, ${color.g}, ${color.b}, 0.45)`);
+    this.element.style.setProperty('--muzen-breathe-peak-opacity', `${typeof adv.breathePeakOpacity === 'number' ? adv.breathePeakOpacity : 0.96}`);
 
-    // 處理光暈 (Glow Intensity: 0 為無光暈)
-    const glow = typeof state.glow === 'number' ? Math.max(0, state.glow) : 0;
+    // 處理光暈 (Glow Radius: 優先讀取進階設定 glowRadius，0 為無光暈)
+    const glow = typeof adv.glowRadius === 'number' ? Math.max(0, adv.glowRadius) : (typeof state.glow === 'number' ? Math.max(0, state.glow) : 0);
     if (glow <= 0) {
       this.element.style.setProperty('--muzen-breathe-filter-min', 'none');
       this.element.style.setProperty('--muzen-breathe-filter-peak', 'none');
@@ -182,9 +186,13 @@ export class VimCursorOverlay {
       this.element.style.setProperty('--muzen-breathe-filter-max', `drop-shadow(0 0 ${coreMax}px var(--muzen-glow-core)) drop-shadow(0 0 ${haloMax}px var(--muzen-glow-halo))`);
     }
 
-    // 2. 依據游標形態 (Shape) 與粗細 (Thickness) 調整幾何與渲染
+    // 2. 依據游標形態 (Shape)、粗細 (Thickness) 與進階幾何數值調整
     const shape = state.shape || 'block';
-    const thickness = typeof state.thickness === 'number' ? Math.max(0.5, state.thickness) : 1.5;
+    const thickness = typeof adv.thickness === 'number' ? Math.max(0.5, adv.thickness) : (typeof state.thickness === 'number' ? Math.max(0.5, state.thickness) : 1.5);
+    const borderRadius = typeof adv.borderRadius === 'number' ? Math.max(0, adv.borderRadius) : 1.5;
+    const outlineOffset = typeof adv.outlineOffset === 'number' ? adv.outlineOffset : -1;
+    const blockBgOpacity = typeof adv.blockBgOpacity === 'number' ? adv.blockBgOpacity : 0.22;
+    const hollowBgOpacity = typeof adv.hollowBgOpacity === 'number' ? adv.hollowBgOpacity : 0.05;
 
     let targetX = state.rect.x;
     let targetY = state.rect.y;
@@ -193,10 +201,10 @@ export class VimCursorOverlay {
 
     switch (shape) {
       case 'hollow': // 空心外框：文字完全清晰可見，高對比外框錨定
-        this.element.style.background = `rgba(${color.r}, ${color.g}, ${color.b}, 0.05)`;
+        this.element.style.background = `rgba(${color.r}, ${color.g}, ${color.b}, ${hollowBgOpacity})`;
         this.element.style.outline = 'none';
         this.element.style.border = `${thickness}px solid ${color.hex}`;
-        this.element.style.borderRadius = '2px';
+        this.element.style.borderRadius = `${borderRadius}px`;
         this.element.style.boxShadow = glow > 0
           ? `0 0 ${glow}px rgba(${color.r}, ${color.g}, ${color.b}, 0.5)`
           : 'none';
@@ -217,43 +225,48 @@ export class VimCursorOverlay {
       case 'block': // 經典實心方塊 (完全對齊 mugen-yomu 原始碼規格)
       default:
         this.element.style.background = state.mode === 'VISUAL'
-          ? `rgba(${color.r}, ${color.g}, ${color.b}, 0.35)`
-          : `rgba(${color.r}, ${color.g}, ${color.b}, 0.22)`;
+          ? `rgba(${color.r}, ${color.g}, ${color.b}, ${visualBgOpacity})`
+          : `rgba(${color.r}, ${color.g}, ${color.b}, ${blockBgOpacity})`;
         this.element.style.border = 'none';
         this.element.style.outline = `${thickness}px solid ${color.hex}`;
-        this.element.style.outlineOffset = '-1px';
-        this.element.style.borderRadius = '1.5px';
+        this.element.style.outlineOffset = `${outlineOffset}px`;
+        this.element.style.borderRadius = `${borderRadius}px`;
         this.element.style.boxShadow = glow > 0
           ? `0 0 ${Math.round(glow * 1.2)}px rgba(${color.r}, ${color.g}, ${color.b}, 0.6)`
           : 'none';
         break;
     }
 
-    // 3. 依據動態特效 (Effects: smooth, bounce, breathe, blink)
+    // 3. 依據動態特效 (Effects: smooth, bounce, breathe, blink) 與進階過渡參數
     const effects = state.effects || { smooth: true, bounce: true, breathe: false, blink: true };
+    const smoothDurationSec = ((adv.smoothDurationMs ?? 80) / 1000).toFixed(3);
+    const springDurationSec = ((adv.springDurationMs ?? 110) / 1000).toFixed(3);
+    const springOvershoot = typeof adv.springOvershoot === 'number' ? adv.springOvershoot : 1.45;
 
     // 平滑位移與彈跳阻尼控制
     if (effects.smooth) {
       if (effects.bounce) {
         // 彈性梯形物理回彈曲線 (Overshoot Spring)
-        this.element.style.transition = 'transform 0.11s cubic-bezier(0.34, 1.45, 0.64, 1), width 0.08s ease, height 0.08s ease';
+        this.element.style.transition = `transform ${springDurationSec}s cubic-bezier(0.34, ${springOvershoot}, 0.64, 1), width 0.08s ease, height 0.08s ease`;
       } else {
-        this.element.style.transition = 'transform 0.08s cubic-bezier(0.2, 0, 0, 1), width 0.08s ease, height 0.08s ease';
+        this.element.style.transition = `transform ${smoothDurationSec}s cubic-bezier(0.2, 0, 0, 1), width 0.08s ease, height 0.08s ease`;
       }
     } else {
       this.element.style.transition = 'none';
     }
 
-    // 複合動畫組合 (breathe, blink)：mugen-yomu 招牌機制——移動中保持常亮，不閃爍
+    // 複合動畫組合 (breathe, blink)：移動中保持常亮，不閃爍
     const animList: string[] = [];
     const isMoving = !!state.isMoving;
+    const breatheDuration = typeof adv.breatheDuration === 'number' ? adv.breatheDuration : 3.0;
+    const blinkDuration = typeof adv.blinkDuration === 'number' ? adv.blinkDuration : 1.1;
 
     if (!isMoving) {
       if (effects.breathe) {
-        animList.push('muzen-breathe 3s cubic-bezier(0.4, 0, 0.2, 1) infinite');
+        animList.push(`muzen-breathe ${breatheDuration}s cubic-bezier(0.4, 0, 0.2, 1) infinite`);
       }
       if (effects.blink) {
-        animList.push('muzen-blink 1.1s ease-in-out infinite');
+        animList.push(`muzen-blink ${blinkDuration}s ease-in-out infinite`);
       }
     }
 
@@ -271,23 +284,32 @@ export class VimCursorOverlay {
     const isNewMotion = state.motionSequence !== this.lastRenderedSeq;
     this.lastRenderedSeq = state.motionSequence;
 
+    const persp = typeof adv.perspective === 'number' ? adv.perspective : 320;
+    const tiltX = typeof adv.tiltAngleX === 'number' ? adv.tiltAngleX : 18;
+    const tiltY = typeof adv.tiltAngleY === 'number' ? adv.tiltAngleY : 18;
+    const stretchX = typeof adv.scaleStretchX === 'number' ? adv.scaleStretchX : 1.15;
+    const squishY = typeof adv.scaleSquishY === 'number' ? adv.scaleSquishY : 0.94;
+    const stretchY = typeof adv.scaleStretchY === 'number' ? adv.scaleStretchY : 1.10;
+    const squishX = typeof adv.scaleSquishX === 'number' ? adv.scaleSquishX : 0.90;
+    const deformSettleMs = typeof adv.deformSettleMs === 'number' ? adv.deformSettleMs : 75;
+
     if (effects.bounce && effects.smooth && isNewMotion && state.motionDirection !== 'none') {
       let deform = '';
       switch (state.motionDirection) {
         case 'right':
-          deform = 'perspective(320px) rotateY(-18deg) scale(1.15, 0.94)';
+          deform = `perspective(${persp}px) rotateY(-${tiltX}deg) scale(${stretchX}, ${squishY})`;
           break;
         case 'left':
-          deform = 'perspective(320px) rotateY(18deg) scale(1.15, 0.94)';
+          deform = `perspective(${persp}px) rotateY(${tiltX}deg) scale(${stretchX}, ${squishY})`;
           break;
         case 'down':
-          deform = 'perspective(320px) rotateX(18deg) scale(1.10, 0.90)';
+          deform = `perspective(${persp}px) rotateX(${tiltY}deg) scale(${stretchY}, ${squishX})`;
           break;
         case 'up':
-          deform = 'perspective(320px) rotateX(-18deg) scale(1.10, 0.90)';
+          deform = `perspective(${persp}px) rotateX(-${tiltY}deg) scale(${stretchY}, ${squishX})`;
           break;
         case 'jump':
-          deform = 'perspective(320px) rotateX(8deg) scale(1.08, 0.92)';
+          deform = `perspective(${persp}px) rotateX(${Math.round(tiltY * 0.44)}deg) scale(${((stretchX + stretchY) / 2).toFixed(2)}, ${((squishX + squishY) / 2).toFixed(2)})`;
           break;
       }
 
@@ -297,9 +319,9 @@ export class VimCursorOverlay {
         clearTimeout(this.settleTimer);
       }
       this.settleTimer = window.setTimeout(() => {
-        this.element.style.transform = `translate3d(${targetX}px, ${targetY}px, 0) perspective(320px) rotateX(0deg) rotateY(0deg) scale(1, 1)`;
+        this.element.style.transform = `translate3d(${targetX}px, ${targetY}px, 0) perspective(${persp}px) rotateX(0deg) rotateY(0deg) scale(1, 1)`;
         this.settleTimer = null;
-      }, 75);
+      }, deformSettleMs);
     } else {
       if (this.settleTimer !== null) {
         clearTimeout(this.settleTimer);

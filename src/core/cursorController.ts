@@ -10,8 +10,11 @@ let activeScrollRafId: number | null = null;
 function animateScrollTo(
   target: HTMLElement | Window,
   targetTop: number,
-  duration = 380
+  duration?: number
 ): void {
+  const actualDuration = typeof duration === 'number'
+    ? duration
+    : (cursorStore.getState().advanced?.scrollDurationMs ?? 380);
   if (activeScrollRafId !== null) {
     cancelAnimationFrame(activeScrollRafId);
     activeScrollRafId = null;
@@ -43,7 +46,7 @@ function animateScrollTo(
 
   function step(currentTime: number) {
     const elapsed = currentTime - startTime;
-    const progress = Math.min(1, elapsed / duration);
+    const progress = Math.min(1, elapsed / actualDuration);
     // Ease-Out Cubic: mugen-yomu 招牌物理阻尼曲線，確保極致絲滑
     const ease = 1 - Math.pow(1 - progress, 3);
     const currentPos = startTop + distance * ease;
@@ -69,10 +72,16 @@ function animateScrollTo(
   activeScrollRafId = requestAnimationFrame(step);
 }
 
+export interface CursorControllerOptions {
+  containerRoot?: HTMLElement;
+  enableScroll?: boolean;
+}
+
 /**
  * Vim 核心游標控制器 (純邏輯運算，解除業務綁定)
  */
 export class CursorController {
+  private options?: CursorControllerOptions;
   private currentTarget: TextTarget | null = null;
   private visualAnchor: TextTarget | null = null;
   private preferredX: number | null = null;
@@ -84,6 +93,14 @@ export class CursorController {
   private clickHandler: ((e: MouseEvent) => void) | null = null;
   private resizeHandler: (() => void) | null = null;
   private scrollHandler: (() => void) | null = null;
+
+  constructor(options?: CursorControllerOptions) {
+    this.options = options;
+  }
+
+  private get rootElement(): HTMLElement {
+    return this.options?.containerRoot || document.body;
+  }
 
   public init(): void {
     this.keydownHandler = (e: KeyboardEvent) => this.handleKeyDown(e);
@@ -151,6 +168,11 @@ export class CursorController {
     const targetEl = (rawTarget instanceof Element ? rawTarget : (rawTarget as Node)?.parentElement) as HTMLElement | null;
 
     if (!targetEl || targetEl.closest('#muzen-cursor-host-root')) {
+      return;
+    }
+
+    // 若限定作用容器，非容器內部的點擊一律忽略
+    if (this.options?.containerRoot && !this.options.containerRoot.contains(targetEl)) {
       return;
     }
 
@@ -400,7 +422,7 @@ export class CursorController {
   /**
    * 水平移動 (h / l)
    */
-  private moveHorizontal(delta: number): void {
+  public moveHorizontal(delta: number): void {
     this.preferredX = null;
     if (!this.currentTarget) {
       this.findInitialTarget();
@@ -435,45 +457,50 @@ export class CursorController {
   /**
    * 垂直移動 (j / k) - 穿透同行 <a>, <span>, <code> 標籤，精準鎖定下一視覺行
    */
-  private moveVertical(deltaRows: number): void {
+  public moveVertical(deltaRows: number): void {
     if (!this.currentTarget) {
       this.findInitialTarget();
       return;
     }
 
-    const { node, offset } = this.currentTarget;
-    const len = node.textContent?.length || 0;
-    if (len === 0) return;
-
-    // 1. 取得當前真實字元的螢幕基準線
-    const baseRange = document.createRange();
-    const safeFrom = Math.min(offset, Math.max(0, len - 1));
-    baseRange.setStart(node, safeFrom);
-    baseRange.setEnd(node, Math.min(safeFrom + 1, len));
-    const baseRect = baseRange.getBoundingClientRect();
-    const currentCharTop = baseRect.top;
-    const charHeight = baseRect.height > 0 ? baseRect.height : 22;
-    const lineThreshold = charHeight * 0.65;
-
-    // 2. 鎖定或保持基準水平 X 座標 (Vim 經典行為)
-    if (this.preferredX === null) {
-      this.preferredX = baseRect.left;
-    }
-    const targetX = this.preferredX;
+    const steps = Math.abs(deltaRows);
     const isDownward = deltaRows > 0;
 
-    let foundTarget: { node: Text; offset: number } | null = null;
+    for (let step = 0; step < steps; step++) {
+      if (!this.currentTarget) break;
+      const target: TextTarget = this.currentTarget;
+      const { node, offset } = target;
+      const len = node.textContent?.length || 0;
+      if (len === 0) break;
 
-    if (isDownward) {
-      foundTarget = this.searchDownwardNextLine(node, offset, currentCharTop, lineThreshold, charHeight, targetX);
-    } else {
-      foundTarget = this.searchUpwardPrevLine(node, offset, currentCharTop, lineThreshold, charHeight, targetX);
+      // 1. 取得當前真實字元的螢幕基準線
+      const baseRange = document.createRange();
+      const safeFrom = Math.min(offset, Math.max(0, len - 1));
+      baseRange.setStart(node, safeFrom);
+      baseRange.setEnd(node, Math.min(safeFrom + 1, len));
+      const baseRect = baseRange.getBoundingClientRect();
+      const currentCharTop = baseRect.top;
+      const charHeight = baseRect.height > 0 ? baseRect.height : 22;
+      const lineThreshold = charHeight * 0.65;
+
+      // 2. 鎖定或保持基準水平 X 座標 (Vim 經典行為)
+      if (this.preferredX === null) {
+        this.preferredX = baseRect.left;
+      }
+      const targetX = this.preferredX;
+
+      const foundTarget: TextTarget | null = isDownward
+        ? this.searchDownwardNextLine(node, offset, currentCharTop, lineThreshold, charHeight, targetX)
+        : this.searchUpwardPrevLine(node, offset, currentCharTop, lineThreshold, charHeight, targetX);
+
+      if (foundTarget) {
+        this.currentTarget = foundTarget;
+      } else {
+        break;
+      }
     }
 
-    if (foundTarget) {
-      this.currentTarget = foundTarget;
-      this.updateCursorPosition(true);
-    }
+    this.updateCursorPosition(true);
   }
 
   /**
@@ -667,7 +694,7 @@ export class CursorController {
   /**
    * 跳至下一個詞彙 (w)
    */
-  private moveWordForward(): void {
+  public moveWordForward(): void {
     this.preferredX = null;
     if (!this.currentTarget) {
       this.findInitialTarget();
@@ -782,14 +809,22 @@ export class CursorController {
   /**
    * 跳至文章頂部 (gg)
    */
-  private jumpToDocumentStart(): void {
-    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  public jumpToDocumentStart(): void {
+    const walker = document.createTreeWalker(this.rootElement, NodeFilter.SHOW_TEXT);
     let n = walker.nextNode();
     while (n) {
       if (n.textContent && n.textContent.trim().length > 0) {
         this.currentTarget = { node: n as Text, offset: 0 };
         this.updateCursorPosition();
-        animateScrollTo(window, 0, 420);
+        if (this.options?.enableScroll !== false) {
+          const scrollParent = this.getScrollParent(this.currentTarget.node);
+          const duration = cursorStore.getState().advanced?.scrollDurationMs ?? 380;
+          if (scrollParent) {
+            animateScrollTo(scrollParent, 0, duration);
+          } else if (!this.options?.containerRoot) {
+            animateScrollTo(window, 0, duration);
+          }
+        }
         return;
       }
       n = walker.nextNode();
@@ -799,8 +834,8 @@ export class CursorController {
   /**
    * 跳至文章底部 (G)
    */
-  private jumpToDocumentEnd(): void {
-    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  public jumpToDocumentEnd(): void {
+    const walker = document.createTreeWalker(this.rootElement, NodeFilter.SHOW_TEXT);
     let lastTextNode: Text | null = null;
     let n = walker.nextNode();
     while (n) {
@@ -816,15 +851,24 @@ export class CursorController {
         offset: lastTextNode.textContent?.length || 0
       };
       this.updateCursorPosition();
-      const maxScroll = Math.max(0, Math.max(document.body.scrollHeight, document.documentElement.scrollHeight) - window.innerHeight);
-      animateScrollTo(window, maxScroll, 420);
+      if (this.options?.enableScroll !== false) {
+        const scrollParent = this.getScrollParent(this.currentTarget.node);
+        const duration = cursorStore.getState().advanced?.scrollDurationMs ?? 380;
+        if (scrollParent) {
+          const maxScroll = Math.max(0, scrollParent.scrollHeight - scrollParent.clientHeight);
+          animateScrollTo(scrollParent, maxScroll, duration);
+        } else if (!this.options?.containerRoot) {
+          const maxScroll = Math.max(0, Math.max(document.body.scrollHeight, document.documentElement.scrollHeight) - window.innerHeight);
+          animateScrollTo(window, maxScroll, duration);
+        }
+      }
     }
   }
 
   /**
    * 切換 Visual 模式
    */
-  private toggleVisualMode(): void {
+  public toggleVisualMode(): void {
     const currentMode = cursorStore.getState().mode;
     if (currentMode === 'NORMAL') {
       if (!this.currentTarget) {
@@ -840,7 +884,7 @@ export class CursorController {
     }
   }
 
-  private exitVisualMode(): void {
+  public exitVisualMode(): void {
     this.visualAnchor = null;
     cursorStore.setState({ mode: 'NORMAL' });
     const sel = window.getSelection();
@@ -890,7 +934,7 @@ export class CursorController {
   /**
    * Yank (複製) 當前選取內容
    */
-  private async yankSelection(): Promise<void> {
+  public async yankSelection(): Promise<void> {
     const sel = window.getSelection();
     const text = sel ? sel.toString() : '';
 
@@ -906,7 +950,16 @@ export class CursorController {
     this.exitVisualMode();
   }
 
-  private findInitialTarget(): void {
+  public findInitialTarget(): void {
+    if (this.options?.containerRoot) {
+      const firstText = this.findFirstTextNodeIn(this.options.containerRoot);
+      if (firstText) {
+        this.currentTarget = { node: firstText, offset: 0 };
+        this.updateCursorPosition();
+        return;
+      }
+    }
+
     const cx = window.innerWidth / 2;
     const cy = window.innerHeight / 3;
 
@@ -924,7 +977,7 @@ export class CursorController {
       return;
     }
 
-    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    const walker = document.createTreeWalker(this.rootElement, NodeFilter.SHOW_TEXT);
     let n = walker.nextNode();
     while (n) {
       const text = n.textContent?.trim();
@@ -1056,11 +1109,12 @@ export class CursorController {
         }
       }
 
-      // mugen-yomu 招牌移動避震機制：位移時保持常亮不閃爍，靜止 400ms 後平滑恢復閃爍
+      // 移動避震機制：位移時保持常亮不閃爍，靜止一段時間後平滑恢復閃爍/呼吸
+      const settleDelay = cursorStore.getState().advanced?.moveSettleDelayMs ?? 400;
       if (this.moveTimer) clearTimeout(this.moveTimer);
       this.moveTimer = setTimeout(() => {
         cursorStore.setState({ isMoving: false, motionDirection: 'none' });
-      }, 400);
+      }, settleDelay);
 
       cursorStore.setState({
         visible: isVisibleInViewport,
@@ -1086,20 +1140,31 @@ export class CursorController {
       if (scrollIntoView) {
         const scrollParent = this.getScrollParent(node);
         const viewHeight = scrollParent ? scrollParent.clientHeight : window.innerHeight;
-        const curTop = rect.top;
-        const curBottom = rect.bottom;
+        const parentTop = scrollParent ? scrollParent.getBoundingClientRect().top : 0;
+        const curTop = rect.top - parentTop;
+        const curBottom = rect.bottom - parentTop;
         const currentScroll = scrollParent
           ? scrollParent.scrollTop
           : (window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0);
 
-        // 向下閱讀超過視野 58% 時，平滑將文字推進至 45% 舒適閱讀視野
-        if (curBottom > viewHeight * 0.58) {
-          const targetScroll = currentScroll + curBottom - viewHeight * 0.45;
-          animateScrollTo(scrollParent || window, targetScroll, 320);
-        } else if (curTop < viewHeight * 0.18) {
-          // 向上閱讀低於 18% 時，平滑回推至 28%
-          const targetScroll = Math.max(0, currentScroll + curTop - viewHeight * 0.28);
-          animateScrollTo(scrollParent || window, targetScroll, 320);
+        const adv = cursorStore.getState().advanced;
+        // 若為獨立子容器，安全邊距適應容器尺度
+        const maxPad = scrollParent ? Math.floor(viewHeight * 0.35) : Infinity;
+        const padBottom = Math.min(maxPad, adv?.viewportPaddingBottom ?? 160);
+        const padTop = Math.min(maxPad, adv?.viewportPaddingTop ?? 120);
+        const scrollDuration = adv?.scrollDurationMs ?? 320;
+
+        const scrollTarget = scrollParent || (this.options?.containerRoot ? null : window);
+        if (scrollTarget) {
+          // 向下閱讀超過底部邊界視野時
+          if (curBottom > viewHeight - padBottom) {
+            const targetScroll = currentScroll + (curBottom - (viewHeight - padBottom)) + 12;
+            animateScrollTo(scrollTarget, targetScroll, scrollDuration);
+          } else if (curTop < padTop) {
+            // 向上閱讀低於頂部邊界視野時
+            const targetScroll = Math.max(0, currentScroll - (padTop - curTop) - 12);
+            animateScrollTo(scrollTarget, targetScroll, scrollDuration);
+          }
         }
       }
     } catch (err) {
@@ -1193,7 +1258,10 @@ export class CursorController {
       : (window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0);
     const targetScrollTop = currentScrollTop + scrollAmount;
 
-    animateScrollTo(scrollParent || window, targetScrollTop, 380);
+    const scrollTarget = scrollParent || (this.options?.containerRoot ? null : window);
+    if (scrollTarget) {
+      animateScrollTo(scrollTarget, targetScrollTop, 380);
+    }
 
     // 5. 強制保持游標可見並同步更新位置
     cursorStore.setState({ visible: true });
@@ -1217,11 +1285,27 @@ export class CursorController {
       }
       el = el.parentElement;
     }
+
+    // 若指定了 containerRoot，向上查找滾動容器
+    if (this.options?.containerRoot) {
+      let p: HTMLElement | null = this.options.containerRoot;
+      while (p && p !== document.body && p !== document.documentElement) {
+        try {
+          const style = window.getComputedStyle(p);
+          const overflowY = style.overflowY;
+          if (overflowY === 'auto' || overflowY === 'scroll') {
+            return p;
+          }
+        } catch {}
+        p = p.parentElement;
+      }
+    }
+
     return null;
   }
 
   private findNextTextNode(current: Text): Text | null {
-    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    const walker = document.createTreeWalker(this.rootElement, NodeFilter.SHOW_TEXT);
     walker.currentNode = current;
     let next = walker.nextNode();
     while (next) {
@@ -1234,7 +1318,7 @@ export class CursorController {
   }
 
   private findPrevTextNode(current: Text): Text | null {
-    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    const walker = document.createTreeWalker(this.rootElement, NodeFilter.SHOW_TEXT);
     walker.currentNode = current;
     let prev = walker.previousNode();
     while (prev) {

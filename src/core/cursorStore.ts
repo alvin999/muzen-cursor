@@ -39,6 +39,75 @@ export interface CursorRect {
   height: number;
 }
 
+export interface AdvancedConfig {
+  // 1. 幾何外觀與筆觸
+  thickness: number;          // 游標粗細/線寬 (px)
+  borderRadius: number;       // 圓角半徑 (px)
+  outlineOffset: number;      // 外框偏移 (px)
+  glowRadius: number;         // 光暈擴散半徑 (px)
+  blockBgOpacity: number;     // NORMAL 方塊背景不透明度 (0~1)
+  visualBgOpacity: number;    // VISUAL 選取不透明度 (0~1)
+  hollowBgOpacity: number;    // 空心內部不透明度 (0~1)
+
+  // 2. 梯形彈跳與 3D 透視物理
+  perspective: number;        // 3D 透視景深 (px)
+  tiltAngleX: number;         // 水平傾斜角度 (deg)
+  tiltAngleY: number;         // 垂直傾斜角度 (deg)
+  scaleStretchX: number;      // 水平伸展倍率
+  scaleSquishY: number;       // 水平擠壓倍率
+  scaleStretchY: number;      // 垂直伸展倍率
+  scaleSquishX: number;       // 垂直擠壓倍率
+  deformSettleMs: number;     // 形變回彈復原時間 (ms)
+
+  // 3. 平滑過渡與阻尼時間
+  smoothDurationMs: number;   // 平滑位移時間 (ms)
+  springDurationMs: number;   // 彈簧回彈時間 (ms)
+  springOvershoot: number;    // 彈簧超調張力
+
+  // 4. 動態週期與計時器
+  breatheDuration: number;    // 呼吸燈週期 (s)
+  breathePeakOpacity: number; // 呼吸燈最高峰不透明度 (0~1)
+  blinkDuration: number;      // 閃爍循環週期 (s)
+  moveSettleDelayMs: number;  // 移動避震恢復延遲 (ms)
+
+  // 5. 平滑捲動與視窗視野
+  scrollDurationMs: number;   // 視窗捲動時間 (ms)
+  viewportPaddingTop: number; // 視窗頂部邊距 (px)
+  viewportPaddingBottom: number; // 視窗底部邊距 (px)
+}
+
+export const DEFAULT_ADVANCED_CONFIG: AdvancedConfig = {
+  thickness: 1.5,
+  borderRadius: 1.5,
+  outlineOffset: -1,
+  glowRadius: 0,
+  blockBgOpacity: 0.22,
+  visualBgOpacity: 0.35,
+  hollowBgOpacity: 0.05,
+
+  perspective: 320,
+  tiltAngleX: 18,
+  tiltAngleY: 18,
+  scaleStretchX: 1.15,
+  scaleSquishY: 0.94,
+  scaleStretchY: 1.10,
+  scaleSquishX: 0.90,
+  deformSettleMs: 75,
+
+  smoothDurationMs: 80,
+  springDurationMs: 110,
+  springOvershoot: 1.45,
+
+  breatheDuration: 3.0,
+  breathePeakOpacity: 0.96,
+  blinkDuration: 1.1,
+  moveSettleDelayMs: 400,
+
+  scrollDurationMs: 380,
+  viewportPaddingTop: 120,
+  viewportPaddingBottom: 160
+};
+
 export interface CursorState {
   enabled: boolean;
   isExcluded: boolean;
@@ -49,6 +118,7 @@ export interface CursorState {
   thickness: number;     // 游標粗細/線寬 (1 - 8 px，預設 2)
   glow: number;          // 游標光暈強度 (0 - 12 px，0 為無光暈，預設 6)
   effects: CursorEffects;
+  advanced: AdvancedConfig; // 進階數值調校配置
   showStatusBar: boolean;
   rect: CursorRect;
   visible: boolean;
@@ -78,6 +148,7 @@ class CursorStore {
       breathe: false,
       blink: true
     },
+    advanced: { ...DEFAULT_ADVANCED_CONFIG },
     showStatusBar: true,
     rect: { x: 0, y: 0, width: 10, height: 20 },
     visible: false,

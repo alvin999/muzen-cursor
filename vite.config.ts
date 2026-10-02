@@ -80,6 +80,7 @@ export default defineConfig({
       input: {
         background: resolve(__dirname, 'src/background/index.ts'),
         popup: resolve(__dirname, 'popup/index.html'),
+        options: resolve(__dirname, 'options/index.html'),
         pdfViewer: resolve(__dirname, 'src/pdf-viewer/viewer.html')
       },
       output: {

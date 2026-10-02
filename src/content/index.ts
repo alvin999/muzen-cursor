@@ -1,6 +1,6 @@
 import { initCursorHost } from './hostElement';
 import { CursorController } from '../core/cursorController';
-import { cursorStore } from '../core/cursorStore';
+import { cursorStore, DEFAULT_ADVANCED_CONFIG } from '../core/cursorStore';
 
 /**
  * 判斷當前網域名稱是否命中排除名單 (支援子網域比對)
@@ -87,6 +87,15 @@ function main(): void {
           cursorStore.setState({ effects: { smooth: false, bounce: false, smoothScroll: true, breathe: false, blink: true } });
         }
         sendResponse({ success: true });
+      } else if (message.type === 'SET_ADVANCED') {
+        const currentAdv = cursorStore.getState().advanced || DEFAULT_ADVANCED_CONFIG;
+        cursorStore.setState({
+          advanced: {
+            ...currentAdv,
+            ...message.advanced
+          }
+        });
+        sendResponse({ success: true });
       } else if (message.type === 'GET_STATUS') {
         sendResponse({ success: true, state: cursorStore.getState() });
       }
@@ -96,7 +105,7 @@ function main(): void {
 
   // 4. 讀取持久化設定
   if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
-    chrome.storage.sync.get(['muzen_enabled', 'muzen_locale', 'muzen_theme', 'muzen_shape', 'muzen_thickness', 'muzen_glow', 'muzen_effects', 'muzen_show_status_bar', 'muzen_excluded_sites', 'muzen_animation'], (result) => {
+    chrome.storage.sync.get(['muzen_enabled', 'muzen_locale', 'muzen_theme', 'muzen_shape', 'muzen_thickness', 'muzen_glow', 'muzen_effects', 'muzen_show_status_bar', 'muzen_excluded_sites', 'muzen_animation', 'muzen_advanced'], (result) => {
       if (typeof result.muzen_enabled === 'boolean') {
         cursorStore.setState({ enabled: result.muzen_enabled });
       }
@@ -117,6 +126,14 @@ function main(): void {
       }
       if (typeof result.muzen_glow === 'number') {
         cursorStore.setState({ glow: result.muzen_glow });
+      }
+      if (result.muzen_advanced && typeof result.muzen_advanced === 'object') {
+        cursorStore.setState({
+          advanced: {
+            ...DEFAULT_ADVANCED_CONFIG,
+            ...result.muzen_advanced
+          }
+        });
       }
       if (result.muzen_effects) {
         cursorStore.setState({
@@ -140,6 +157,32 @@ function main(): void {
         } else if (result.muzen_animation === 'blink') {
           cursorStore.setState({ effects: { smooth: false, bounce: false, smoothScroll: true, breathe: false, blink: true } });
         }
+      }
+    });
+
+    // 監聽外部選項頁面儲存之變動，即時熱更新
+    chrome.storage.onChanged.addListener((changes, areaName) => {
+      if (areaName !== 'sync') return;
+      if (changes.muzen_advanced) {
+        const updated = changes.muzen_advanced.newValue || {};
+        cursorStore.setState({
+          advanced: {
+            ...DEFAULT_ADVANCED_CONFIG,
+            ...updated
+          }
+        });
+      }
+      if (changes.muzen_enabled) {
+        cursorStore.setState({ enabled: changes.muzen_enabled.newValue });
+      }
+      if (changes.muzen_theme) {
+        cursorStore.setState({ theme: changes.muzen_theme.newValue });
+      }
+      if (changes.muzen_shape) {
+        cursorStore.setState({ shape: changes.muzen_shape.newValue });
+      }
+      if (changes.muzen_effects) {
+        cursorStore.setState({ effects: changes.muzen_effects.newValue });
       }
     });
   }
