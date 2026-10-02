@@ -80,17 +80,29 @@ export class VimCursorOverlay {
     this.styleSheet.textContent = `
       @keyframes muzen-breathe {
         0%, 100% {
-          opacity: 0.92;
-          filter: var(--muzen-breathe-filter-min, drop-shadow(0 0 3px var(--muzen-glow, rgba(254, 128, 25, 0.6))));
+          opacity: 0;
+          filter: none;
+        }
+        40% {
+          opacity: 0.96;
+          filter: var(--muzen-breathe-filter-max, none);
         }
         50% {
-          opacity: 0.38;
-          filter: var(--muzen-breathe-filter-max, drop-shadow(0 0 12px var(--muzen-glow, rgba(254, 128, 25, 0.8))));
+          opacity: 0.93;
+          filter: var(--muzen-breathe-filter-peak, none);
+        }
+        85% {
+          opacity: 0.15;
+          filter: none;
         }
       }
       @keyframes muzen-blink {
-        0%, 49% { opacity: 0.9; }
-        50%, 100% { opacity: 0.05; }
+        0%, 54%  { opacity: 1; }
+        57%, 88% { opacity: 0; }
+        92%, 100%{ opacity: 1; }
+      }
+      ::selection {
+        background: var(--muzen-selection-bg, rgba(254, 128, 25, 0.35)) !important;
       }
     `;
 
@@ -140,24 +152,37 @@ export class VimCursorOverlay {
     const palette = THEME_PALETTES[themeKey] || THEME_PALETTES['gruvbox-dark'];
     const color = state.mode === 'VISUAL' ? palette.visual : palette.normal;
 
+    // 同步 mugen-yomu 主題選取透明效果 (35% 半透明高對比底色)
+    const visualColor = palette.visual;
+    document.documentElement.style.setProperty(
+      '--muzen-selection-bg',
+      `rgba(${visualColor.r}, ${visualColor.g}, ${visualColor.b}, 0.35)`
+    );
+
     // 設定 CSS 變數供呼吸動畫引用
     this.element.style.setProperty('--muzen-glow', `rgba(${color.r}, ${color.g}, ${color.b}, 0.8)`);
+    this.element.style.setProperty('--muzen-glow-core', `rgba(${color.r}, ${color.g}, ${color.b}, 0.85)`);
+    this.element.style.setProperty('--muzen-glow-halo', `rgba(${color.r}, ${color.g}, ${color.b}, 0.45)`);
 
     // 處理光暈 (Glow Intensity: 0 為無光暈)
-    const glow = typeof state.glow === 'number' ? Math.max(0, state.glow) : 6;
+    const glow = typeof state.glow === 'number' ? Math.max(0, state.glow) : 0;
     if (glow <= 0) {
       this.element.style.setProperty('--muzen-breathe-filter-min', 'none');
+      this.element.style.setProperty('--muzen-breathe-filter-peak', 'none');
       this.element.style.setProperty('--muzen-breathe-filter-max', 'none');
     } else {
-      const minBlur = Math.max(1, Math.round(glow * 0.5));
-      const maxBlur = Math.round(glow * 1.8);
-      this.element.style.setProperty('--muzen-breathe-filter-min', `drop-shadow(0 0 ${minBlur}px var(--muzen-glow))`);
-      this.element.style.setProperty('--muzen-breathe-filter-max', `drop-shadow(0 0 ${maxBlur}px var(--muzen-glow))`);
+      const coreMin = Math.max(1, Math.round(glow * 0.25));
+      const coreMax = Math.max(1, Math.round(glow * 0.5));
+      const haloMax = Math.round(glow * 1.8);
+      const haloPeak = Math.round(glow * 1.4);
+      this.element.style.setProperty('--muzen-breathe-filter-min', `drop-shadow(0 0 ${coreMin}px var(--muzen-glow-core))`);
+      this.element.style.setProperty('--muzen-breathe-filter-peak', `drop-shadow(0 0 ${coreMax}px var(--muzen-glow-core)) drop-shadow(0 0 ${haloPeak}px var(--muzen-glow-halo))`);
+      this.element.style.setProperty('--muzen-breathe-filter-max', `drop-shadow(0 0 ${coreMax}px var(--muzen-glow-core)) drop-shadow(0 0 ${haloMax}px var(--muzen-glow-halo))`);
     }
 
     // 2. 依據游標形態 (Shape) 與粗細 (Thickness) 調整幾何與渲染
     const shape = state.shape || 'block';
-    const thickness = typeof state.thickness === 'number' ? Math.max(1, state.thickness) : 2;
+    const thickness = typeof state.thickness === 'number' ? Math.max(0.5, state.thickness) : 1.5;
 
     let targetX = state.rect.x;
     let targetY = state.rect.y;
@@ -167,7 +192,9 @@ export class VimCursorOverlay {
     switch (shape) {
       case 'hollow': // 空心外框：文字完全清晰可見，高對比外框錨定
         this.element.style.background = `rgba(${color.r}, ${color.g}, ${color.b}, 0.05)`;
+        this.element.style.outline = 'none';
         this.element.style.border = `${thickness}px solid ${color.hex}`;
+        this.element.style.borderRadius = '2px';
         this.element.style.boxShadow = glow > 0
           ? `0 0 ${glow}px rgba(${color.r}, ${color.g}, ${color.b}, 0.5)`
           : 'none';
@@ -175,7 +202,9 @@ export class VimCursorOverlay {
 
       case 'underline': // 閱讀底線：高度依據 thickness 貼齊文字基線底部
         this.element.style.background = color.hex;
+        this.element.style.outline = 'none';
         this.element.style.border = 'none';
+        this.element.style.borderRadius = '0px';
         this.element.style.boxShadow = glow > 0
           ? `0 0 ${glow}px rgba(${color.r}, ${color.g}, ${color.b}, 0.7)`
           : 'none';
@@ -183,13 +212,15 @@ export class VimCursorOverlay {
         targetY = state.rect.y + state.rect.height - thickness;
         break;
 
-      case 'block': // 經典實心方塊
+      case 'block': // 經典實心方塊 (完全對齊 mugen-yomu 原始碼規格)
       default:
         this.element.style.background = state.mode === 'VISUAL'
-          ? `rgba(${color.r}, ${color.g}, ${color.b}, 0.4)`
-          : `rgba(${color.r}, ${color.g}, ${color.b}, 0.75)`;
-        const blockBorderWidth = Math.max(1, Math.min(thickness, 3));
-        this.element.style.border = `${blockBorderWidth}px solid ${color.hex}`;
+          ? `rgba(${color.r}, ${color.g}, ${color.b}, 0.35)`
+          : `rgba(${color.r}, ${color.g}, ${color.b}, 0.22)`;
+        this.element.style.border = 'none';
+        this.element.style.outline = `${thickness}px solid ${color.hex}`;
+        this.element.style.outlineOffset = '-1px';
+        this.element.style.borderRadius = '1.5px';
         this.element.style.boxShadow = glow > 0
           ? `0 0 ${Math.round(glow * 1.2)}px rgba(${color.r}, ${color.g}, ${color.b}, 0.6)`
           : 'none';
@@ -197,7 +228,7 @@ export class VimCursorOverlay {
     }
 
     // 3. 依據動態特效 (Effects: smooth, breathe, blink)
-    const effects = state.effects || { smooth: true, breathe: true, blink: false };
+    const effects = state.effects || { smooth: true, breathe: false, blink: true };
 
     // 平滑位移控制
     if (effects.smooth) {
@@ -209,10 +240,10 @@ export class VimCursorOverlay {
     // 複合動畫組合 (breathe, blink)
     const animList: string[] = [];
     if (effects.breathe) {
-      animList.push('muzen-breathe 2.4s ease-in-out infinite');
+      animList.push('muzen-breathe 3s cubic-bezier(0.4, 0, 0.2, 1) infinite');
     }
     if (effects.blink) {
-      animList.push('muzen-blink 1s steps(2, start) infinite');
+      animList.push('muzen-blink 1.1s ease-in-out infinite');
     }
 
     if (animList.length > 0) {
@@ -233,6 +264,7 @@ export class VimCursorOverlay {
       this.unsubscribe();
       this.unsubscribe = null;
     }
+    document.documentElement.style.removeProperty('--muzen-selection-bg');
     this.element.remove();
     this.styleSheet.remove();
   }

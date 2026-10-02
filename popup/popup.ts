@@ -18,8 +18,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const glowVal = document.getElementById('glow-val');
   const effectSmooth = document.getElementById('effect-smooth') as HTMLInputElement | null;
   const effectSmoothScroll = document.getElementById('effect-smooth-scroll') as HTMLInputElement | null;
-  const effectBreathe = document.getElementById('effect-breathe') as HTMLInputElement | null;
-  const effectBlink = document.getElementById('effect-blink') as HTMLInputElement | null;
+  const pulseRadios = document.querySelectorAll<HTMLInputElement>('input[name="muzen-pulse"]');
+  const btnResetDefaults = document.getElementById('btn-reset-defaults') as HTMLButtonElement | null;
   const btnOpenPdf = document.getElementById('btn-open-pdf-viewer') as HTMLButtonElement | null;
   const currentSiteHostEl = document.getElementById('current-site-host');
   const toggleCurrentSite = document.getElementById('toggle-current-site') as HTMLInputElement | null;
@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (glowSlider) glowSlider.value = String(val);
     if (glowVal) {
       const dict = LOCALES[currentLocale] || LOCALES['zh-TW'];
-      glowVal.textContent = val <= 0 ? dict.glowOff : `${val}px`;
+      glowVal.textContent = val <= 0 ? (dict.glowOffDetail || dict.glowOff) : `${val}px`;
     }
   };
 
@@ -130,24 +130,27 @@ document.addEventListener('DOMContentLoaded', () => {
       if (typeof data.muzen_thickness === 'number') {
         updateThicknessUI(data.muzen_thickness);
       } else {
-        updateThicknessUI(2);
+        updateThicknessUI(1.5);
       }
       if (typeof data.muzen_glow === 'number') {
         updateGlowUI(data.muzen_glow);
       } else {
-        updateGlowUI(6);
+        updateGlowUI(0);
       }
       if (data.muzen_effects) {
         if (effectSmooth) effectSmooth.checked = data.muzen_effects.smooth !== undefined ? !!data.muzen_effects.smooth : true;
         if (effectSmoothScroll) effectSmoothScroll.checked = data.muzen_effects.smoothScroll !== undefined ? !!data.muzen_effects.smoothScroll : true;
-        if (effectBreathe) effectBreathe.checked = !!data.muzen_effects.breathe;
-        if (effectBlink) effectBlink.checked = !!data.muzen_effects.blink;
+        const pulseVal = data.muzen_effects.blink ? 'blink' : data.muzen_effects.breathe ? 'breathe' : 'none';
+        pulseRadios.forEach((r) => { r.checked = r.value === pulseVal; });
       } else if (data.muzen_animation) {
         // 向下相容
         if (effectSmooth) effectSmooth.checked = data.muzen_animation === 'smooth' || data.muzen_animation === 'breathe';
         if (effectSmoothScroll) effectSmoothScroll.checked = true;
-        if (effectBreathe) effectBreathe.checked = data.muzen_animation === 'breathe';
-        if (effectBlink) effectBlink.checked = data.muzen_animation === 'blink';
+        const pulseVal = data.muzen_animation === 'breathe' ? 'breathe' : data.muzen_animation === 'blink' ? 'blink' : 'none';
+        pulseRadios.forEach((r) => { r.checked = r.value === pulseVal; });
+      } else {
+        // 預設為 mugen-yomu 經典閃爍
+        pulseRadios.forEach((r) => { r.checked = r.value === 'blink'; });
       }
 
       // 載入排除網站名單
@@ -370,13 +373,18 @@ document.addEventListener('DOMContentLoaded', () => {
     broadcastToActiveTab({ type: 'SET_GLOW', glow: val });
   });
 
-  // 14. 動態特效變更事件 (多選：Smooth / SmoothScroll / Breathe / Blink)
+  // 14. 動態特效變更事件 (位移特效複選 + 靜態脈動單選)
   const onEffectsChanged = () => {
+    let activePulse = 'blink';
+    pulseRadios.forEach((r) => {
+      if (r.checked) activePulse = r.value;
+    });
+
     const effects = {
       smooth: effectSmooth ? effectSmooth.checked : true,
       smoothScroll: effectSmoothScroll ? effectSmoothScroll.checked : true,
-      breathe: effectBreathe ? effectBreathe.checked : false,
-      blink: effectBlink ? effectBlink.checked : false
+      breathe: activePulse === 'breathe',
+      blink: activePulse === 'blink'
     };
 
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
@@ -387,6 +395,70 @@ document.addEventListener('DOMContentLoaded', () => {
 
   effectSmooth?.addEventListener('change', onEffectsChanged);
   effectSmoothScroll?.addEventListener('change', onEffectsChanged);
-  effectBreathe?.addEventListener('change', onEffectsChanged);
-  effectBlink?.addEventListener('change', onEffectsChanged);
+  pulseRadios.forEach((r) => r.addEventListener('change', onEffectsChanged));
+
+  // 15. 回復 mugen-yomu 預設值事件
+  btnResetDefaults?.addEventListener('click', () => {
+    // 預設參數對齊 mugen-yomu 經典體驗
+    const defaultTheme = 'gruvbox-dark';
+    const defaultShape = 'block';
+    const defaultThickness = 1.5;
+    const defaultGlow = 0;
+    const defaultEffects = {
+      smooth: true,
+      smoothScroll: true,
+      breathe: false,
+      blink: true
+    };
+    const defaultShowStatusBar = true;
+    const defaultInterceptPdf = true;
+
+    // 1. 更新 UI 控制項狀態
+    if (themeSelect) {
+      themeSelect.value = defaultTheme;
+      applyTheme(defaultTheme);
+    }
+    if (shapeSelect) shapeSelect.value = defaultShape;
+    updateThicknessUI(defaultThickness);
+    updateGlowUI(defaultGlow);
+    if (effectSmooth) effectSmooth.checked = true;
+    if (effectSmoothScroll) effectSmoothScroll.checked = true;
+    pulseRadios.forEach((r) => { r.checked = r.value === 'blink'; });
+    if (toggleStatusBar) toggleStatusBar.checked = defaultShowStatusBar;
+    if (togglePdf) togglePdf.checked = defaultInterceptPdf;
+
+    // 2. 寫入 chrome.storage.sync
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
+      chrome.storage.sync.set({
+        muzen_theme: defaultTheme,
+        muzen_shape: defaultShape,
+        muzen_thickness: defaultThickness,
+        muzen_glow: defaultGlow,
+        muzen_effects: defaultEffects,
+        muzen_show_status_bar: defaultShowStatusBar,
+        muzen_intercept_pdf: defaultInterceptPdf
+      });
+    }
+
+    // 3. 廣播所有更新至作用中分頁
+    broadcastToActiveTab({ type: 'SET_THEME', theme: defaultTheme });
+    broadcastToActiveTab({ type: 'SET_SHAPE', shape: defaultShape });
+    broadcastToActiveTab({ type: 'SET_THICKNESS', thickness: defaultThickness });
+    broadcastToActiveTab({ type: 'SET_GLOW', glow: defaultGlow });
+    broadcastToActiveTab({ type: 'SET_EFFECTS', effects: defaultEffects });
+    broadcastToActiveTab({ type: 'SET_STATUS_BAR', show: defaultShowStatusBar });
+
+    // 4. 按鈕微動畫回饋
+    const btnIcon = btnResetDefaults.querySelector('.btn-icon');
+    const btnText = btnResetDefaults.querySelector('.btn-text');
+    const strings = LOCALES[currentLocale] || LOCALES['zh-TW'];
+    if (btnIcon) btnIcon.textContent = '✓';
+    if (btnText) btnText.textContent = strings.resetDefaultsSuccess;
+    btnResetDefaults.classList.add('success');
+    setTimeout(() => {
+      if (btnIcon) btnIcon.textContent = '↺';
+      if (btnText) btnText.textContent = strings.resetDefaultsBtn;
+      btnResetDefaults.classList.remove('success');
+    }, 1500);
+  });
 });

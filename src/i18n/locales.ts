@@ -29,11 +29,16 @@ export interface Translations {
   shapeUnderline: string;
   thicknessLabel: string;
   thicknessPresetThin: string;
+  thicknessPresetClassic: string;
   thicknessPresetMedium: string;
   thicknessPresetThick: string;
   glowLabel: string;
   glowOff: string;
+  glowOffDetail: string;
   effectsLabel: string;
+  motionEffectsLabel: string;
+  pulseEffectLabel: string;
+  pulseNone: string;
   effectSmooth: string;
   effectSmoothScroll: string;
   effectBreathe: string;
@@ -62,6 +67,8 @@ export interface Translations {
   shortcutEscape: string;
   footerTip: string;
   statusStartPrompt: string;
+  resetDefaultsBtn: string;
+  resetDefaultsSuccess: string;
 }
 
 export const LOCALES: Record<Locale, Translations> = {
@@ -89,12 +96,17 @@ export const LOCALES: Record<Locale, Translations> = {
     shapeHollow: '空心外框 (Hollow)',
     shapeUnderline: '閱讀底線 (Underline)',
     thicknessLabel: '游標粗細',
-    thicknessPresetThin: '1px 細',
+    thicknessPresetThin: '1px 極細',
+    thicknessPresetClassic: '1.5px 經典',
     thicknessPresetMedium: '2px 標準',
-    thicknessPresetThick: '4px 粗',
+    thicknessPresetThick: '3px 加粗',
     glowLabel: '游標光暈 (0 為無光暈)',
     glowOff: '無',
+    glowOffDetail: '0 (無光暈)',
     effectsLabel: '動態特效 (可複選)',
+    motionEffectsLabel: '位移特效 (可複選)',
+    pulseEffectLabel: '靜態脈動 (單選)',
+    pulseNone: '常駐微光',
     effectSmooth: '平滑位移',
     effectSmoothScroll: '平滑捲動',
     effectBreathe: '禪意呼吸',
@@ -122,7 +134,9 @@ export const LOCALES: Record<Locale, Translations> = {
     shortcutToggle: '快速啟動 / 凍結游標',
     shortcutEscape: '取消選取 / 隱藏游標',
     footerTip: '點擊網頁文字即可立即錨定閱讀焦點',
-    statusStartPrompt: '點擊文字或按 j 開始'
+    statusStartPrompt: '點擊文字或按 j 開始',
+    resetDefaultsBtn: '回復 mugen-yomu 預設值',
+    resetDefaultsSuccess: '已回復預設值'
   },
   'en': {
     appName: 'Muzen Cursor',
@@ -148,12 +162,17 @@ export const LOCALES: Record<Locale, Translations> = {
     shapeHollow: 'Hollow Outline',
     shapeUnderline: 'Reading Underline',
     thicknessLabel: 'Cursor Thickness',
-    thicknessPresetThin: '1px Thin',
+    thicknessPresetThin: '1px Ultra',
+    thicknessPresetClassic: '1.5px Classic',
     thicknessPresetMedium: '2px Medium',
-    thicknessPresetThick: '4px Thick',
+    thicknessPresetThick: '3px Bold',
     glowLabel: 'Cursor Glow (0 is Off)',
     glowOff: 'Off',
+    glowOffDetail: '0 (Off)',
     effectsLabel: 'Motion Effects (Multi-select)',
+    motionEffectsLabel: 'Motion Effects (Multi-select)',
+    pulseEffectLabel: 'Idle Pulse (Single-choice)',
+    pulseNone: 'Steady Glow',
     effectSmooth: 'Smooth Motion',
     effectSmoothScroll: 'Smooth Scroll',
     effectBreathe: 'Zen Pulse',
@@ -181,7 +200,9 @@ export const LOCALES: Record<Locale, Translations> = {
     shortcutToggle: 'Toggle Cursor Active',
     shortcutEscape: 'Clear Selection / Dismiss',
     footerTip: 'Click any text on the page to anchor cursor',
-    statusStartPrompt: 'Click text or press j to begin'
+    statusStartPrompt: 'Click text or press j to begin',
+    resetDefaultsBtn: 'Reset to Defaults',
+    resetDefaultsSuccess: 'Restored Defaults'
   },
   'ja': {
     appName: 'Muzen Cursor',
@@ -207,12 +228,17 @@ export const LOCALES: Record<Locale, Translations> = {
     shapeHollow: 'ホローアウトライン (Hollow)',
     shapeUnderline: 'アンダーライン (Underline)',
     thicknessLabel: 'カーソルの太さ',
-    thicknessPresetThin: '1px 細',
+    thicknessPresetThin: '1px 極細',
+    thicknessPresetClassic: '1.5px 定番',
     thicknessPresetMedium: '2px 標準',
-    thicknessPresetThick: '4px 太',
+    thicknessPresetThick: '3px 太字',
     glowLabel: 'カーソル光彩（0で無効）',
     glowOff: 'なし',
+    glowOffDetail: '0 (無光彩)',
     effectsLabel: 'モーション効果 (複数選択可)',
+    motionEffectsLabel: '移動エフェクト (複数選択可)',
+    pulseEffectLabel: '静止時の脈動 (単一選択)',
+    pulseNone: '常時微光',
     effectSmooth: 'スムーズ移動',
     effectSmoothScroll: 'スムーズスクロール',
     effectBreathe: '禅の呼吸',
@@ -240,7 +266,9 @@ export const LOCALES: Record<Locale, Translations> = {
     shortcutToggle: 'カーソル起動 / 停止',
     shortcutEscape: '選択解除 / 非表示',
     footerTip: 'テキストをクリックして読書アンカーを設定',
-    statusStartPrompt: 'クリックまたは j で開始'
+    statusStartPrompt: 'クリックまたは j で開始',
+    resetDefaultsBtn: '初期設定に戻す',
+    resetDefaultsSuccess: '初期値に戻しました'
   }
 };
 

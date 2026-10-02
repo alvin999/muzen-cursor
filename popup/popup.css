@@ -711,3 +711,43 @@ input:checked + .slider-small:before {
   box-shadow: 0 0 10px var(--accent-orange);
 }
 
+/* 回復預設值按鈕樣式 */
+.action-section {
+  padding-top: 2px;
+}
+
+.btn-reset {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--fg-muted);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.btn-reset:hover {
+  background: color-mix(in srgb, var(--accent-orange) 12%, var(--bg-card));
+  border-color: var(--accent-orange);
+  color: var(--fg-color);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--accent-orange) 20%, transparent);
+}
+
+.btn-reset:active {
+  transform: scale(0.98);
+}
+
+.btn-reset.success {
+  background: color-mix(in srgb, var(--accent-green) 18%, var(--bg-card));
+  border-color: var(--accent-green);
+  color: var(--accent-green);
+}
+
+

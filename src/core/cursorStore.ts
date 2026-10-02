@@ -63,13 +63,13 @@ class CursorStore {
     mode: 'NORMAL',
     theme: 'gruvbox-dark',
     shape: 'block',
-    thickness: 2,
-    glow: 6,
+    thickness: 1.5,
+    glow: 0,
     effects: {
       smooth: true,
       smoothScroll: true,
-      breathe: true,
-      blink: false
+      breathe: false,
+      blink: true
     },
     showStatusBar: true,
     rect: { x: 0, y: 0, width: 10, height: 20 },

@@ -123,8 +123,8 @@ function main(): void {
           effects: {
             smooth: result.muzen_effects.smooth ?? true,
             smoothScroll: result.muzen_effects.smoothScroll ?? true,
-            breathe: result.muzen_effects.breathe ?? true,
-            blink: result.muzen_effects.blink ?? false
+            breathe: result.muzen_effects.breathe ?? false,
+            blink: result.muzen_effects.blink ?? true
           }
         });
       }
