@@ -80,11 +80,11 @@ function main(): void {
       } else if (message.type === 'SET_ANIMATION') {
         // 向下相容舊版單選訊息
         if (message.animation === 'smooth') {
-          cursorStore.setState({ effects: { smooth: true, smoothScroll: true, breathe: false, blink: false } });
+          cursorStore.setState({ effects: { smooth: true, bounce: true, smoothScroll: true, breathe: false, blink: false } });
         } else if (message.animation === 'breathe') {
-          cursorStore.setState({ effects: { smooth: true, smoothScroll: true, breathe: true, blink: false } });
+          cursorStore.setState({ effects: { smooth: true, bounce: true, smoothScroll: true, breathe: true, blink: false } });
         } else if (message.animation === 'blink') {
-          cursorStore.setState({ effects: { smooth: false, smoothScroll: true, breathe: false, blink: true } });
+          cursorStore.setState({ effects: { smooth: false, bounce: false, smoothScroll: true, breathe: false, blink: true } });
         }
         sendResponse({ success: true });
       } else if (message.type === 'GET_STATUS') {
@@ -122,6 +122,7 @@ function main(): void {
         cursorStore.setState({
           effects: {
             smooth: result.muzen_effects.smooth ?? true,
+            bounce: result.muzen_effects.bounce ?? true,
             smoothScroll: result.muzen_effects.smoothScroll ?? true,
             breathe: result.muzen_effects.breathe ?? false,
             blink: result.muzen_effects.blink ?? true
@@ -133,11 +134,11 @@ function main(): void {
         cursorStore.setState({ isExcluded });
       } else if (result.muzen_animation) {
         if (result.muzen_animation === 'smooth') {
-          cursorStore.setState({ effects: { smooth: true, smoothScroll: true, breathe: false, blink: false } });
+          cursorStore.setState({ effects: { smooth: true, bounce: true, smoothScroll: true, breathe: false, blink: false } });
         } else if (result.muzen_animation === 'breathe') {
-          cursorStore.setState({ effects: { smooth: true, smoothScroll: true, breathe: true, blink: false } });
+          cursorStore.setState({ effects: { smooth: true, bounce: true, smoothScroll: true, breathe: true, blink: false } });
         } else if (result.muzen_animation === 'blink') {
-          cursorStore.setState({ effects: { smooth: false, smoothScroll: true, breathe: false, blink: true } });
+          cursorStore.setState({ effects: { smooth: false, bounce: false, smoothScroll: true, breathe: false, blink: true } });
         }
       }
     });

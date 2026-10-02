@@ -22,8 +22,11 @@ export type CursorTheme =
   | 'cyberpunk';
 export type CursorShape = 'block' | 'hollow' | 'underline';
 
+export type MotionDirection = 'left' | 'right' | 'up' | 'down' | 'jump' | 'none';
+
 export interface CursorEffects {
   smooth: boolean;       // 平滑物理位移 (Smooth Transition)
+  bounce: boolean;       // 彈性梯形形變 (Trapezoid Deformation Bounce)
   smoothScroll: boolean; // 平滑視窗捲動 (Smooth Page Scrolling)
   breathe: boolean;      // 禪意呼吸燈 (Breathing Pulse Glow)
   blink: boolean;        // 經典閃爍 (Terminal Blink)
@@ -50,6 +53,8 @@ export interface CursorState {
   rect: CursorRect;
   visible: boolean;
   isMoving: boolean;      // 是否正在連續鍵盤移動或定位 (移動時常亮不閃爍)
+  motionDirection: MotionDirection; // 運動方向（用於計算梯形與透視形變）
+  motionSequence: number;  // 運動計數序號（即使同方向連續移動亦可感知每次跳躍）
   readingProgress: number; // 0 - 100
   charOffset: number;
 }
@@ -68,6 +73,7 @@ class CursorStore {
     glow: 0,
     effects: {
       smooth: true,
+      bounce: true,
       smoothScroll: true,
       breathe: false,
       blink: true
@@ -76,6 +82,8 @@ class CursorStore {
     rect: { x: 0, y: 0, width: 10, height: 20 },
     visible: false,
     isMoving: false,
+    motionDirection: 'none',
+    motionSequence: 0,
     readingProgress: 0,
     charOffset: 0
   };

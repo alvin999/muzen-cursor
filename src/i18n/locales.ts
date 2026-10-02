@@ -40,6 +40,7 @@ export interface Translations {
   pulseEffectLabel: string;
   pulseNone: string;
   effectSmooth: string;
+  effectBounce: string;
   effectSmoothScroll: string;
   effectBreathe: string;
   effectBlink: string;
@@ -108,6 +109,7 @@ export const LOCALES: Record<Locale, Translations> = {
     pulseEffectLabel: '靜態脈動 (單選)',
     pulseNone: '常駐微光',
     effectSmooth: '平滑位移',
+    effectBounce: '彈簧效果',
     effectSmoothScroll: '平滑捲動',
     effectBreathe: '禪意呼吸',
     effectBlink: '經典閃爍',
@@ -174,6 +176,7 @@ export const LOCALES: Record<Locale, Translations> = {
     pulseEffectLabel: 'Idle Pulse (Single-choice)',
     pulseNone: 'Steady Glow',
     effectSmooth: 'Smooth Motion',
+    effectBounce: 'Spring Effect',
     effectSmoothScroll: 'Smooth Scroll',
     effectBreathe: 'Zen Pulse',
     effectBlink: 'Classic Blink',
@@ -240,6 +243,7 @@ export const LOCALES: Record<Locale, Translations> = {
     pulseEffectLabel: '静止時の脈動 (単一選択)',
     pulseNone: '常時微光',
     effectSmooth: 'スムーズ移動',
+    effectBounce: 'バネ効果',
     effectSmoothScroll: 'スムーズスクロール',
     effectBreathe: '禅の呼吸',
     effectBlink: 'クラシック点滅',

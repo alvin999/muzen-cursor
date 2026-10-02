@@ -1,4 +1,4 @@
-import { cursorStore } from './cursorStore';
+import { cursorStore, MotionDirection } from './cursorStore';
 import { isTypingContext } from '../utils/domUtils';
 import { WordNavigator, TextTarget } from './wordNavigator';
 
@@ -1034,15 +1034,39 @@ export class CursorController {
       // 容許適度邊界緩衝，避免邊界滾動時游標閃現閃退
       const isVisibleInViewport = rect.bottom >= -80 && rect.top <= window.innerHeight + 80;
 
+      // 計算本次位移向量與方向 (提供 3D 透視梯形動態反饋使用)
+      const prevState = cursorStore.getState();
+      const prevRect = prevState.rect;
+      let motionDir: MotionDirection = 'none';
+
+      if (prevState.visible) {
+        const dx = rect.left - prevRect.x;
+        const dy = rect.top - prevRect.y;
+        const absDx = Math.abs(dx);
+        const absDy = Math.abs(dy);
+
+        if (absDx > 1 || absDy > 1) {
+          if (absDy > 80 || absDx > 500) {
+            motionDir = 'jump';
+          } else if (absDx >= absDy) {
+            motionDir = dx > 0 ? 'right' : 'left';
+          } else {
+            motionDir = dy > 0 ? 'down' : 'up';
+          }
+        }
+      }
+
       // mugen-yomu 招牌移動避震機制：位移時保持常亮不閃爍，靜止 400ms 後平滑恢復閃爍
       if (this.moveTimer) clearTimeout(this.moveTimer);
       this.moveTimer = setTimeout(() => {
-        cursorStore.setState({ isMoving: false });
+        cursorStore.setState({ isMoving: false, motionDirection: 'none' });
       }, 400);
 
       cursorStore.setState({
         visible: isVisibleInViewport,
         isMoving: true,
+        motionDirection: motionDir,
+        motionSequence: (prevState.motionSequence || 0) + 1,
         rect: {
           x: rect.left,
           y: rect.top,

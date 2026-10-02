@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const glowSlider = document.getElementById('glow-slider') as HTMLInputElement | null;
   const glowVal = document.getElementById('glow-val');
   const effectSmooth = document.getElementById('effect-smooth') as HTMLInputElement | null;
+  const effectBounce = document.getElementById('effect-bounce') as HTMLInputElement | null;
   const effectSmoothScroll = document.getElementById('effect-smooth-scroll') as HTMLInputElement | null;
   const pulseRadios = document.querySelectorAll<HTMLInputElement>('input[name="muzen-pulse"]');
   const btnResetDefaults = document.getElementById('btn-reset-defaults') as HTMLButtonElement | null;
@@ -139,12 +140,14 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       if (data.muzen_effects) {
         if (effectSmooth) effectSmooth.checked = data.muzen_effects.smooth !== undefined ? !!data.muzen_effects.smooth : true;
+        if (effectBounce) effectBounce.checked = data.muzen_effects.bounce !== undefined ? !!data.muzen_effects.bounce : true;
         if (effectSmoothScroll) effectSmoothScroll.checked = data.muzen_effects.smoothScroll !== undefined ? !!data.muzen_effects.smoothScroll : true;
         const pulseVal = data.muzen_effects.blink ? 'blink' : data.muzen_effects.breathe ? 'breathe' : 'none';
         pulseRadios.forEach((r) => { r.checked = r.value === pulseVal; });
       } else if (data.muzen_animation) {
         // 向下相容
         if (effectSmooth) effectSmooth.checked = data.muzen_animation === 'smooth' || data.muzen_animation === 'breathe';
+        if (effectBounce) effectBounce.checked = true;
         if (effectSmoothScroll) effectSmoothScroll.checked = true;
         const pulseVal = data.muzen_animation === 'breathe' ? 'breathe' : data.muzen_animation === 'blink' ? 'blink' : 'none';
         pulseRadios.forEach((r) => { r.checked = r.value === pulseVal; });
@@ -382,6 +385,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const effects = {
       smooth: effectSmooth ? effectSmooth.checked : true,
+      bounce: effectBounce ? effectBounce.checked : true,
       smoothScroll: effectSmoothScroll ? effectSmoothScroll.checked : true,
       breathe: activePulse === 'breathe',
       blink: activePulse === 'blink'
@@ -394,6 +398,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   effectSmooth?.addEventListener('change', onEffectsChanged);
+  effectBounce?.addEventListener('change', onEffectsChanged);
   effectSmoothScroll?.addEventListener('change', onEffectsChanged);
   pulseRadios.forEach((r) => r.addEventListener('change', onEffectsChanged));
 
@@ -406,6 +411,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const defaultGlow = 0;
     const defaultEffects = {
       smooth: true,
+      bounce: true,
       smoothScroll: true,
       breathe: false,
       blink: true
@@ -422,6 +428,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateThicknessUI(defaultThickness);
     updateGlowUI(defaultGlow);
     if (effectSmooth) effectSmooth.checked = true;
+    if (effectBounce) effectBounce.checked = true;
     if (effectSmoothScroll) effectSmoothScroll.checked = true;
     pulseRadios.forEach((r) => { r.checked = r.value === 'blink'; });
     if (toggleStatusBar) toggleStatusBar.checked = defaultShowStatusBar;

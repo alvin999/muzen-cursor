@@ -71,6 +71,8 @@ export class VimCursorOverlay {
   private element: HTMLElement;
   private styleSheet: HTMLStyleElement;
   private unsubscribe: (() => void) | null = null;
+  private settleTimer: number | null = null;
+  private lastRenderedSeq = 0;
 
   constructor() {
     this.element = document.createElement('div');
@@ -227,12 +229,17 @@ export class VimCursorOverlay {
         break;
     }
 
-    // 3. 依據動態特效 (Effects: smooth, breathe, blink)
-    const effects = state.effects || { smooth: true, breathe: false, blink: true };
+    // 3. 依據動態特效 (Effects: smooth, bounce, breathe, blink)
+    const effects = state.effects || { smooth: true, bounce: true, breathe: false, blink: true };
 
-    // 平滑位移控制
+    // 平滑位移與彈跳阻尼控制
     if (effects.smooth) {
-      this.element.style.transition = 'transform 0.08s cubic-bezier(0.2, 0, 0, 1), width 0.08s ease, height 0.08s ease';
+      if (effects.bounce) {
+        // 彈性梯形物理回彈曲線 (Overshoot Spring)
+        this.element.style.transition = 'transform 0.11s cubic-bezier(0.34, 1.45, 0.64, 1), width 0.08s ease, height 0.08s ease';
+      } else {
+        this.element.style.transition = 'transform 0.08s cubic-bezier(0.2, 0, 0, 1), width 0.08s ease, height 0.08s ease';
+      }
     } else {
       this.element.style.transition = 'none';
     }
@@ -257,13 +264,56 @@ export class VimCursorOverlay {
       this.element.style.opacity = '1'; // 移動中或無動畫時維持 100% 滿格全亮常駐
     }
 
-    // 4. 利用 translate3d 走 GPU 合成層渲染
+    // 4. 利用 translate3d 與 3D 透視矩陣走 GPU 合成層渲染
     this.element.style.width = `${targetW}px`;
     this.element.style.height = `${targetH}px`;
-    this.element.style.transform = `translate3d(${targetX}px, ${targetY}px, 0)`;
+
+    const isNewMotion = state.motionSequence !== this.lastRenderedSeq;
+    this.lastRenderedSeq = state.motionSequence;
+
+    if (effects.bounce && effects.smooth && isNewMotion && state.motionDirection !== 'none') {
+      let deform = '';
+      switch (state.motionDirection) {
+        case 'right':
+          deform = 'perspective(320px) rotateY(-18deg) scale(1.15, 0.94)';
+          break;
+        case 'left':
+          deform = 'perspective(320px) rotateY(18deg) scale(1.15, 0.94)';
+          break;
+        case 'down':
+          deform = 'perspective(320px) rotateX(18deg) scale(1.10, 0.90)';
+          break;
+        case 'up':
+          deform = 'perspective(320px) rotateX(-18deg) scale(1.10, 0.90)';
+          break;
+        case 'jump':
+          deform = 'perspective(320px) rotateX(8deg) scale(1.08, 0.92)';
+          break;
+      }
+
+      this.element.style.transform = `translate3d(${targetX}px, ${targetY}px, 0) ${deform}`;
+
+      if (this.settleTimer !== null) {
+        clearTimeout(this.settleTimer);
+      }
+      this.settleTimer = window.setTimeout(() => {
+        this.element.style.transform = `translate3d(${targetX}px, ${targetY}px, 0) perspective(320px) rotateX(0deg) rotateY(0deg) scale(1, 1)`;
+        this.settleTimer = null;
+      }, 75);
+    } else {
+      if (this.settleTimer !== null) {
+        clearTimeout(this.settleTimer);
+        this.settleTimer = null;
+      }
+      this.element.style.transform = `translate3d(${targetX}px, ${targetY}px, 0)`;
+    }
   }
 
   public destroy(): void {
+    if (this.settleTimer !== null) {
+      clearTimeout(this.settleTimer);
+      this.settleTimer = null;
+    }
     if (this.unsubscribe) {
       this.unsubscribe();
       this.unsubscribe = null;
