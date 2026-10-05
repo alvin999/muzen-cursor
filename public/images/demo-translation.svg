@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="880" height="480" viewBox="0 0 880 480" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="window-shadow" x="0" y="0" width="880" height="480" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="16" stdDeviation="20" flood-color="#000000" flood-opacity="0.6"/>
+    </filter>
+    <filter id="card-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#000000" flood-opacity="0.5"/>
+    </filter>
+    <filter id="cursor-glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#fe8019" flood-opacity="0.8"/>
+    </filter>
+    <filter id="cursor-glow-gold" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#fabd2f" flood-opacity="0.8"/>
+    </filter>
+    <linearGradient id="card-grad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#282828"/>
+      <stop offset="100%" stop-color="#1d2021"/>
+    </linearGradient>
+
+    <style>
+      /* ====================================================
+         三階段動態影格 (8.5 秒完整心流循環):
+         0% ~ 12% : NORMAL 靜態閱讀 (停在單字開頭 s)
+         13% ~ 21%: 第一步：按 v 觸發選取 (VISUAL 啟動，首字選取)
+         23% ~ 32%: 第二步：按 w 智慧跳詞 (選取範圍平滑展開至詞尾)
+         35% ~ 82%: 第三步：觸發原生選取 ➔ 彈出翻譯字典畫面！
+         85% ~ 100%: 閱畢淡出並重置歸位
+         ==================================================== */
+
+      /* 第 1 步: v 按鍵閃亮 */
+      @keyframes keyPressV {
+        0%, 11%  { fill: #3c3836; stroke: #504945; transform: scale(1); }
+        13%, 18% { fill: #fabd2f; stroke: #fabd2f; transform: scale(0.93); filter: drop-shadow(0 0 6px #fabd2f); }
+        20%, 100%{ fill: #3c3836; stroke: #504945; transform: scale(1); filter: none; }
+      }
+      @keyframes keyTextV {
+        0%, 11%  { fill: #fabd2f; }
+        13%, 18% { fill: #1d2021; font-weight: 800; }
+        20%, 100%{ fill: #fabd2f; }
+      }
+
+      /* 第 2 步: w 按鍵閃亮 */
+      @keyframes keyPressW {
+        0%, 22%  { fill: #3c3836; stroke: #504945; transform: scale(1); }
+        24%, 30% { fill: #fe8019; stroke: #fe8019; transform: scale(0.93); filter: drop-shadow(0 0 6px #fe8019); }
+        32%, 100%{ fill: #3c3836; stroke: #504945; transform: scale(1); filter: none; }
+      }
+      @keyframes keyTextW {
+        0%, 22%  { fill: #fe8019; }
+        24%, 30% { fill: #1d2021; font-weight: 800; }
+        32%, 100%{ fill: #fe8019; }
+      }
+
+      /* 選取高亮框平滑展開 (從無 ➔ 首字 s ➔ 整個單詞 serendipitous) */
+      @keyframes selectionExpansion {
+        0%, 12%  { width: 0px; opacity: 0; }
+        14%, 23% { width: 14px; opacity: 1; }
+        26%, 83% { width: 114px; opacity: 1; }
+        87%, 100%{ width: 114px; opacity: 0; }
+      }
+
+      /* 游標位移 (NORMAL 在首字 ➔ VISUAL 按 w 跳至詞尾) */
+      @keyframes cursorStepMotion {
+        0%, 23%  { transform: translateX(0px); }
+        26%, 83% { transform: translateX(101px); }
+        87%, 100%{ transform: translateX(0px); }
+      }
+      @keyframes cursorColorChange {
+        0%, 12%  { fill: #fe8019; }
+        14%, 84% { fill: #fabd2f; }
+        86%, 100%{ fill: #fe8019; }
+      }
+
+      /* 第 3 步: 翻譯卡片在選取完成後彈出 */
+      @keyframes popupCardAppear {
+        0%, 33%  { opacity: 0; transform: translateY(14px) scale(0.96); pointer-events: none; }
+        37%      { opacity: 1; transform: translateY(-2px) scale(1.02); }
+        40%, 82% { opacity: 1; transform: translateY(0px) scale(1); }
+        86%, 100%{ opacity: 0; transform: translateY(-8px) scale(0.98); }
+      }
+
+      /* 狀態列模式切換 (NORMAL ⟷ VISUAL) */
+      @keyframes statusNormalSwitch {
+        0%, 12%  { opacity: 1; }
+        14%, 84% { opacity: 0; }
+        86%, 100%{ opacity: 1; }
+      }
+      @keyframes statusVisualSwitch {
+        0%, 12%  { opacity: 0; }
+        14%, 84% { opacity: 1; }
+        86%, 100%{ opacity: 0; }
+      }
+
+      /* 底部 Banner 翻譯按鈕高亮提示 */
+      @keyframes bannerTransGlow {
+        0%, 33%  { fill: #b8bb26; fill-opacity: 0.12; stroke: #b8bb26; stroke-width: 0.8; filter: none; }
+        36%, 82% { fill: #b8bb26; fill-opacity: 0.35; stroke: #b8bb26; stroke-width: 1.5; filter: drop-shadow(0 0 6px rgba(184, 187, 38, 0.6)); }
+        85%, 100%{ fill: #b8bb26; fill-opacity: 0.12; stroke: #b8bb26; stroke-width: 0.8; filter: none; }
+      }
+
+      .anim-key-rect-v { animation: keyPressV 8.5s ease-in-out infinite; transform-origin: center; }
+      .anim-key-text-v { animation: keyTextV 8.5s ease-in-out infinite; }
+      .anim-key-rect-w { animation: keyPressW 8.5s ease-in-out infinite; transform-origin: center; }
+      .anim-key-text-w { animation: keyTextW 8.5s ease-in-out infinite; }
+      .anim-selection  { animation: selectionExpansion 8.5s cubic-bezier(0.25, 1, 0.5, 1) infinite; }
+      .anim-cursor-pos { animation: cursorStepMotion 8.5s cubic-bezier(0.25, 1, 0.5, 1) infinite; }
+      .anim-cursor-col { animation: cursorColorChange 8.5s ease-in-out infinite; }
+      .anim-popup      { animation: popupCardAppear 8.5s cubic-bezier(0.25, 1, 0.5, 1) infinite; transform-origin: top center; }
+      .anim-status-norm{ animation: statusNormalSwitch 8.5s steps(1) infinite; }
+      .anim-status-vis { animation: statusVisualSwitch 8.5s steps(1) infinite; }
+      .anim-banner-pop { animation: bannerTransGlow 8.5s ease-in-out infinite; }
+    </style>
+  </defs>
+
+  
+    <!-- 視窗底色與外框陰影 -->
+    <rect x="10" y="10" width="860" height="460" rx="14" fill="#1d2021" stroke="#3c3836" stroke-width="1.5" filter="url(#window-shadow)" />
+
+    <!-- 視窗標題列 -->
+    <rect x="10" y="10" width="860" height="44" rx="14" fill="#282828" />
+    <rect x="10" y="40" width="860" height="14" fill="#282828" />
+    <line x1="10" y1="54" x2="870" y2="54" stroke="#3c3836" stroke-width="1" />
+
+    <!-- macOS 紅黃綠三圓點 -->
+    <circle cx="36" cy="32" r="6" fill="#fb4934" />
+    <circle cx="56" cy="32" r="6" fill="#fabd2f" />
+    <circle cx="76" cy="32" r="6" fill="#b8bb26" />
+
+    <!-- 模擬網址列 -->
+    <rect x="110" y="20" width="640" height="24" rx="6" fill="#1d2021" stroke="#504945" stroke-width="1" />
+    <text x="125" y="36" fill="#a89984" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace" font-size="11">🔒 https://en.wikipedia.org/wiki/Serendipity</text>
+
+    <!-- 視窗右側外觀標籤 -->
+    <rect x="765" y="22" width="95" height="20" rx="4" fill="#3c3836" />
+    <text x="812" y="36" fill="#d5c4a1" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif" font-size="11" text-anchor="middle" font-weight="600">MUZEN VIM</text>
+  
+
+  <!-- 內容區 -->
+  <g transform="translate(48, 86)">
+    <!-- 標題 -->
+    <text x="0" y="24" fill="#ebdbb2" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif" font-size="24" font-weight="700">Serendipity &amp; Scientific Discovery</text>
+    <text x="0" y="48" fill="#928374" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif" font-size="13">From Wikipedia, the free encyclopedia</text>
+    <line x1="0" y1="62" x2="784" y2="62" stroke="#3c3836" stroke-width="1" />
+
+    <!-- 內文段落 -->
+    <text x="0" y="100" fill="#ebdbb2" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif" font-size="16" letter-spacing="0.3">
+      Serendipity is an unplanned, fortunate discovery. In the history of science and literature,
+    </text>
+
+    <!-- 目標句子 -->
+    <text x="0" y="138" fill="#ebdbb2" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif" font-size="16" letter-spacing="0.3">many revolutionary ideas emerged from </text>
+
+    <!-- 動態展開之選取高亮框 (Gruvbox Visual Gold) -->
+    <rect class="anim-selection" x="290" y="118" height="26" rx="3" fill="#fabd2f" fill-opacity="0.32" stroke="#fabd2f" stroke-width="1.2" />
+
+    <!-- 被選取的單詞文字 (保持清晰可見) -->
+    <text x="294" y="138" fill="#fbf1c7" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif" font-size="16" font-weight="600" letter-spacing="0.3">serendipitous</text>
+
+    <!-- 覆蓋於字元上的動態游標方塊 (伴隨按 w 平滑位移至詞尾) -->
+    <g class="anim-cursor-pos">
+      <rect class="anim-cursor-col" x="290" y="118" width="13" height="26" rx="2" fill-opacity="0.8" filter="url(#cursor-glow)" />
+      <text x="294" y="138" fill="#282828" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif" font-size="16" font-weight="700">s</text>
+    </g>
+
+    <text x="408" y="138" fill="#ebdbb2" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif" font-size="16" letter-spacing="0.3"> observations, enabling thinkers to connect</text>
+    <text x="0" y="176" fill="#ebdbb2" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif" font-size="16" letter-spacing="0.3">previously unrelated clues into profound breakthroughs.</text>
+
+    <!-- ==================================================== -->
+    <!-- 劃詞翻譯懸浮彈窗 (第三階段：選詞完畢後平滑彈出) -->
+    <!-- ==================================================== -->
+    <g transform="translate(230, 156)" filter="url(#card-shadow)">
+      <g class="anim-popup">
+        <rect x="0" y="0" width="370" height="152" rx="10" fill="url(#card-grad)" stroke="#665c54" stroke-width="1.2" />
+
+        <!-- 頂部單字發音與詞性列 -->
+        <circle cx="24" cy="26" r="10" fill="#3c3836" />
+        <path d="M21 23 L24 23 L27 20 L27 32 L24 29 L21 29 Z" fill="#fabd2f" />
+
+        <text x="42" y="30" fill="#fe8019" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif" font-size="16" font-weight="700">serendipitous</text>
+        <text x="165" y="30" fill="#a89984" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace" font-size="13">/ˌserənˈdɪpətəs/</text>
+
+        <rect x="306" y="16" width="46" height="20" rx="4" fill="#b8bb26" fill-opacity="0.2" stroke="#b8bb26" stroke-width="0.8" />
+        <text x="329" y="30" fill="#b8bb26" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif" font-size="11" text-anchor="middle" font-weight="600">adj.</text>
+
+        <line x1="16" y1="46" x2="354" y2="46" stroke="#3c3836" stroke-width="1" />
+
+        <!-- 翻譯主體釋義 -->
+        <text x="18" y="70" fill="#fbf1c7" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif" font-size="14" font-weight="600">1. 機緣湊巧的；偶然發現的；意外獲得的</text>
+        <text x="18" y="94" fill="#d5c4a1" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif" font-size="13">2. 善於意外發掘新奇事物的能力</text>
+
+        <!-- 底部相容性提示 -->
+        <rect x="0" y="118" width="370" height="34" rx="0" fill="#1d2021" />
+        <line x1="0" y1="118" x2="370" y2="118" stroke="#3c3836" stroke-width="1" />
+        <text x="18" y="139" fill="#83a598" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif" font-size="11">✨ 原生選取連動 ➔ 相容 Saladict、沉浸式翻譯、Google 翻譯</text>
+      </g>
+    </g>
+
+    <!-- 右下角狀態列 (支援 NORMAL ⟷ VISUAL 動態熱切換) -->
+    <g transform="translate(605, 240)">
+      <rect x="0" y="0" width="178" height="28" rx="6" fill="#282828" stroke="#504945" stroke-width="1" />
+      
+      <!-- NORMAL 狀態 -->
+      <g class="anim-status-norm">
+        <circle cx="14" cy="14" r="4" fill="#b8bb26" />
+        <text x="24" y="18" fill="#b8bb26" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace" font-size="11" font-weight="700">NORMAL</text>
+        <text x="82" y="18" fill="#a89984" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace" font-size="11">[2:42]</text>
+        <text x="134" y="18" fill="#83a598" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace" font-size="11">Top 18%</text>
+      </g>
+
+      <!-- VISUAL 狀態 (按 v 後點亮) -->
+      <g class="anim-status-vis">
+        <circle cx="14" cy="14" r="4" fill="#fabd2f" />
+        <text x="24" y="18" fill="#fabd2f" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace" font-size="11" font-weight="700">VISUAL</text>
+        <text x="76" y="18" fill="#fabd2f" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace" font-size="11">[Word Sel]</text>
+        <text x="142" y="18" fill="#83a598" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace" font-size="11">18%</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- ==================================================== -->
+  <!-- 底部操作提示導引 (嚴格對齊操作順序: v ➔ w ➔ 彈出翻譯) -->
+  <!-- ==================================================== -->
+  <g transform="translate(48, 420)">
+    <rect x="0" y="0" width="784" height="40" rx="8" fill="#282828" stroke="#3c3836" stroke-width="1" />
+
+    <!-- 步驟 1: 按 v 觸發選取 -->
+    <rect class="anim-key-rect-v" x="16" y="8" width="28" height="24" rx="4" fill="#3c3836" stroke="#504945" stroke-width="1" />
+    <text class="anim-key-text-v" x="30" y="24" fill="#fabd2f" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace" font-size="13" font-weight="700" text-anchor="middle">v</text>
+    <text x="52" y="24" fill="#ebdbb2" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif" font-size="13" font-weight="600">1. 觸發選取</text>
+
+    <!-- 箭頭 -->
+    <text x="130" y="24" fill="#665c54" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif" font-size="14">➔</text>
+
+    <!-- 步驟 2: 按 w 智慧跳詞 -->
+    <rect class="anim-key-rect-w" x="152" y="8" width="28" height="24" rx="4" fill="#3c3836" stroke="#504945" stroke-width="1" />
+    <text class="anim-key-text-w" x="166" y="24" fill="#fe8019" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace" font-size="13" font-weight="700" text-anchor="middle">w</text>
+    <text x="188" y="24" fill="#ebdbb2" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif" font-size="13" font-weight="600">2. 智慧跳詞</text>
+
+    <!-- 箭頭 -->
+    <text x="268" y="24" fill="#665c54" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif" font-size="14">➔</text>
+
+    <!-- 步驟 3: 出現翻譯卡片 -->
+    <rect class="anim-banner-pop" x="290" y="8" width="80" height="24" rx="4" fill="#b8bb26" fill-opacity="0.2" stroke="#b8bb26" stroke-width="1" />
+    <text x="330" y="24" fill="#b8bb26" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif" font-size="12" font-weight="700" text-anchor="middle">3. 自動翻譯</text>
+    <text x="382" y="24" fill="#fbf1c7" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif" font-size="13">即刻彈出釋義字典，雙手全神貫注鍵盤</text>
+  </g>
+</svg>

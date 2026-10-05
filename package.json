@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite build --watch --mode development",
-    "build": "tsc --noEmit && vite build"
+    "build": "tsc --noEmit && vite build",
+    "generate:mockups": "node scripts/generate-mockup-svg.mjs"
   },
   "keywords": [
     "vim",
