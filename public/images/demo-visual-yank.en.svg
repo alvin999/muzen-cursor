@@ -183,7 +183,7 @@
         <rect x="0" y="0" width="280" height="48" rx="8" fill="#282828" stroke="#b8bb26" stroke-width="1.5" />
         <circle cx="26" cy="24" r="12" fill="#b8bb26" fill-opacity="0.2" />
         <path d="M20 24 L24 28 L32 19" stroke="#b8bb26" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none" />
-        <text x="48" y="22" fill="#ebdbb2" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="13" font-weight="700">3 行代碼已複製 (Yanked)</text>
+        <text x="48" y="22" fill="#ebdbb2" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="13" font-weight="700">3 lines yanked (copied)</text>
         <text x="48" y="38" fill="#a89984" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace" font-size="11">Copied to system clipboard!</text>
       </g>
     </g>
@@ -217,7 +217,7 @@
     <!-- 步驟 1 -->
     <rect class="anim-yank-key-v" x="16" y="8" width="28" height="24" rx="4" fill="#3c3836" stroke="#504945" stroke-width="1" />
     <text class="anim-yank-text-v" x="30" y="24" fill="#fabd2f" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace" font-size="13" font-weight="700" text-anchor="middle">v</text>
-    <text x="52" y="24" fill="#ebdbb2" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="13" font-weight="600">1. 進入選取</text>
+    <text x="52" y="24" fill="#ebdbb2" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="13" font-weight="600">1. Enter Visual</text>
 
     <!-- 箭頭 -->
     <text x="145" y="24" fill="#665c54" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="14">➔</text>
@@ -225,7 +225,7 @@
     <!-- 步驟 2 -->
     <rect class="anim-yank-key-j" x="165" y="8" width="46" height="24" rx="4" fill="#3c3836" stroke="#504945" stroke-width="1" />
     <text class="anim-yank-text-j" x="188" y="24" fill="#fabd2f" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace" font-size="13" font-weight="700" text-anchor="middle">j / $</text>
-    <text x="218" y="24" fill="#ebdbb2" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="13" font-weight="600">2. 整行擴展</text>
+    <text x="218" y="24" fill="#ebdbb2" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="13" font-weight="600">2. Line Expand</text>
 
     <!-- 箭頭 -->
     <text x="310" y="24" fill="#665c54" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="14">➔</text>
@@ -233,8 +233,8 @@
     <!-- 步驟 3 -->
     <rect class="anim-yank-key-y" x="330" y="8" width="28" height="24" rx="4" fill="#3c3836" stroke="#504945" stroke-width="1" />
     <text class="anim-yank-text-y" x="344" y="24" fill="#b8bb26" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace" font-size="13" font-weight="700" text-anchor="middle">y</text>
-    <text x="366" y="24" fill="#ebdbb2" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="13" font-weight="600">3. 瞬間複製 (Yank)</text>
+    <text x="366" y="24" fill="#ebdbb2" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="13" font-weight="600">3. Instant Yank</text>
     
-    <text x="500" y="24" fill="#928374" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="12">自動寫入系統剪貼簿，告別滑鼠拖曳手抖</text>
+    <text x="500" y="24" fill="#928374" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="12">Copied directly to clipboard—farewell to mouse slips</text>
   </g>
 </svg>

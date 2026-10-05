@@ -167,10 +167,10 @@
     <!-- 左側：情境介紹與互動卡片 -->
     <g transform="translate(0, 72)">
       <text x="0" y="16" fill="#d5c4a1" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="14.5" letter-spacing="0.2">
-        傳統滑鼠標記或原生游標極易在長文中迷失字元焦點。
+        従来のマウスや標準カーソルは長文で行・文字を見失いがちです。
       </text>
       <text x="0" y="38" fill="#d5c4a1" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="14.5" letter-spacing="0.2">
-        Muzen Cursor 將高對比幾何游標「直接覆蓋在目標字元正上方」：
+        Muzen Cursor は高コントラストな幾何学カーソルを文字の真上に直接吸着：
       </text>
 
       <!-- 核心展示卡片 -->
@@ -183,7 +183,7 @@
         <line x1="0" y1="30" x2="510" y2="30" stroke="#3c3836" stroke-width="1" />
 
         <circle cx="16" cy="15" r="4" fill="#fe8019" />
-        <text x="26" y="19" fill="#fe8019" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="11" font-weight="700">當前閱讀聚焦行 (ACTIVE LINE)</text>
+        <text x="26" y="19" fill="#fe8019" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="11" font-weight="700">現在の読書フォーカス行 (ACTIVE LINE)</text>
         
         <rect x="408" y="6" width="90" height="18" rx="4" fill="#3c3836" />
         <text x="453" y="19" fill="#fabd2f" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace" font-size="10" font-weight="700" text-anchor="middle">VIM NORMAL</text>
@@ -214,15 +214,15 @@
 
         <!-- 卡片底部狀態提示條 -->
         <line x1="0" y1="92" x2="510" y2="92" stroke="#282828" stroke-width="1" />
-        <text x="16" y="106" fill="#83a598" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="11">✨ 游標完全貼齊字元邊界，具備 GPU 物理阻尼（80ms）平滑跟隨位移</text>
+        <text x="16" y="106" fill="#83a598" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="11">✨ 文字境界に精密吸着し、GPU物理ダンピング (80ms) で滑らかに追従</text>
       </g>
 
       <!-- 卡片下方補充說明 -->
       <text x="0" y="196" fill="#ebdbb2" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="13.5">
-        • 按 l 向右前進一個字元；按 h 向左後退一個字元。
+        • l で右へ1文字進み、h で左へ1文字戻ります。
       </text>
       <text x="0" y="218" fill="#a89984" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="12.5">
-        • 搭配 w / b 詞彙跳躍，視線永遠精準鎖定文字基線，手指無需碰觸滑鼠。
+        • w / b の単語ジャンプと合わせ、視線を行間に固定したまま読書可能。
       </text>
     </g>
 
@@ -238,52 +238,52 @@
       <g transform="translate(18, 32)">
         <rect class="anim-key-rect-h" x="0" y="0" width="40" height="34" rx="5" fill="#3c3836" stroke="#504945" stroke-width="1.2" />
         <text class="anim-key-text-h" x="20" y="22" fill="#ebdbb2" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace" font-size="16" font-weight="700" text-anchor="middle">h</text>
-        <text x="20" y="44" fill="#a89984" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="10" text-anchor="middle">向左 ⟵</text>
+        <text x="20" y="44" fill="#a89984" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="10" text-anchor="middle">左へ ⟵</text>
       </g>
 
       <!-- [ l ] 按鍵 -->
       <g transform="translate(74, 32)">
         <rect class="anim-key-rect-l" x="0" y="0" width="40" height="34" rx="5" fill="#3c3836" stroke="#504945" stroke-width="1.2" />
         <text class="anim-key-text-l" x="20" y="22" fill="#ebdbb2" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace" font-size="16" font-weight="700" text-anchor="middle">l</text>
-        <text x="20" y="44" fill="#a89984" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="10" text-anchor="middle">向右 ⟶</text>
+        <text x="20" y="44" fill="#a89984" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="10" text-anchor="middle">右へ ⟶</text>
       </g>
 
       <!-- 動態指示狀態膠囊 -->
       <rect x="125" y="38" width="90" height="24" rx="4" fill="#1d2021" stroke="#3c3836" stroke-width="1" />
       <g class="anim-dir-l">
-        <text x="170" y="54" fill="#fe8019" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="10.5" font-weight="700" text-anchor="middle">▶ 右移 (l)</text>
+        <text x="170" y="54" fill="#fe8019" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="10.5" font-weight="700" text-anchor="middle">▶ 右移動 (l)</text>
       </g>
       <g class="anim-dir-h">
-        <text x="170" y="54" fill="#fabd2f" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="10.5" font-weight="700" text-anchor="middle">◀ 左移 (h)</text>
+        <text x="170" y="54" fill="#fabd2f" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="10.5" font-weight="700" text-anchor="middle">◀ 左移動 (h)</text>
       </g>
 
-      <text x="14" y="96" fill="#83a598" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace" font-size="10.5">阻尼跟隨: 80ms 物理過渡</text>
+      <text x="14" y="96" fill="#83a598" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace" font-size="10.5">ダンピング追従: 80ms 物理遷移</text>
 
       <!-- 下方: 游標三種幾何形態 -->
-      <text x="0" y="132" fill="#fabd2f" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="12" font-weight="700">3 幾何錨點形態 (自訂外觀)</text>
+      <text x="0" y="132" fill="#fabd2f" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="12" font-weight="700">3つの幾何学アンカー (外観)</text>
 
       <!-- 形態 1: Block -->
       <g transform="translate(0, 142)">
         <rect x="0" y="0" width="225" height="30" rx="5" fill="#1d2021" stroke="#fe8019" stroke-width="1" />
         <rect x="10" y="6" width="10" height="18" rx="2" fill="#fe8019" />
-        <text x="28" y="20" fill="#ebdbb2" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="11.5" font-weight="600">Block 實心方塊</text>
-        <text x="160" y="20" fill="#fe8019" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="9.5" font-weight="700">覆蓋字元</text>
+        <text x="28" y="20" fill="#ebdbb2" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="11.5" font-weight="600">ソリッドブロック</text>
+        <text x="160" y="20" fill="#fe8019" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="9.5" font-weight="700">文字を覆う</text>
       </g>
 
       <!-- 形態 2: Hollow -->
       <g transform="translate(0, 178)">
         <rect x="0" y="0" width="225" height="30" rx="5" fill="#1d2021" stroke="#3c3836" stroke-width="1" />
         <rect x="10" y="6" width="10" height="18" rx="2" fill="none" stroke="#7aa2f7" stroke-width="1.8" />
-        <text x="28" y="20" fill="#a89984" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="11.5">Hollow 空心外框</text>
-        <text x="155" y="20" fill="#665c54" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="9.5">文字無遮擋</text>
+        <text x="28" y="20" fill="#a89984" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="11.5">ホローアウトライン</text>
+        <text x="155" y="20" fill="#665c54" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="9.5">文字を隠さない</text>
       </g>
 
       <!-- 形態 3: Underline -->
       <g transform="translate(0, 214)">
         <rect x="0" y="0" width="225" height="30" rx="5" fill="#1d2021" stroke="#3c3836" stroke-width="1" />
         <rect x="8" y="20" width="14" height="4" rx="1" fill="#b8bb26" />
-        <text x="28" y="20" fill="#a89984" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="11.5">Underline 閱讀底線</text>
-        <text x="160" y="20" fill="#665c54" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="9.5">速讀導航規</text>
+        <text x="28" y="20" fill="#a89984" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="11.5">アンダーライン</text>
+        <text x="160" y="20" fill="#665c54" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="9.5">速読ガイド</text>
       </g>
     </g>
   </g>
@@ -295,23 +295,23 @@
     <!-- 按鍵指引 -->
     <rect class="anim-key-rect-h" x="14" y="8" width="28" height="24" rx="4" fill="#3c3836" stroke="#504945" stroke-width="1" />
     <text class="anim-key-text-h" x="28" y="24" fill="#ebdbb2" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace" font-size="13" font-weight="700" text-anchor="middle">h</text>
-    <text x="48" y="24" fill="#ebdbb2" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="12.5" font-weight="600">向左字元</text>
+    <text x="48" y="24" fill="#ebdbb2" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="12.5" font-weight="600">左へ1文字</text>
 
     <text x="116" y="24" fill="#665c54" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="14">|</text>
 
     <rect class="anim-key-rect-l" x="130" y="8" width="28" height="24" rx="4" fill="#3c3836" stroke="#504945" stroke-width="1" />
     <text class="anim-key-text-l" x="144" y="24" fill="#fe8019" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace" font-size="13" font-weight="700" text-anchor="middle">l</text>
-    <text x="164" y="24" fill="#ebdbb2" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="12.5" font-weight="600">向右字元</text>
+    <text x="164" y="24" fill="#ebdbb2" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="12.5" font-weight="600">右へ1文字</text>
 
     <text x="236" y="24" fill="#665c54" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="14">|</text>
 
     <rect x="250" y="8" width="50" height="24" rx="4" fill="#3c3836" stroke="#504945" stroke-width="1" />
     <text x="275" y="24" fill="#fabd2f" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace" font-size="13" font-weight="700" text-anchor="middle">w / b</text>
-    <text x="306" y="24" fill="#ebdbb2" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="12.5">智慧單字跳躍</text>
+    <text x="306" y="24" fill="#ebdbb2" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="12.5">単語ジャンプ</text>
 
     <text x="408" y="24" fill="#665c54" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="14">|</text>
 
-    <text x="424" y="24" fill="#b8bb26" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="12.5" font-weight="600">🎯 游標覆蓋字元</text>
-    <text x="548" y="24" fill="#928374" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="11.5">雙手不離鍵盤，目光不離行距</text>
+    <text x="424" y="24" fill="#b8bb26" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="12.5" font-weight="600">🎯 文字吸着カーソル</text>
+    <text x="548" y="24" fill="#928374" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif" font-size="11.5">キーボードから手を離さず、視線を行間へ</text>
   </g>
 </svg>
