@@ -231,12 +231,25 @@ export class CursorController {
       }
     }
 
-    // 2. 後備方案：僅在點擊具體文字標籤（非全域容器）時才尋找其內部文字
+    // 2. 後備方案：純依賴 CSSOM 渲染層與視覺排版判斷，不列舉任何 HTML 標籤
     if (!targetNode && !isGlobalContainer) {
-      const textTags = ['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI', 'SPAN', 'A', 'STRONG', 'EM', 'BLOCKQUOTE', 'TD', 'TH', 'CODE', 'PRE'];
-      if (textTags.includes(targetEl.tagName)) {
-        targetNode = this.findFirstTextNodeIn(targetEl);
-        targetOffset = 0;
+      const isVisible = typeof targetEl.checkVisibility === 'function'
+        ? targetEl.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })
+        : (targetEl.offsetWidth > 0 || targetEl.offsetHeight > 0 || targetEl.getClientRects().length > 0);
+
+      if (isVisible && (targetEl.innerText?.trim().length || 0) > 0) {
+        try {
+          const computed = window.getComputedStyle(targetEl);
+          if (computed.userSelect !== 'none' && computed.pointerEvents !== 'none') {
+            const firstText = this.findFirstTextNodeIn(targetEl);
+            if (firstText) {
+              targetNode = firstText;
+              targetOffset = 0;
+            }
+          }
+        } catch {
+          // 容錯防禦
+        }
       }
     }
 
