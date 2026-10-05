@@ -140,8 +140,8 @@ During long-form reading, mouse wheel scrolling frequently causes readers to los
 | <kbd>G</kbd> | Jump to the end of the document | Scrolls to bottom |
 | <kbd>v</kbd> | Toggle **VISUAL selection mode** | High-contrast selection color, syncs with native selection |
 | <kbd>y</kbd> | Copy selected text (Yank) | Writes directly to operating system clipboard |
-| <kbd>Alt</kbd> + <kbd>v</kbd> | Global toggle (Activate / Freeze cursor) | Awaken or sleep cursor at any time |
-| <kbd>Esc</kbd> | Clear selection / Hide cursor | Returns keys to page, restores pure reading view |
+| <kbd>alt</kbd> + <kbd>v</kbd> | Global toggle (Activate / Freeze cursor) | Awaken or sleep cursor at any time |
+| <kbd>esc</kbd> | Clear selection / Hide cursor | Returns keys to page, restores pure reading view |
 
 > 💡 **Tip**: Click any text on the page with your mouse, and the cursor and status bar will immediately anchor to that character.
 

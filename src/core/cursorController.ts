@@ -1,4 +1,4 @@
-import { cursorStore, MotionDirection, CursorRect } from './cursorStore';
+import { cursorStore, MotionDirection, CursorRect, matchesKeybinding, DEFAULT_KEYBINDINGS } from './cursorStore';
 import { isTypingContext } from '../utils/domUtils';
 import { WordNavigator, TextTarget } from './wordNavigator';
 
@@ -158,7 +158,10 @@ export class CursorController {
    */
   private handleClick(e: MouseEvent): void {
     this.preferredX = null;
-    if (isTypingContext(e) || cursorStore.getState().isExcluded) {
+    const state = cursorStore.getState();
+
+    // 1. 若處於打字情境、完全停用名單、或擴充功能未啟用，直接忽略
+    if (isTypingContext(e) || state.isExcluded || state.enabled === false) {
       return;
     }
 
@@ -169,6 +172,11 @@ export class CursorController {
     const targetEl = (rawTarget instanceof Element ? rawTarget : (rawTarget as Node)?.parentElement) as HTMLElement | null;
 
     if (!targetEl || targetEl.closest('#muzen-cursor-host-root')) {
+      return;
+    }
+
+    // 2. 智慧防誤觸：點擊按鈕、超連結、下拉選單、分頁標籤、導覽列等互動元件時，100% 保持網頁原生功能，不召喚游標
+    if (targetEl.closest('button, a, summary, [role="button"], [role="tab"], [role="menuitem"], .btn, nav, header')) {
       return;
     }
 
@@ -258,6 +266,8 @@ export class CursorController {
       if (cursorStore.getState().mode !== 'VISUAL') {
         this.visualAnchor = null;
       }
+      // 直接喚醒游標並設定為可見，狀態列同步切換為 NORMAL 模式
+      cursorStore.setState({ enabled: true, visible: true });
       this.updateCursorPosition(false);
     }
   }
@@ -278,145 +288,183 @@ export class CursorController {
   }
 
   private handleKeyDown(e: KeyboardEvent): void {
-    // 1. 若處於輸入模式（輸入框、編輯器）或當前網站已被排除，完全不攔截
-    if (isTypingContext(e) || cursorStore.getState().isExcluded) return;
+    const state = cursorStore.getState();
 
-    // 2. Alt + V: 切換啟用狀態
-    if (e.altKey && (e.key === 'v' || e.key === 'V')) {
+    // 0. 若當前網站在完全停用名單中，100% 不干涉
+    if (state.isExcluded) return;
+
+    const config = state.keybindings || DEFAULT_KEYBINDINGS;
+    const bindings = config.bindings || DEFAULT_KEYBINDINGS.bindings;
+
+    // 1. 全域強制主開關 (toggleCursor, alt + v)
+    // 置於最頂層優先響應，無論焦點在搜尋框或頁面任何地方均可強制開關切換
+    if (matchesKeybinding(e, bindings.toggleCursor)) {
       e.preventDefault();
-      const current = cursorStore.getState().enabled;
-      cursorStore.setState({ enabled: !current });
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+
+      const isCurrentlyActive = state.enabled && state.visible;
+      if (isCurrentlyActive) {
+        // 關閉：立即退回休眠狀態
+        cursorStore.setState({ visible: false });
+      } else {
+        // 開啟：立即強制喚醒接管
+        cursorStore.setState({ enabled: true, visible: true });
+        if (!this.currentTarget || !document.contains(this.currentTarget.node)) {
+          this.findInitialTarget();
+        } else {
+          this.updateCursorPosition(true);
+        }
+      }
       return;
     }
 
-    const state = cursorStore.getState();
-    if (!state.enabled) return;
+    // 2. 若處於輸入框或富文本編輯器打字情境，不干擾打字
+    if (isTypingContext(e)) {
+      return;
+    }
 
+    if (!state.enabled) {
+      return;
+    }
+
+    // 3. 落實右下角「按 j 開始」：若游標處於休眠隱藏狀態 (!visible)，按下 j (moveDown) 時直接喚醒
+    if (!state.visible) {
+      if (matchesKeybinding(e, bindings.moveDown)) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        cursorStore.setState({ enabled: true, visible: true });
+        if (!this.currentTarget || !document.contains(this.currentTarget.node)) {
+          this.findInitialTarget();
+        } else {
+          this.moveVertical(1);
+        }
+        return;
+      }
+      // 其他單鍵與快捷鍵在休眠時 100% 自然放行給網頁原生
+      return;
+    }
+
+    // 4. 游標處於喚醒接管狀態 (visible: true)：所有 Vim 按鍵全面霸道接管
+    // 呼叫 stopImmediatePropagation 徹底壓制任何網頁原生物件監聽器
+    const intercept = () => {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    };
+
+    // Esc: 退出選取或隱藏游標返回休眠
+    if (matchesKeybinding(e, bindings.escape)) {
+      intercept();
+      if (state.mode === 'VISUAL') {
+        this.exitVisualMode();
+      } else {
+        cursorStore.setState({ visible: false });
+      }
+      return;
+    }
+
+    // 連續指令 gg (跳至全文頂部) 比對
     const now = Date.now();
     const prevKey = this.lastKey;
     const isDoubleG = prevKey === 'g' && e.key === 'g' && now - this.lastKeyTime < 500;
     this.lastKey = e.key;
     this.lastKeyTime = now;
 
-    // 3. 處理連續指令 gg (跳至全文頂部)
-    if (isDoubleG) {
-      e.preventDefault();
-      this.jumpToDocumentStart();
+    const docStartDef = bindings.docStart;
+    if (docStartDef && docStartDef.enabled) {
+      if ((docStartDef.key === 'g' && isDoubleG) || (docStartDef.key !== 'g' && matchesKeybinding(e, docStartDef))) {
+        intercept();
+        this.jumpToDocumentStart();
+        return;
+      }
+    }
+
+    if (matchesKeybinding(e, bindings.visualMode)) {
+      intercept();
+      this.toggleVisualMode();
       return;
     }
 
-    // 4. Vim 快捷指令處理
-    switch (e.key) {
-      case 'Escape':
-        e.preventDefault();
-        if (state.mode === 'VISUAL') {
-          this.exitVisualMode();
-        } else {
-          cursorStore.setState({ visible: false });
-        }
-        break;
+    if (matchesKeybinding(e, bindings.yank)) {
+      if (state.mode === 'VISUAL') {
+        intercept();
+        this.yankSelection();
+      }
+      return;
+    }
 
-      case 'v':
-        if (!e.ctrlKey && !e.metaKey) {
-          e.preventDefault();
-          this.toggleVisualMode();
-        }
-        break;
+    if (matchesKeybinding(e, bindings.moveLeft)) {
+      intercept();
+      this.moveHorizontal(-1);
+      return;
+    }
 
-      case 'y': // Yank (複製)
-        if (!e.ctrlKey && !e.metaKey && state.mode === 'VISUAL') {
-          e.preventDefault();
-          this.yankSelection();
-        }
-        break;
+    if (matchesKeybinding(e, bindings.moveRight)) {
+      intercept();
+      this.moveHorizontal(1);
+      return;
+    }
 
-      case 'l': // 單字元右移
-        if (!e.ctrlKey && !e.metaKey) {
-          e.preventDefault();
-          this.moveHorizontal(1);
-        }
-        break;
+    if (matchesKeybinding(e, bindings.moveUp)) {
+      intercept();
+      this.moveVertical(-1);
+      return;
+    }
 
-      case 'h': // 單字元左移
-        if (!e.ctrlKey && !e.metaKey) {
-          e.preventDefault();
-          this.moveHorizontal(-1);
-        }
-        break;
+    if (matchesKeybinding(e, bindings.moveDown)) {
+      intercept();
+      this.moveVertical(1);
+      return;
+    }
 
-      case 'j': // 下移一行
-        if (!e.ctrlKey && !e.metaKey) {
-          e.preventDefault();
-          this.moveVertical(1);
-        }
-        break;
+    if (matchesKeybinding(e, bindings.wordForward)) {
+      intercept();
+      this.moveWordForward();
+      return;
+    }
 
-      case 'k': // 上移一行
-        if (!e.ctrlKey && !e.metaKey) {
-          e.preventDefault();
-          this.moveVertical(-1);
-        }
-        break;
+    if (matchesKeybinding(e, bindings.wordBackward)) {
+      intercept();
+      this.moveWordBackward();
+      return;
+    }
 
-      case 'w': // 單字/詞彙跳躍 (Word forward)
-        if (!e.ctrlKey && !e.metaKey) {
-          e.preventDefault();
-          this.moveWordForward();
-        }
-        break;
+    if (matchesKeybinding(e, bindings.wordEnd)) {
+      intercept();
+      this.moveWordEnd();
+      return;
+    }
 
-      case 'b': // 單字/詞彙前退 (Word backward)
-        if (!e.ctrlKey && !e.metaKey) {
-          e.preventDefault();
-          this.moveWordBackward();
-        }
-        break;
+    if (matchesKeybinding(e, bindings.lineStart)) {
+      intercept();
+      this.jumpToLineBoundary(true);
+      return;
+    }
 
-      case 'e': // 跳至字尾 (Word end)
-        if (!e.ctrlKey && !e.metaKey) {
-          e.preventDefault();
-          this.moveWordEnd();
-        }
-        break;
+    if (matchesKeybinding(e, bindings.lineEnd)) {
+      intercept();
+      this.jumpToLineBoundary(false);
+      return;
+    }
 
-      case '0':
-      case '^': // 跳至行首
-        if (!e.ctrlKey && !e.metaKey) {
-          e.preventDefault();
-          this.jumpToLineBoundary(true);
-        }
-        break;
+    if (matchesKeybinding(e, bindings.halfPageDown)) {
+      intercept();
+      this.moveHalfPage(true);
+      return;
+    }
 
-      case '$': // 跳至行尾
-        if (!e.ctrlKey && !e.metaKey) {
-          e.preventDefault();
-          this.jumpToLineBoundary(false);
-        }
-        break;
+    if (matchesKeybinding(e, bindings.halfPageUp)) {
+      intercept();
+      this.moveHalfPage(false);
+      return;
+    }
 
-      case 'd': // 單鍵向下半頁 (Half-page down)
-        if (!e.ctrlKey && !e.altKey && !e.metaKey) {
-          e.preventDefault();
-          this.moveHalfPage(true);
-        }
-        break;
-
-      case 'u': // 單鍵向上半頁 (Half-page up)
-        if (!e.ctrlKey && !e.altKey && !e.metaKey) {
-          e.preventDefault();
-          this.moveHalfPage(false);
-        }
-        break;
-
-      case 'G': // Shift + G (跳至全文底部)
-        if (!e.ctrlKey && !e.metaKey) {
-          e.preventDefault();
-          this.jumpToDocumentEnd();
-        }
-        break;
-
-      default:
-        break;
+    if (matchesKeybinding(e, bindings.docEnd)) {
+      intercept();
+      this.jumpToDocumentEnd();
+      return;
     }
   }
 
@@ -1056,26 +1104,46 @@ export class CursorController {
       range = document.caretRangeFromPoint(cx, cy);
     }
 
-    if (range && range.startContainer.nodeType === Node.TEXT_NODE) {
-      this.currentTarget = {
-        node: range.startContainer as Text,
-        offset: range.startOffset
-      };
-      this.updateCursorPosition();
-      return;
+    if (range) {
+      if (range.startContainer.nodeType === Node.TEXT_NODE) {
+        this.currentTarget = {
+          node: range.startContainer as Text,
+          offset: range.startOffset
+        };
+        this.updateCursorPosition();
+        return;
+      } else if (range.startContainer.nodeType === Node.ELEMENT_NODE) {
+        const textNode = this.findFirstTextNodeIn(range.startContainer);
+        if (textNode) {
+          this.currentTarget = { node: textNode, offset: 0 };
+          this.updateCursorPosition();
+          return;
+        }
+      }
     }
 
+    // 視窗可見文字深度探測：使用 Range 精確測量文字節點在目前視窗中的座標
     const walker = document.createTreeWalker(this.rootElement, NodeFilter.SHOW_TEXT);
     let n = walker.nextNode();
     while (n) {
       const text = n.textContent?.trim();
-      if (text && text.length > 2 && n.parentElement) {
-        const rect = n.parentElement.getBoundingClientRect();
-        if (rect.top >= 0 && rect.bottom <= window.innerHeight) {
-          this.currentTarget = { node: n as Text, offset: 0 };
-          this.updateCursorPosition();
-          return;
-        }
+      const parent = n.parentElement;
+      if (
+        text &&
+        text.length > 0 &&
+        parent &&
+        !['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEXTAREA', 'INPUT'].includes(parent.tagName)
+      ) {
+        try {
+          const testRange = document.createRange();
+          testRange.selectNodeContents(n);
+          const rect = testRange.getBoundingClientRect();
+          if (rect.width > 0 && rect.height > 0 && rect.bottom >= 0 && rect.top <= window.innerHeight) {
+            this.currentTarget = { node: n as Text, offset: 0 };
+            this.updateCursorPosition();
+            return;
+          }
+        } catch {}
       }
       n = walker.nextNode();
     }

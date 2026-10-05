@@ -1,6 +1,6 @@
 import { initCursorHost } from './hostElement';
 import { CursorController } from '../core/cursorController';
-import { cursorStore, DEFAULT_ADVANCED_CONFIG } from '../core/cursorStore';
+import { cursorStore, DEFAULT_ADVANCED_CONFIG, DEFAULT_KEYBINDINGS } from '../core/cursorStore';
 
 /**
  * 判斷當前網域名稱是否命中排除名單 (支援子網域比對)
@@ -96,6 +96,19 @@ function main(): void {
           }
         });
         sendResponse({ success: true });
+      } else if (message.type === 'SET_KEYBINDINGS') {
+        const currentKeys = cursorStore.getState().keybindings || DEFAULT_KEYBINDINGS;
+        cursorStore.setState({
+          keybindings: {
+            ...currentKeys,
+            ...message.keybindings,
+            bindings: {
+              ...currentKeys.bindings,
+              ...(message.keybindings?.bindings || {})
+            }
+          }
+        });
+        sendResponse({ success: true });
       } else if (message.type === 'GET_STATUS') {
         sendResponse({ success: true, state: cursorStore.getState() });
       }
@@ -105,7 +118,7 @@ function main(): void {
 
   // 4. 讀取持久化設定
   if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
-    chrome.storage.sync.get(['muzen_enabled', 'muzen_locale', 'muzen_theme', 'muzen_shape', 'muzen_thickness', 'muzen_glow', 'muzen_effects', 'muzen_show_status_bar', 'muzen_excluded_sites', 'muzen_animation', 'muzen_advanced'], (result) => {
+    chrome.storage.sync.get(['muzen_enabled', 'muzen_locale', 'muzen_theme', 'muzen_shape', 'muzen_thickness', 'muzen_glow', 'muzen_effects', 'muzen_show_status_bar', 'muzen_excluded_sites', 'muzen_animation', 'muzen_advanced', 'muzen_keybindings'], (result) => {
       if (typeof result.muzen_enabled === 'boolean') {
         cursorStore.setState({ enabled: result.muzen_enabled });
       }
@@ -132,6 +145,18 @@ function main(): void {
           advanced: {
             ...DEFAULT_ADVANCED_CONFIG,
             ...result.muzen_advanced
+          }
+        });
+      }
+      if (result.muzen_keybindings && typeof result.muzen_keybindings === 'object') {
+        cursorStore.setState({
+          keybindings: {
+            ...DEFAULT_KEYBINDINGS,
+            ...result.muzen_keybindings,
+            bindings: {
+              ...DEFAULT_KEYBINDINGS.bindings,
+              ...(result.muzen_keybindings.bindings || {})
+            }
           }
         });
       }
@@ -170,6 +195,19 @@ function main(): void {
           advanced: {
             ...DEFAULT_ADVANCED_CONFIG,
             ...updated
+          }
+        });
+      }
+      if (changes.muzen_keybindings) {
+        const updatedKeys = changes.muzen_keybindings.newValue || {};
+        cursorStore.setState({
+          keybindings: {
+            ...DEFAULT_KEYBINDINGS,
+            ...updatedKeys,
+            bindings: {
+              ...DEFAULT_KEYBINDINGS.bindings,
+              ...(updatedKeys.bindings || {})
+            }
           }
         });
       }

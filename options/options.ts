@@ -1,4 +1,14 @@
-import { AdvancedConfig, DEFAULT_ADVANCED_CONFIG, CursorTheme, CursorShape, cursorStore } from '../src/core/cursorStore';
+import {
+  AdvancedConfig,
+  DEFAULT_ADVANCED_CONFIG,
+  CursorTheme,
+  CursorShape,
+  cursorStore,
+  KeyActionId,
+  KeybindingsConfig,
+  DEFAULT_KEYBINDINGS,
+  formatKeyCombo
+} from '../src/core/cursorStore';
 import { initCursorHost } from '../src/content/hostElement';
 import { CursorController } from '../src/core/cursorController';
 import { LOCALES, Locale, Translations, detectDefaultLocale } from '../src/i18n/locales';
@@ -8,11 +18,70 @@ import { LOCALES, Locale, Translations, detectDefaultLocale } from '../src/i18n/
  */
 
 let currentConfig: AdvancedConfig = { ...DEFAULT_ADVANCED_CONFIG };
+let currentKeybindings: KeybindingsConfig = {
+  ...DEFAULT_KEYBINDINGS,
+  bindings: { ...DEFAULT_KEYBINDINGS.bindings }
+};
+let recordingActionId: KeyActionId | null = null;
 let currentLocale: Locale = 'zh-TW';
 let toastTimer: number | null = null;
 let sandboxTheme: CursorTheme = 'gruvbox-dark';
 let sandboxShape: CursorShape = 'block';
 let controller: CursorController | null = null;
+
+interface KeyGroupDef {
+  groupTitleKey: keyof Translations;
+  actions: Array<{
+    id: KeyActionId;
+    nameKey: keyof Translations;
+    descKey: keyof Translations;
+  }>;
+}
+
+const KEY_GROUPS: KeyGroupDef[] = [
+  {
+    groupTitleKey: 'groupSystemKeysTitle',
+    actions: [
+      { id: 'toggleCursor', nameKey: 'actionToggleCursor', descKey: 'descToggleCursor' },
+      { id: 'escape', nameKey: 'actionEscape', descKey: 'descEscape' }
+    ]
+  },
+  {
+    groupTitleKey: 'groupMoveKeysTitle',
+    actions: [
+      { id: 'moveLeft', nameKey: 'actionMoveLeft', descKey: 'descMoveLeft' },
+      { id: 'moveRight', nameKey: 'actionMoveRight', descKey: 'descMoveRight' },
+      { id: 'moveUp', nameKey: 'actionMoveUp', descKey: 'descMoveUp' },
+      { id: 'moveDown', nameKey: 'actionMoveDown', descKey: 'descMoveDown' }
+    ]
+  },
+  {
+    groupTitleKey: 'groupWordKeysTitle',
+    actions: [
+      { id: 'wordForward', nameKey: 'actionWordForward', descKey: 'descWordForward' },
+      { id: 'wordBackward', nameKey: 'actionWordBackward', descKey: 'descWordBackward' },
+      { id: 'wordEnd', nameKey: 'actionWordEnd', descKey: 'descWordEnd' },
+      { id: 'lineStart', nameKey: 'actionLineStart', descKey: 'descLineStart' },
+      { id: 'lineEnd', nameKey: 'actionLineEnd', descKey: 'descLineEnd' }
+    ]
+  },
+  {
+    groupTitleKey: 'groupPageKeysTitle',
+    actions: [
+      { id: 'halfPageDown', nameKey: 'actionHalfPageDown', descKey: 'descHalfPageDown' },
+      { id: 'halfPageUp', nameKey: 'actionHalfPageUp', descKey: 'descHalfPageUp' },
+      { id: 'docStart', nameKey: 'actionDocStart', descKey: 'descDocStart' },
+      { id: 'docEnd', nameKey: 'actionDocEnd', descKey: 'descDocEnd' }
+    ]
+  },
+  {
+    groupTitleKey: 'groupVisualKeysTitle',
+    actions: [
+      { id: 'visualMode', nameKey: 'actionVisualMode', descKey: 'descVisualMode' },
+      { id: 'yank', nameKey: 'actionYank', descKey: 'descYank' }
+    ]
+  }
+];
 
 function applyLocale(locale: Locale): void {
   currentLocale = locale;
@@ -35,6 +104,8 @@ function applyLocale(locale: Locale): void {
   if (localeSel) {
     localeSel.value = locale;
   }
+
+  renderKeybindingsList();
 }
 
 function showToast(message?: string): void {
@@ -57,8 +128,177 @@ function syncCursorStore(): void {
     visible: true,
     theme: sandboxTheme,
     shape: sandboxShape,
-    advanced: currentConfig
+    advanced: currentConfig,
+    keybindings: currentKeybindings
   });
+}
+
+function switchTab(tabId: 'tab-physics' | 'tab-keybindings'): void {
+  const tabBtns = document.querySelectorAll<HTMLButtonElement>('.tab-btn');
+  tabBtns.forEach((btn) => {
+    btn.classList.toggle('active', btn.getAttribute('data-tab') === tabId);
+  });
+
+  const tabPhysics = document.getElementById('tab-physics');
+  const tabKeys = document.getElementById('tab-keybindings');
+
+  if (tabId === 'tab-physics') {
+    tabPhysics?.classList.remove('hidden');
+    tabKeys?.classList.add('hidden');
+    window.location.hash = '#physics';
+  } else {
+    tabPhysics?.classList.add('hidden');
+    tabKeys?.classList.remove('hidden');
+    window.location.hash = '#keybindings';
+  }
+}
+
+function renderKeybindingsList(): void {
+  const container = document.getElementById('keybindings-list');
+  if (!container) return;
+
+  const dict = LOCALES[currentLocale] || LOCALES['zh-TW'];
+  container.innerHTML = '';
+
+  KEY_GROUPS.forEach((group) => {
+    const block = document.createElement('div');
+    block.className = 'key-group-block';
+
+    const groupTitle = document.createElement('h3');
+    groupTitle.className = 'key-group-title';
+    groupTitle.textContent = dict[group.groupTitleKey] || String(group.groupTitleKey);
+    block.appendChild(groupTitle);
+
+    group.actions.forEach((act) => {
+      const binding = currentKeybindings.bindings[act.id];
+      const row = document.createElement('div');
+      row.className = 'keybinding-row';
+
+      const meta = document.createElement('div');
+      meta.className = 'keybinding-meta';
+
+      const name = document.createElement('span');
+      name.className = 'keybinding-name';
+      name.textContent = dict[act.nameKey] || String(act.nameKey);
+
+      const desc = document.createElement('span');
+      desc.className = 'keybinding-desc';
+      desc.textContent = dict[act.descKey] || String(act.descKey);
+
+      meta.appendChild(name);
+      meta.appendChild(desc);
+
+      const actionGroup = document.createElement('div');
+      actionGroup.className = 'keybinding-action-group';
+
+      const badge = document.createElement('span');
+      badge.className = 'key-badge' + (binding?.enabled ? '' : ' disabled');
+      badge.textContent = binding?.enabled ? formatKeyCombo(binding) : dict.keyDisabledText;
+
+      const recordBtn = document.createElement('button');
+      recordBtn.type = 'button';
+      recordBtn.className = 'btn-key-record' + (recordingActionId === act.id ? ' recording' : '');
+      recordBtn.textContent = recordingActionId === act.id ? dict.recordingKeyPrompt : dict.recordKeyBtn;
+      recordBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (recordingActionId === act.id) {
+          stopRecording();
+        } else {
+          startRecording(act.id);
+        }
+      });
+
+      const clearBtn = document.createElement('button');
+      clearBtn.type = 'button';
+      clearBtn.className = 'btn-key-clear';
+      clearBtn.textContent = binding?.enabled ? dict.clearKeyBtn : (currentLocale === 'en' ? 'Enable' : currentLocale === 'ja' ? '有効' : '啟用');
+      clearBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (currentKeybindings.bindings[act.id]) {
+          currentKeybindings.bindings[act.id].enabled = !currentKeybindings.bindings[act.id].enabled;
+          saveKeybindings();
+          renderKeybindingsList();
+        }
+      });
+
+      actionGroup.appendChild(badge);
+      actionGroup.appendChild(recordBtn);
+      actionGroup.appendChild(clearBtn);
+
+      row.appendChild(meta);
+      row.appendChild(actionGroup);
+
+      block.appendChild(row);
+    });
+
+    container.appendChild(block);
+  });
+}
+
+function startRecording(actionId: KeyActionId): void {
+  recordingActionId = actionId;
+  renderKeybindingsList();
+}
+
+function stopRecording(): void {
+  recordingActionId = null;
+  renderKeybindingsList();
+}
+
+function saveKeybindings(silent = false): void {
+  if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
+    chrome.storage.sync.set({ muzen_keybindings: currentKeybindings }, () => {
+      if (!silent) showToast();
+    });
+  } else {
+    localStorage.setItem('muzen_keybindings', JSON.stringify(currentKeybindings));
+    if (!silent) showToast();
+  }
+
+  cursorStore.setState({ keybindings: currentKeybindings });
+
+  if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.query) {
+    chrome.tabs.query({}, (tabs) => {
+      tabs.forEach((tab) => {
+        if (tab.id) {
+          chrome.tabs.sendMessage(tab.id, {
+            type: 'SET_KEYBINDINGS',
+            keybindings: currentKeybindings
+          }).catch(() => {});
+        }
+      });
+    });
+  }
+}
+
+function handleGlobalRecordingKeyDown(e: KeyboardEvent): void {
+  if (!recordingActionId) return;
+
+  if (['Shift', 'Control', 'Alt', 'Meta'].includes(e.key)) {
+    return;
+  }
+
+  e.preventDefault();
+  e.stopPropagation();
+
+  const key = e.key;
+  const ctrlKey = e.ctrlKey;
+  const altKey = e.altKey;
+  const shiftKey = e.shiftKey && key.length > 1;
+  const metaKey = e.metaKey;
+
+  currentKeybindings.bindings[recordingActionId] = {
+    key,
+    ctrlKey,
+    altKey,
+    shiftKey,
+    metaKey,
+    enabled: true
+  };
+
+  recordingActionId = null;
+  saveKeybindings(false);
+  renderKeybindingsList();
 }
 
 let previewTimer: any = null;
@@ -281,7 +521,7 @@ function saveConfig(silent = false): void {
 
 function loadConfig(): void {
   if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
-    chrome.storage.sync.get(['muzen_advanced', 'muzen_theme', 'muzen_shape', 'muzen_locale'], (res) => {
+    chrome.storage.sync.get(['muzen_advanced', 'muzen_theme', 'muzen_shape', 'muzen_locale', 'muzen_keybindings', 'muzen_excluded_sites'], (res) => {
       const savedLocale = (res.muzen_locale as Locale) || detectDefaultLocale();
       applyLocale(savedLocale);
 
@@ -293,13 +533,40 @@ function loadConfig(): void {
       if (res.muzen_theme) sandboxTheme = res.muzen_theme;
       if (res.muzen_shape) sandboxShape = res.muzen_shape;
 
+      if (res.muzen_keybindings && typeof res.muzen_keybindings === 'object') {
+        currentKeybindings = {
+          ...DEFAULT_KEYBINDINGS,
+          ...res.muzen_keybindings,
+          bindings: {
+            ...DEFAULT_KEYBINDINGS.bindings,
+            ...(res.muzen_keybindings.bindings || {})
+          }
+        };
+      } else {
+        currentKeybindings = {
+          ...DEFAULT_KEYBINDINGS,
+          bindings: { ...DEFAULT_KEYBINDINGS.bindings }
+        };
+      }
+
       const themeSel = document.getElementById('sandbox-theme') as HTMLSelectElement | null;
       if (themeSel && res.muzen_theme) themeSel.value = res.muzen_theme;
 
       const shapeSel = document.getElementById('sandbox-shape') as HTMLSelectElement | null;
       if (shapeSel && res.muzen_shape) shapeSel.value = res.muzen_shape;
 
+      // 載入完全停用名單
+      const excludedInput = document.getElementById('excluded-sites-input') as HTMLTextAreaElement | null;
+      if (excludedInput && Array.isArray(res.muzen_excluded_sites)) {
+        excludedInput.value = res.muzen_excluded_sites.join('\n');
+      }
+
       populateForm(currentConfig);
+      renderKeybindingsList();
+
+      if (window.location.hash === '#keybindings' || window.location.hash === '#shortcuts') {
+        switchTab('tab-keybindings');
+      }
     });
   } else {
     applyLocale(detectDefaultLocale());
@@ -311,7 +578,32 @@ function loadConfig(): void {
         currentConfig = { ...DEFAULT_ADVANCED_CONFIG };
       }
     }
+    const localKeys = localStorage.getItem('muzen_keybindings');
+    if (localKeys) {
+      try {
+        currentKeybindings = { ...DEFAULT_KEYBINDINGS, ...JSON.parse(localKeys) };
+      } catch {
+        currentKeybindings = { ...DEFAULT_KEYBINDINGS };
+      }
+    }
+
+    const localExcluded = localStorage.getItem('muzen_excluded_sites');
+    if (localExcluded) {
+      try {
+        const parsed = JSON.parse(localExcluded);
+        const excludedInput = document.getElementById('excluded-sites-input') as HTMLTextAreaElement | null;
+        if (excludedInput && Array.isArray(parsed)) {
+          excludedInput.value = parsed.join('\n');
+        }
+      } catch {}
+    }
+
     populateForm(currentConfig);
+    renderKeybindingsList();
+
+    if (window.location.hash === '#keybindings' || window.location.hash === '#shortcuts') {
+      switchTab('tab-keybindings');
+    }
   }
 }
 
@@ -362,6 +654,17 @@ function initEvents(): void {
       if (changes.muzen_advanced && changes.muzen_advanced.newValue) {
         currentConfig = { ...DEFAULT_ADVANCED_CONFIG, ...changes.muzen_advanced.newValue };
         populateForm(currentConfig);
+      }
+      if (changes.muzen_keybindings && changes.muzen_keybindings.newValue) {
+        currentKeybindings = {
+          ...DEFAULT_KEYBINDINGS,
+          ...changes.muzen_keybindings.newValue,
+          bindings: {
+            ...DEFAULT_KEYBINDINGS.bindings,
+            ...(changes.muzen_keybindings.newValue.bindings || {})
+          }
+        };
+        renderKeybindingsList();
       }
     });
   }
@@ -529,6 +832,79 @@ function initEvents(): void {
       card.classList.remove('is-previewing');
       stopPreview();
     });
+  });
+
+  // 9. 標籤頁點擊切換
+  document.querySelectorAll<HTMLButtonElement>('.tab-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const targetTab = btn.getAttribute('data-tab') as 'tab-physics' | 'tab-keybindings';
+      if (targetTab) switchTab(targetTab);
+    });
+  });
+
+  // 11. 完全停用名單儲存 (Blacklist)
+  document.getElementById('btn-save-excluded')?.addEventListener('click', () => {
+    const input = document.getElementById('excluded-sites-input') as HTMLTextAreaElement | null;
+    if (input) {
+      const sites = Array.from(new Set(
+        input.value
+          .split('\n')
+          .map((s) => s.trim().toLowerCase())
+          .filter((s) => s.length > 0)
+      ));
+      input.value = sites.join('\n');
+
+      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
+        chrome.storage.sync.set({ muzen_excluded_sites: sites }, () => {
+          showToast();
+        });
+      } else {
+        localStorage.setItem('muzen_excluded_sites', JSON.stringify(sites));
+        showToast();
+      }
+
+      // 廣播至所有已開啟分頁
+      if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.query) {
+        chrome.tabs.query({}, (tabs) => {
+          tabs.forEach((tab) => {
+            if (tab.id) {
+              chrome.tabs.sendMessage(tab.id, {
+                type: 'UPDATE_EXCLUDED_SITES',
+                excludedSites: sites
+              }).catch(() => {});
+            }
+          });
+        });
+      }
+
+      const btn = document.getElementById('btn-save-excluded');
+      const dict = LOCALES[currentLocale] || LOCALES['zh-TW'];
+      if (btn) btn.textContent = dict.blacklistSavedBtn;
+      setTimeout(() => {
+        if (btn) btn.textContent = dict.blacklistSaveBtn;
+      }, 1800);
+    }
+  });
+
+  // 12. 還原預設按鍵
+  document.getElementById('btn-reset-keybindings')?.addEventListener('click', () => {
+    currentKeybindings = {
+      ...DEFAULT_KEYBINDINGS,
+      bindings: { ...DEFAULT_KEYBINDINGS.bindings }
+    };
+    saveKeybindings(false);
+    renderKeybindingsList();
+
+    const dict = LOCALES[currentLocale] || LOCALES['zh-TW'];
+    showToast(dict.toastKeybindingsReset);
+  });
+
+  // 13. 全域按鍵錄製與點擊取消監聽
+  window.addEventListener('keydown', handleGlobalRecordingKeyDown, true);
+  window.addEventListener('click', () => {
+    if (recordingActionId) {
+      stopRecording();
+    }
   });
 }
 

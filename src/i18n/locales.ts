@@ -193,6 +193,77 @@ export interface Translations {
   toastExportSuccess: string;
   toastImportSuccess: string;
   alertImportError: string;
+
+  // 標籤頁與按鍵設定
+  tabPhysicsTitle: string;
+  tabKeybindingsTitle: string;
+  keybindingsSectionTitle: string;
+  keybindingsSectionDesc: string;
+  conflictStrategyTitle: string;
+  conflictStrategyDesc: string;
+  conflictModeActiveOnly: string;
+  conflictModeActiveOnlyDesc: string;
+  conflictModeAlways: string;
+  conflictModeAlwaysDesc: string;
+  conflictModeRequireModifier: string;
+  conflictModeRequireModifierDesc: string;
+  passthroughSitesTitle: string;
+  passthroughSitesDesc: string;
+  passthroughPlaceholder: string;
+  savePassthroughBtn: string;
+  passthroughSavedBtn: string;
+  siteRulesTitle: string;
+  siteRulesDesc: string;
+
+  groupSystemKeysTitle: string;
+  groupMoveKeysTitle: string;
+  groupWordKeysTitle: string;
+  groupPageKeysTitle: string;
+  groupVisualKeysTitle: string;
+
+  actionToggleCursor: string;
+  descToggleCursor: string;
+  actionEscape: string;
+  descEscape: string;
+  actionMoveLeft: string;
+  descMoveLeft: string;
+  actionMoveRight: string;
+  descMoveRight: string;
+  actionMoveUp: string;
+  descMoveUp: string;
+  actionMoveDown: string;
+  descMoveDown: string;
+  actionWordForward: string;
+  descWordForward: string;
+  actionWordBackward: string;
+  descWordBackward: string;
+  actionWordEnd: string;
+  descWordEnd: string;
+  actionLineStart: string;
+  descLineStart: string;
+  actionLineEnd: string;
+  descLineEnd: string;
+  actionHalfPageDown: string;
+  descHalfPageDown: string;
+  actionHalfPageUp: string;
+  descHalfPageUp: string;
+  actionDocStart: string;
+  descDocStart: string;
+  actionDocEnd: string;
+  descDocEnd: string;
+  actionVisualMode: string;
+  descVisualMode: string;
+  actionYank: string;
+  descYank: string;
+
+  recordKeyBtn: string;
+  recordingKeyPrompt: string;
+  clearKeyBtn: string;
+  resetKeybindingsBtn: string;
+  keyConflictWarning: string;
+  keyDisabledText: string;
+  toastKeybindingsReset: string;
+  openKeybindingsSettingsBtn: string;
 }
 
 export const LOCALES: Record<Locale, Translations> = {
@@ -375,7 +446,77 @@ export const LOCALES: Record<Locale, Translations> = {
     toastResetAll: '✓ 所有進階數值已回復為預設值',
     toastExportSuccess: '✓ 已匯出設定檔 (JSON)',
     toastImportSuccess: '✓ 成功匯入外部進階設定',
-    alertImportError: '匯入失敗：JSON 格式無效'
+    alertImportError: '匯入失敗：JSON 格式無效',
+
+    tabPhysicsTitle: '📐 物理與動態調校',
+    tabKeybindingsTitle: '⌨️ 按鍵設定與衝突管理',
+    keybindingsSectionTitle: '快捷鍵設定與防衝突機制',
+    keybindingsSectionDesc: '自訂所有 Vim 導航按鍵，並靈活應對 YouTube、GitHub、Gmail 等網頁專屬快捷鍵',
+    conflictStrategyTitle: '網頁快捷鍵衝突防護策略',
+    conflictStrategyDesc: '當瀏覽本身已有內建快捷鍵的網頁時，選擇 Muzen Cursor 的接管方式',
+    conflictModeActiveOnly: '僅游標喚醒時接管 (推薦)',
+    conflictModeActiveOnlyDesc: '平常放行單鍵給 YouTube、Gmail；按下切換鍵 (alt + v) 或點擊文字喚醒游標後才接管，按 Esc 隱藏後立即歸還網頁。',
+    conflictModeAlways: '隨時接管模式 (經典 Vim)',
+    conflictModeAlwaysDesc: '隨時響應單鍵快捷鍵（可能與 YouTube、Gmail 原生按鍵重疊）。',
+    conflictModeRequireModifier: '修飾鍵模式 (alt 組合鍵)',
+    conflictModeRequireModifierDesc: '所有導航鍵強制搭配 alt 修飾鍵 (例如 alt + j/k)，100% 杜絕與任何網頁單鍵衝突。',
+    passthroughSitesTitle: '快捷鍵直通網站清單 (Passthrough Sites)',
+    passthroughSitesDesc: '在此清單內的網域中，自動避讓網頁原生快捷鍵，平時不誤彈出；按 alt + v 可隨時喚醒接管',
+    passthroughPlaceholder: '每行一個網域，例如：\ngithub.com\nyoutube.com\nmail.google.com\nnotion.so',
+    savePassthroughBtn: '儲存直通清單',
+    passthroughSavedBtn: '✓ 直通名單已儲存',
+    siteRulesTitle: '網站規則與相容性管理',
+    siteRulesDesc: '分區管理「快捷鍵直通名單」與「完全停用名單」，徹底杜絕衝突與混淆',
+
+    groupSystemKeysTitle: '系統與喚醒控制',
+    groupMoveKeysTitle: '游標字元與跳行移動',
+    groupWordKeysTitle: '智慧跳詞與行邊界',
+    groupPageKeysTitle: '翻頁與全文躍遷',
+    groupVisualKeysTitle: 'Visual 選取與文字複製',
+
+    actionToggleCursor: '啟動 / 凍結游標',
+    descToggleCursor: '切換游標主開關，喚醒或休眠',
+    actionEscape: '取消選取 / 隱藏游標',
+    descEscape: '退出 Visual 模式，或隱藏游標並將單鍵交還網頁',
+    actionMoveLeft: '向左移動 (Move Left)',
+    descMoveLeft: '游標向左移動一個字元',
+    actionMoveRight: '向右移動 (Move Right)',
+    descMoveRight: '游標向右移動一個字元',
+    actionMoveUp: '向上移動 (Move Up)',
+    descMoveUp: '游標向上跳動一行',
+    actionMoveDown: '向下移動 (Move Down)',
+    descMoveDown: '游標向下跳動一行',
+    actionWordForward: '向前跳詞 (Word Forward)',
+    descWordForward: '智慧跳至下一個詞彙開頭',
+    actionWordBackward: '向後退詞 (Word Backward)',
+    descWordBackward: '智慧退回上一個詞彙開頭',
+    actionWordEnd: '跳至詞尾 (Word End)',
+    descWordEnd: '跳至當前或下一個詞彙結尾',
+    actionLineStart: '跳至行首 (Line Start)',
+    descLineStart: '瞬移至當前視覺行最前端',
+    actionLineEnd: '跳至行尾 (Line End)',
+    descLineEnd: '瞬移至當前視覺行最末端',
+    actionHalfPageDown: '向下半頁 (Half-page Down)',
+    descHalfPageDown: '視窗與游標向下推進半頁視野',
+    actionHalfPageUp: '向上半頁 (Half-page Up)',
+    descHalfPageUp: '視窗與游標向上回推半頁視野',
+    actionDocStart: '跳至全文開頭 (Doc Start)',
+    descDocStart: '連按兩次 g 跳回全文最頂部',
+    actionDocEnd: '跳至全文結尾 (Doc End)',
+    descDocEnd: '直接躍遷至文章最底部結尾',
+    actionVisualMode: 'Visual 選取模式',
+    descVisualMode: '進入文字高亮反白選取狀態',
+    actionYank: '複製選取文字 (Yank)',
+    descYank: '將 Visual 選取字句複製至剪貼簿',
+
+    recordKeyBtn: '點擊錄製',
+    recordingKeyPrompt: '請按下按鍵組合...',
+    clearKeyBtn: '停用',
+    resetKeybindingsBtn: '↺ 還原預設按鍵',
+    keyConflictWarning: '此按鍵已被其他動作使用！',
+    keyDisabledText: '已停用',
+    toastKeybindingsReset: '✓ 按鍵設定已還原為官方預設值',
+    openKeybindingsSettingsBtn: '⌨️ 自訂按鍵與防衝突設定'
   },
   'en': {
     appName: 'Muzen Cursor',
@@ -556,7 +697,77 @@ export const LOCALES: Record<Locale, Translations> = {
     toastResetAll: '✓ All advanced settings reset to defaults',
     toastExportSuccess: '✓ Configuration exported (JSON)',
     toastImportSuccess: '✓ Successfully imported advanced settings',
-    alertImportError: 'Import failed: Invalid JSON format'
+    alertImportError: 'Import failed: Invalid JSON format',
+
+    tabPhysicsTitle: '📐 Physics & Motion',
+    tabKeybindingsTitle: '⌨️ Keybindings & Shortcuts',
+    keybindingsSectionTitle: 'Keybindings & Conflict Resolution',
+    keybindingsSectionDesc: 'Customize Vim navigation keys and resolve conflicts with YouTube, GitHub, and Gmail shortcuts',
+    conflictStrategyTitle: 'Web Shortcut Conflict Strategy',
+    conflictStrategyDesc: 'Choose how Muzen Cursor intercepts keys when a web page has its own shortcuts',
+    conflictModeActiveOnly: 'Only When Cursor Active (Recommended)',
+    conflictModeActiveOnlyDesc: 'Pass keys to YouTube and Gmail when cursor is idle. Cursor intercepts keys only when active (via alt + v or click); pressing Esc releases keys back to the webpage immediately.',
+    conflictModeAlways: 'Always Active (Classic Vim)',
+    conflictModeAlwaysDesc: 'Always intercept single keys (may conflict with YouTube/Gmail built-in shortcuts).',
+    conflictModeRequireModifier: 'Require Modifier (Alt Key)',
+    conflictModeRequireModifierDesc: 'All navigation keys must be pressed with Alt (e.g., alt + j/k), 100% avoiding web shortcut clashes.',
+    passthroughSitesTitle: 'Passthrough Sites List',
+    passthroughSitesDesc: 'Single-key shortcuts pass directly to the webpage; press alt + v anytime to activate cursor',
+    passthroughPlaceholder: 'One domain per line, e.g.:\ngithub.com\nyoutube.com\nmail.google.com\nnotion.so',
+    savePassthroughBtn: 'Save Passthrough Sites',
+    passthroughSavedBtn: '✓ Passthrough Sites Saved',
+    siteRulesTitle: 'Site Rules & Compatibility',
+    siteRulesDesc: 'Manage Passthrough Sites and Blacklist Excluded Sites side-by-side without conflicts',
+
+    groupSystemKeysTitle: 'System & Activation',
+    groupMoveKeysTitle: 'Cursor Movement',
+    groupWordKeysTitle: 'Word Navigation & Line Boundaries',
+    groupPageKeysTitle: 'Page Scrolling & Document Boundary',
+    groupVisualKeysTitle: 'Visual Selection & Yank',
+
+    actionToggleCursor: 'Toggle Cursor',
+    descToggleCursor: 'Turn the cursor master switch on or off',
+    actionEscape: 'Cancel / Hide Cursor',
+    descEscape: 'Exit Visual mode or hide cursor and return keys to web',
+    actionMoveLeft: 'Move Left',
+    descMoveLeft: 'Move cursor left by one character',
+    actionMoveRight: 'Move Right',
+    descMoveRight: 'Move cursor right by one character',
+    actionMoveUp: 'Move Up',
+    descMoveUp: 'Move cursor up by one line',
+    actionMoveDown: 'Move Down',
+    descMoveDown: 'Move cursor down by one line',
+    actionWordForward: 'Word Forward',
+    descWordForward: 'Jump forward to the next word start',
+    actionWordBackward: 'Word Backward',
+    descWordBackward: 'Jump backward to previous word start',
+    actionWordEnd: 'Word End',
+    descWordEnd: 'Jump to end of current/next word',
+    actionLineStart: 'Line Start',
+    descLineStart: 'Jump to beginning of visual line',
+    actionLineEnd: 'Line End',
+    descLineEnd: 'Jump to end of visual line',
+    actionHalfPageDown: 'Half-page Down',
+    descHalfPageDown: 'Scroll down by half a page',
+    actionHalfPageUp: 'Half-page Up',
+    descHalfPageUp: 'Scroll up by half a page',
+    actionDocStart: 'Document Start',
+    descDocStart: 'Jump to very beginning of document (gg)',
+    actionDocEnd: 'Document End',
+    descDocEnd: 'Jump to very end of document (G)',
+    actionVisualMode: 'Visual Selection Mode',
+    descVisualMode: 'Toggle character highlight selection',
+    actionYank: 'Copy Selection (Yank)',
+    descYank: 'Copy selected text to clipboard',
+
+    recordKeyBtn: 'Record Key',
+    recordingKeyPrompt: 'Press key combination...',
+    clearKeyBtn: 'Disable',
+    resetKeybindingsBtn: '↺ Reset Default Keys',
+    keyConflictWarning: 'Key is already assigned to another action!',
+    keyDisabledText: 'Disabled',
+    toastKeybindingsReset: '✓ Keybindings restored to defaults',
+    openKeybindingsSettingsBtn: '⌨️ Custom Keybindings & Conflicts'
   },
   'ja': {
     appName: 'Muzen Cursor',
@@ -737,7 +948,77 @@ export const LOCALES: Record<Locale, Translations> = {
     toastResetAll: '✓ すべての高度な設定をデフォルトに戻しました',
     toastExportSuccess: '✓ 設定をエクスポートしました (JSON)',
     toastImportSuccess: '✓ 高度な設定をインポートしました',
-    alertImportError: 'インポート失敗：無効な JSON 形式です'
+    alertImportError: 'インポート失敗：無効な JSON 形式です',
+
+    tabPhysicsTitle: '📐 物理とモーション調律',
+    tabKeybindingsTitle: '⌨️ キー設定と衝突管理',
+    keybindingsSectionTitle: 'ショートカットキー設定と競合回避',
+    keybindingsSectionDesc: 'Vim移動キーを自由にカスタマイズし、YouTubeやGitHub、Gmail等の独自ショートカットとの衝突を防止します',
+    conflictStrategyTitle: 'Webショートカット衝突防止戦略',
+    conflictStrategyDesc: 'ページ独自のショートカットが存在する場合の動作ポリシーを選択します',
+    conflictModeActiveOnly: 'カーソル起動時のみ有効 (推奨)',
+    conflictModeActiveOnlyDesc: '普段はキーをYouTubeやGmailにそのまま通し、起動キー(alt + v)またはクリック時のみVimキーが動作。Escで非表示にすると即座にページへ返却します。',
+    conflictModeAlways: '常時有効モード (クラシック Vim)',
+    conflictModeAlwaysDesc: 'カーソル状態に関わらず常にキーを捕捉します（YouTube等の独自キーと競合する可能性があります）。',
+    conflictModeRequireModifier: '修飾キー併用モード (Alt キー)',
+    conflictModeRequireModifierDesc: '全ての移動キーにAltの併用を必須とし、Webページの単一キーとの衝突を100%防止します。',
+    passthroughSitesTitle: 'キー直通サイトリスト (Passthrough Sites)',
+    passthroughSitesDesc: 'このリスト内のドメインでは単一キーをWebページへ優先。誤クリックを防ぎ、alt + v でいつでも起動可能',
+    passthroughPlaceholder: '1行に1ドメインを入力（例）：\ngithub.com\nyoutube.com\nmail.google.com\nnotion.so',
+    savePassthroughBtn: '直通リストを保存',
+    passthroughSavedBtn: '✓ 直通リスト保存完了',
+    siteRulesTitle: 'サイト規則と互換性管理',
+    siteRulesDesc: '「キー直通リスト」と「完全無効化リスト」を同一画面で一括管理し、競合を解消します',
+
+    groupSystemKeysTitle: 'システムと起動制御',
+    groupMoveKeysTitle: '文字・行移動',
+    groupWordKeysTitle: '単語移動と行境界',
+    groupPageKeysTitle: 'ページスクロールと文書境界',
+    groupVisualKeysTitle: 'Visual選択とコピー',
+
+    actionToggleCursor: 'カーソル有効/無効',
+    descToggleCursor: 'カーソルのメインスイッチを切り替えます',
+    actionEscape: '選択解除 / カーソル非表示',
+    descEscape: 'Visualモードを解除、またはカーソルを非表示にしてキーを返却',
+    actionMoveLeft: '左へ移動',
+    descMoveLeft: 'カーソルを1文字左へ移動',
+    actionMoveRight: '右へ移動',
+    descMoveRight: 'カーソルを1文字右へ移動',
+    actionMoveUp: '上へ移動',
+    descMoveUp: 'カーソルを1行上へ移動',
+    actionMoveDown: '下へ移動',
+    descMoveDown: 'カーソルを1行下へ移動',
+    actionWordForward: '次の単語へ',
+    descWordForward: '次の単語の先頭へジャンプ',
+    actionWordBackward: '前の単語へ',
+    descWordBackward: '前の単語の先頭へ戻る',
+    actionWordEnd: '単語の末尾へ',
+    descWordEnd: '現在または次の単語の末尾へジャンプ',
+    actionLineStart: '行頭へジャンプ',
+    descLineStart: '現在の行の先頭へ瞬時に移動',
+    actionLineEnd: '行末へジャンプ',
+    descLineEnd: '現在の行の末尾へ瞬時に移動',
+    actionHalfPageDown: '半ページ下へ',
+    descHalfPageDown: '画面を半ページ分下へ進める',
+    actionHalfPageUp: '半ページ上へ',
+    descHalfPageUp: '画面を半ページ分上へ戻す',
+    actionDocStart: '文書の先頭へ (gg)',
+    descDocStart: 'g を連続2回押して文書の最上部へ',
+    actionDocEnd: '文書の末尾へ (G)',
+    descDocEnd: '文書の最下部へ直接ジャンプ',
+    actionVisualMode: 'Visual選択モード',
+    descVisualMode: '文字のハイライト選択を開始/終了',
+    actionYank: '選択文字をコピー (Yank)',
+    descYank: '選択範囲のテキストをクリップボードにコピー',
+
+    recordKeyBtn: 'キー割り当て',
+    recordingKeyPrompt: 'キーを押してください...',
+    clearKeyBtn: '無効化',
+    resetKeybindingsBtn: '↺ キー設定を初期化',
+    keyConflictWarning: 'このキーは既に他の操作に割り当てられています！',
+    keyDisabledText: '無効',
+    toastKeybindingsReset: '✓ キー設定を初期値に戻しました',
+    openKeybindingsSettingsBtn: '⌨️ キー設定と衝突管理'
   }
 };
 

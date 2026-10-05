@@ -50,3 +50,17 @@ export function isElementInViewport(el: HTMLElement): boolean {
     rect.left <= (window.innerWidth || document.documentElement.clientWidth)
   );
 }
+
+/**
+ * 判斷當前網域名稱是否命中名單 (支援萬用或子網域比對)
+ */
+export function isHostnameExcluded(hostname: string, list: string[]): boolean {
+  if (!hostname || !list || !Array.isArray(list)) return false;
+  const current = hostname.toLowerCase();
+  return list.some((item) => {
+    const pattern = item.trim().toLowerCase();
+    if (!pattern) return false;
+    return current === pattern || current.endsWith('.' + pattern);
+  });
+}
+

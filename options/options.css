@@ -580,3 +580,223 @@ body {
   color: var(--accent-cyan);
   font-weight: 600;
 }
+
+/* 標籤頁導航列 */
+.options-tabs-nav {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 12px;
+}
+
+.tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  background: var(--bg-card);
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.tab-btn:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-main);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.tab-btn.active {
+  background: rgba(254, 128, 25, 0.15);
+  color: var(--accent-orange);
+  border-color: var(--accent-orange);
+  box-shadow: 0 0 12px rgba(254, 128, 25, 0.2);
+}
+
+.tab-pane.hidden {
+  display: none !important;
+}
+
+/* 完全停用名單卡片 */
+.site-rule-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  gap: 8px;
+}
+
+.site-rule-card .field-label-row {
+  margin-bottom: 2px;
+}
+
+.site-rule-card .field-hint {
+  margin-bottom: 8px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.textarea-input {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--text-main);
+  padding: 12px 14px;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.textarea-input:focus {
+  border-color: var(--border-focus);
+  outline: none;
+  box-shadow: 0 0 8px rgba(254, 128, 25, 0.25);
+}
+
+/* 按鍵配置列表 */
+.keybindings-list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.key-group-block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.key-group-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--accent-gold);
+  border-bottom: 1px solid rgba(250, 189, 47, 0.2);
+  padding-bottom: 6px;
+  margin-top: 4px;
+}
+
+.keybinding-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  gap: 12px;
+  transition: all var(--transition-fast);
+}
+
+.keybinding-row:hover {
+  background: var(--bg-card);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.keybinding-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.keybinding-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.keybinding-desc {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+
+.keybinding-action-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.key-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 72px;
+  padding: 4px 10px;
+  background: #121314;
+  border: 1px solid rgba(235, 219, 178, 0.2);
+  border-bottom: 2px solid rgba(235, 219, 178, 0.35);
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--accent-orange);
+  font-weight: 600;
+  text-align: center;
+}
+
+.key-badge.disabled {
+  color: var(--text-dim);
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.btn-key-record {
+  padding: 5px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(254, 128, 25, 0.3);
+  background: rgba(254, 128, 25, 0.1);
+  color: var(--accent-orange);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-key-record:hover {
+  background: var(--accent-orange);
+  color: #1d2021;
+}
+
+.btn-key-record.recording {
+  background: var(--accent-red);
+  color: #ffffff;
+  border-color: var(--accent-red);
+  animation: keyPulse 1s infinite alternate;
+}
+
+@keyframes keyPulse {
+  from {
+    box-shadow: 0 0 4px rgba(251, 73, 52, 0.4);
+    opacity: 0.85;
+  }
+  to {
+    box-shadow: 0 0 12px rgba(251, 73, 52, 0.9);
+    opacity: 1;
+  }
+}
+
+.btn-key-clear {
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-key-clear:hover {
+  background: rgba(251, 73, 52, 0.15);
+  color: var(--accent-red);
+  border-color: rgba(251, 73, 52, 0.3);
+}
+

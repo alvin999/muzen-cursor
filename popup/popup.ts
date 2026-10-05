@@ -1,4 +1,5 @@
 import { LOCALES, Locale, Translations, detectDefaultLocale } from '../src/i18n/locales';
+import { formatKeyCombo, DEFAULT_KEYBINDINGS, KeybindingsConfig } from '../src/core/cursorStore';
 
 /**
  * Popup 設定邏輯 (Vanilla TS)
@@ -22,6 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const effectTrail = document.getElementById('effect-trail') as HTMLInputElement | null;
   const pulseRadios = document.querySelectorAll<HTMLInputElement>('input[name="muzen-pulse"]');
   const btnResetDefaults = document.getElementById('btn-reset-defaults') as HTMLButtonElement | null;
+  const btnOpenKeybindings = document.getElementById('btn-open-keybindings') as HTMLButtonElement | null;
   const btnOpenOptions = document.getElementById('btn-open-options') as HTMLButtonElement | null;
   const btnOpenPdf = document.getElementById('btn-open-pdf-viewer') as HTMLButtonElement | null;
   const currentSiteHostEl = document.getElementById('current-site-host');
@@ -55,6 +57,34 @@ document.addEventListener('DOMContentLoaded', () => {
     if (glowVal) {
       const dict = LOCALES[currentLocale] || LOCALES['zh-TW'];
       glowVal.textContent = val <= 0 ? (dict.glowOffDetail || dict.glowOff) : `${val}px`;
+    }
+  };
+
+  // 動態更新快捷鍵指引
+  const formatToKbds = (binding?: any) => {
+    if (!binding) return '';
+    const text = formatKeyCombo(binding);
+    if (text.includes(' + ')) {
+      return text.split(' + ').map((k) => `<kbd>${k}</kbd>`).join(' + ');
+    }
+    return `<kbd>${text}</kbd>`;
+  };
+
+  const updateShortcutGuides = (keybindings?: KeybindingsConfig) => {
+    const config = keybindings || DEFAULT_KEYBINDINGS;
+    const bindings = config.bindings || DEFAULT_KEYBINDINGS.bindings;
+
+    const toggleEl = document.getElementById('guide-toggle');
+    if (toggleEl && bindings.toggleCursor) {
+      toggleEl.innerHTML = formatToKbds(bindings.toggleCursor);
+    }
+    const escEl = document.getElementById('guide-esc');
+    if (escEl && bindings.escape) {
+      escEl.innerHTML = formatToKbds(bindings.escape);
+    }
+    const visualEl = document.getElementById('guide-visual');
+    if (visualEl && bindings.visualMode && bindings.yank) {
+      visualEl.innerHTML = `${formatToKbds(bindings.visualMode)} / ${formatToKbds(bindings.yank)}`;
     }
   };
 
@@ -104,13 +134,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 1. 初始化讀取設定
   if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
-    chrome.storage.sync.get(['muzen_enabled', 'muzen_locale', 'muzen_theme', 'muzen_intercept_pdf', 'muzen_shape', 'muzen_thickness', 'muzen_glow', 'muzen_effects', 'muzen_show_status_bar', 'muzen_excluded_sites', 'muzen_animation'], (data) => {
+    chrome.storage.sync.get(['muzen_enabled', 'muzen_locale', 'muzen_theme', 'muzen_intercept_pdf', 'muzen_shape', 'muzen_thickness', 'muzen_glow', 'muzen_effects', 'muzen_show_status_bar', 'muzen_excluded_sites', 'muzen_animation', 'muzen_keybindings'], (data) => {
       // 載入語言設定
       const savedLocale = (data.muzen_locale as Locale) || detectDefaultLocale();
       if (localeSelect) {
         localeSelect.value = savedLocale;
       }
       applyLocale(savedLocale);
+      updateShortcutGuides(data.muzen_keybindings);
 
       if (toggleEnabled && typeof data.muzen_enabled === 'boolean') {
         toggleEnabled.checked = data.muzen_enabled;
@@ -408,12 +439,25 @@ document.addEventListener('DOMContentLoaded', () => {
   effectTrail?.addEventListener('change', onEffectsChanged);
   pulseRadios.forEach((r) => r.addEventListener('change', onEffectsChanged));
 
+  // 14.4 開啟按鍵與防衝突設定頁面
+  btnOpenKeybindings?.addEventListener('click', () => {
+    if (typeof chrome !== 'undefined' && chrome.tabs && chrome.runtime) {
+      const url = chrome.runtime.getURL('options/index.html#keybindings');
+      chrome.tabs.create({ url });
+    } else {
+      window.open('../options/index.html#keybindings', '_blank');
+    }
+  });
+
   // 14.5 開啟進階設定頁面
   btnOpenOptions?.addEventListener('click', () => {
-    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.openOptionsPage) {
+    if (typeof chrome !== 'undefined' && chrome.tabs && chrome.runtime) {
+      const url = chrome.runtime.getURL('options/index.html#physics');
+      chrome.tabs.create({ url });
+    } else if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.openOptionsPage) {
       chrome.runtime.openOptionsPage();
     } else {
-      window.open('../options/index.html', '_blank');
+      window.open('../options/index.html#physics', '_blank');
     }
   });
 

@@ -185,40 +185,43 @@
     <section class="shortcuts-guide">
       <div class="guide-title" data-i18n="shortcutsTitle">快捷鍵指引</div>
       <div class="shortcut-row">
-        <span class="key-combo"><kbd>h</kbd> <kbd>j</kbd> <kbd>k</kbd> <kbd>l</kbd></span>
+        <span class="key-combo" id="guide-hjkl"><kbd>h</kbd> <kbd>j</kbd> <kbd>k</kbd> <kbd>l</kbd></span>
         <span class="desc" data-i18n="shortcutHjkl">字元 / 行 移動</span>
       </div>
       <div class="shortcut-row">
-        <span class="key-combo"><kbd>u</kbd> / <kbd>d</kbd></span>
+        <span class="key-combo" id="guide-halfpage"><kbd>u</kbd> / <kbd>d</kbd></span>
         <span class="desc" data-i18n="shortcutHalfPage">向下 / 向上半頁跳轉</span>
       </div>
       <div class="shortcut-row">
-        <span class="key-combo"><kbd>w</kbd> <kbd>b</kbd> <kbd>e</kbd></span>
+        <span class="key-combo" id="guide-wbe"><kbd>w</kbd> <kbd>b</kbd> <kbd>e</kbd></span>
         <span class="desc" data-i18n="shortcutWbe">中英文智慧跳詞 / 詞尾</span>
       </div>
       <div class="shortcut-row">
-        <span class="key-combo"><kbd>0</kbd> <kbd>$</kbd></span>
+        <span class="key-combo" id="guide-boundary"><kbd>0</kbd> <kbd>$</kbd></span>
         <span class="desc" data-i18n="shortcutLineBoundary">跳至行首 / 行尾</span>
       </div>
       <div class="shortcut-row">
-        <span class="key-combo"><kbd>g</kbd><kbd>g</kbd> / <kbd>G</kbd></span>
+        <span class="key-combo" id="guide-doc"><kbd>g</kbd><kbd>g</kbd> / <kbd>G</kbd></span>
         <span class="desc" data-i18n="shortcutDocBoundary">全文開頭 / 結尾</span>
       </div>
       <div class="shortcut-row">
-        <span class="key-combo"><kbd>v</kbd> / <kbd>y</kbd></span>
+        <span class="key-combo" id="guide-visual"><kbd>v</kbd> / <kbd>y</kbd></span>
         <span class="desc" data-i18n="shortcutVisual">Visual 選取 / 複製 (Yank)</span>
       </div>
       <div class="shortcut-row">
-        <span class="key-combo"><kbd>Alt</kbd> + <kbd>v</kbd></span>
+        <span class="key-combo" id="guide-toggle"><kbd>alt</kbd> + <kbd>v</kbd></span>
         <span class="desc" data-i18n="shortcutToggle">快速啟動 / 凍結游標</span>
       </div>
       <div class="shortcut-row">
-        <span class="key-combo"><kbd>Esc</kbd></span>
+        <span class="key-combo" id="guide-esc"><kbd>esc</kbd></span>
         <span class="desc" data-i18n="shortcutEscape">取消選取 / 隱藏游標</span>
       </div>
     </section>
 
     <section class="section action-section">
+      <button type="button" id="btn-open-keybindings" class="action-btn" style="margin-bottom: 8px; background: rgba(250, 189, 47, 0.15); border-color: rgba(250, 189, 47, 0.4); color: #fabd2f;" data-i18n="openKeybindingsSettingsBtn">
+        ⌨️ 自訂按鍵與防衝突設定
+      </button>
       <button type="button" id="btn-open-options" class="action-btn" style="margin-bottom: 8px;" data-i18n="advancedSettingsBtn">
         ⚙️ 進階數值調校 (物理與動態)
       </button>

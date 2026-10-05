@@ -41,12 +41,23 @@
     <!-- 儲存反饋提示條 -->
     <div id="save-toast" class="toast hidden">✓ 數值已更新並同步至全部分頁</div>
 
+    <!-- 導覽標籤列 -->
+    <nav class="options-tabs-nav">
+      <button type="button" class="tab-btn active" data-tab="tab-physics">
+        <span data-i18n="tabPhysicsTitle">📐 物理與動態調校</span>
+      </button>
+      <button type="button" class="tab-btn" data-tab="tab-keybindings">
+        <span data-i18n="tabKeybindingsTitle">⌨️ 按鍵設定與衝突管理</span>
+      </button>
+    </nav>
+
     <!-- 主體雙欄工作區 -->
     <main class="options-main">
       <!-- 左側：各項數值輸入表單 -->
       <section class="settings-panel">
-        
-        <!-- 模組 1: 幾何外觀與筆觸 -->
+
+        <!-- 標籤 1: 物理與動態數值調校 -->
+        <div id="tab-physics" class="tab-pane active">
         <div class="setting-group">
           <div class="group-header">
             <span class="group-icon">📐</span>
@@ -506,6 +517,52 @@
 
           </div>
         </div>
+
+        </div><!-- 結束 tab-physics -->
+
+        <!-- 標籤 2: 按鍵自訂與停用名單 -->
+        <div id="tab-keybindings" class="tab-pane hidden">
+
+          <!-- 區塊 A: 完全停用名單 (Blacklist) -->
+          <div class="setting-group">
+            <div class="group-header">
+              <span class="group-icon">🚫</span>
+              <div class="group-title-wrap">
+                <h2 class="group-title" data-i18n="blacklistSectionLabel">完全停用名單 (Blacklist)</h2>
+                <p class="group-desc" data-i18n="blacklistSectionDesc">游標在這些網域中完全休眠凍結，不執行任何功能 (與 Popup 同步)</p>
+              </div>
+            </div>
+
+            <div class="site-rule-card" style="max-width: 640px;">
+              <textarea id="excluded-sites-input" class="textarea-input" rows="6" placeholder="每行輸入一個網域，例如：&#10;docs.google.com&#10;bank.com"></textarea>
+              <div style="margin-top: 10px; display: flex; justify-content: flex-end;">
+                <button type="button" id="btn-save-excluded" class="btn btn-secondary">
+                  <span data-i18n="blacklistSaveBtn">儲存排除名單</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 區塊 C: 自訂快捷鍵配置表 -->
+          <div class="setting-group">
+            <div class="group-header" style="justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <span class="group-icon">⌨️</span>
+                <div class="group-title-wrap">
+                  <h2 class="group-title" data-i18n="keybindingsSectionTitle">快捷鍵設定與動作對應</h2>
+                  <p class="group-desc" data-i18n="keybindingsSectionDesc">點擊任意按鍵旁的「錄製」按鈕，並按下新快捷鍵組合即可自訂</p>
+                </div>
+              </div>
+              <button type="button" id="btn-reset-keybindings" class="btn btn-secondary">
+                <span data-i18n="resetKeybindingsBtn">↺ 還原預設按鍵</span>
+              </button>
+            </div>
+
+            <!-- 按鍵分類清單容器 -->
+            <div class="keybindings-list-container" id="keybindings-list"></div>
+          </div>
+
+        </div><!-- 結束 tab-keybindings -->
 
       </section>
 

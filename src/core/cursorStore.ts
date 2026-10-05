@@ -126,6 +126,113 @@ export const DEFAULT_ADVANCED_CONFIG: AdvancedConfig = {
   trailPreserveTrapezoid: true
 };
 
+export type KeyActionId =
+  | 'toggleCursor'
+  | 'escape'
+  | 'moveLeft'
+  | 'moveRight'
+  | 'moveUp'
+  | 'moveDown'
+  | 'wordForward'
+  | 'wordBackward'
+  | 'wordEnd'
+  | 'lineStart'
+  | 'lineEnd'
+  | 'halfPageDown'
+  | 'halfPageUp'
+  | 'docStart'
+  | 'docEnd'
+  | 'visualMode'
+  | 'yank';
+
+export interface KeybindingDef {
+  key: string;            // 例如 'v', 'Escape', 'ArrowLeft', 'g', 'G', '$'
+  ctrlKey?: boolean;
+  altKey?: boolean;
+  shiftKey?: boolean;
+  metaKey?: boolean;
+  enabled: boolean;
+}
+
+export interface KeybindingsConfig {
+  bindings: Record<KeyActionId, KeybindingDef>;
+}
+
+export const DEFAULT_KEYBINDINGS: KeybindingsConfig = {
+  bindings: {
+    toggleCursor: { key: 'v', altKey: true, enabled: true },
+    escape: { key: 'Escape', enabled: true },
+    moveLeft: { key: 'h', enabled: true },
+    moveRight: { key: 'l', enabled: true },
+    moveUp: { key: 'k', enabled: true },
+    moveDown: { key: 'j', enabled: true },
+    wordForward: { key: 'w', enabled: true },
+    wordBackward: { key: 'b', enabled: true },
+    wordEnd: { key: 'e', enabled: true },
+    lineStart: { key: '0', enabled: true },
+    lineEnd: { key: '$', enabled: true },
+    halfPageDown: { key: 'd', enabled: true },
+    halfPageUp: { key: 'u', enabled: true },
+    docStart: { key: 'g', enabled: true }, // 連按兩次 g (或可自訂)
+    docEnd: { key: 'G', shiftKey: true, enabled: true },
+    visualMode: { key: 'v', enabled: true },
+    yank: { key: 'y', enabled: true }
+  }
+};
+
+/**
+ * 格式化按鍵組合成人類可讀的標籤字串 (例如 "alt + v", "esc", "j")
+ */
+export function formatKeyCombo(binding?: KeybindingDef): string {
+  if (!binding || !binding.enabled) return '已停用';
+  const parts: string[] = [];
+  if (binding.ctrlKey) parts.push('ctrl');
+  if (binding.altKey) parts.push('alt');
+  if (binding.shiftKey && binding.key.length > 1) parts.push('shift');
+  if (binding.metaKey) parts.push('cmd');
+
+  let keyDisplay = binding.key;
+  if (keyDisplay === ' ') keyDisplay = 'space';
+  else if (keyDisplay === 'Escape' || keyDisplay === 'Esc') keyDisplay = 'esc';
+  else if (keyDisplay === 'ArrowUp') keyDisplay = '↑';
+  else if (keyDisplay === 'ArrowDown') keyDisplay = '↓';
+  else if (keyDisplay === 'ArrowLeft') keyDisplay = '←';
+  else if (keyDisplay === 'ArrowRight') keyDisplay = '→';
+  else if (!binding.shiftKey) keyDisplay = keyDisplay.toLowerCase();
+
+  parts.push(keyDisplay);
+  return parts.join(' + ');
+}
+
+/**
+ * 檢查鍵盤事件是否匹配指定的按鍵定義 (支援大小寫容錯)
+ */
+export function matchesKeybinding(e: KeyboardEvent, binding?: KeybindingDef): boolean {
+  if (!binding || !binding.enabled) return false;
+
+  // 修飾鍵精確比對
+  if (Boolean(binding.ctrlKey) !== e.ctrlKey) return false;
+  if (Boolean(binding.altKey) !== e.altKey) return false;
+  if (Boolean(binding.metaKey) !== e.metaKey) return false;
+
+  if (binding.shiftKey !== undefined && Boolean(binding.shiftKey) !== e.shiftKey) {
+    return false;
+  }
+
+  const targetKey = binding.key;
+  if (targetKey === 'Escape' || targetKey === 'esc' || targetKey === 'Esc') {
+    return e.key === 'Escape';
+  }
+
+  // 大寫特定鍵 (如 Shift + G)
+  if (binding.shiftKey || (targetKey.length === 1 && targetKey >= 'A' && targetKey <= 'Z')) {
+    return e.key === targetKey;
+  }
+
+  // 一般單鍵與組合鍵 (如 alt + v) 進行大小寫無關比對
+  return e.key.toLowerCase() === targetKey.toLowerCase();
+}
+
 export interface CursorState {
   enabled: boolean;
   isExcluded: boolean;
@@ -137,6 +244,7 @@ export interface CursorState {
   glow: number;          // 游標光暈強度 (0 - 12 px，0 為無光暈，預設 6)
   effects: CursorEffects;
   advanced: AdvancedConfig; // 進階數值調校配置
+  keybindings: KeybindingsConfig; // 自訂按鍵與防衝突配置
   showStatusBar: boolean;
   rect: CursorRect;
   trailWaypoints?: CursorRect[]; // 跨行移動時由正版 j / k 演算法探測之各行真實路徑點
@@ -169,6 +277,7 @@ class CursorStore {
       trail: true
     },
     advanced: { ...DEFAULT_ADVANCED_CONFIG },
+    keybindings: { ...DEFAULT_KEYBINDINGS },
     showStatusBar: true,
     rect: { x: 0, y: 0, width: 10, height: 20 },
     visible: false,
