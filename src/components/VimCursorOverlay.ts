@@ -105,6 +105,7 @@ export class VimCursorOverlay {
       ghost.style.left = '0px';
       ghost.style.pointerEvents = 'none';
       ghost.style.boxSizing = 'border-box';
+      ghost.style.transformOrigin = 'center center';
       ghost.style.willChange = 'transform, opacity';
       ghost.style.display = 'none';
       ghost.style.opacity = '0';
@@ -689,8 +690,47 @@ export class VimCursorOverlay {
     }
 
     // 模式 B 或 同行水平移動：
-    // 短距離單字元位移 (h / j / k / l，位移 < 45px)：在出發點原位留下 1 個清晰的 3D 殘影
-    if (dist < 45) {
+    // 單行水平位移 (h / l 或同行微步移動)：殘影鎖定於當前行水平基準線的正後方
+    const isHorizontal = absDy < lineHeight * 0.75;
+    if (isHorizontal) {
+      // 確保殘影嚴格鎖定於當前行垂直基準 (gy = targetY, gh = targetH)，杜絕因不同字元邊界微差導致偏移至左上方
+      const gy = targetY;
+      const gh = targetH;
+
+      if (dist < 45) {
+        // 短距離單字元位移 (h / l)：
+        // 若向右移動 (l)，正後方必定在左側；若向左移動 (h)，正後方必定在右側
+        let gx = originX;
+        const gw = originW || targetW;
+        if (dx > 0) {
+          // 向右移動 (l)：正後方在左
+          gx = originX < targetX ? originX : targetX - gw;
+        } else if (dx < 0) {
+          // 向左移動 (h)：正後方在右
+          gx = originX > targetX ? originX : targetX + targetW;
+        }
+
+        this.activateGhost(
+          gx,
+          gy,
+          gw,
+          gh,
+          '', // 同行正後方殘影使用平正錨定，不套用傾斜形變，避免透視旋轉造成視覺位置上浮偏移
+          trailMaxOpacity,
+          trailDurationMs,
+          shape,
+          color,
+          thickness,
+          borderRadius,
+          outlineOffset,
+          glow,
+          0,
+          'static'
+        );
+        return;
+      }
+    } else if (dist < 45) {
+      // 垂直小微步回退方案
       this.activateGhost(
         originX,
         originY,
