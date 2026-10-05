@@ -142,7 +142,8 @@ function main(): void {
             bounce: result.muzen_effects.bounce ?? true,
             smoothScroll: result.muzen_effects.smoothScroll ?? true,
             breathe: result.muzen_effects.breathe ?? false,
-            blink: result.muzen_effects.blink ?? true
+            blink: result.muzen_effects.blink ?? true,
+            trail: result.muzen_effects.trail ?? true
           }
         });
       }

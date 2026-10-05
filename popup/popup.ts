@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const effectSmooth = document.getElementById('effect-smooth') as HTMLInputElement | null;
   const effectBounce = document.getElementById('effect-bounce') as HTMLInputElement | null;
   const effectSmoothScroll = document.getElementById('effect-smooth-scroll') as HTMLInputElement | null;
+  const effectTrail = document.getElementById('effect-trail') as HTMLInputElement | null;
   const pulseRadios = document.querySelectorAll<HTMLInputElement>('input[name="muzen-pulse"]');
   const btnResetDefaults = document.getElementById('btn-reset-defaults') as HTMLButtonElement | null;
   const btnOpenOptions = document.getElementById('btn-open-options') as HTMLButtonElement | null;
@@ -143,6 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (effectSmooth) effectSmooth.checked = data.muzen_effects.smooth !== undefined ? !!data.muzen_effects.smooth : true;
         if (effectBounce) effectBounce.checked = data.muzen_effects.bounce !== undefined ? !!data.muzen_effects.bounce : true;
         if (effectSmoothScroll) effectSmoothScroll.checked = data.muzen_effects.smoothScroll !== undefined ? !!data.muzen_effects.smoothScroll : true;
+        if (effectTrail) effectTrail.checked = data.muzen_effects.trail !== undefined ? !!data.muzen_effects.trail : true;
         const pulseVal = data.muzen_effects.blink ? 'blink' : data.muzen_effects.breathe ? 'breathe' : 'none';
         pulseRadios.forEach((r) => { r.checked = r.value === pulseVal; });
       } else if (data.muzen_animation) {
@@ -150,10 +152,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (effectSmooth) effectSmooth.checked = data.muzen_animation === 'smooth' || data.muzen_animation === 'breathe';
         if (effectBounce) effectBounce.checked = true;
         if (effectSmoothScroll) effectSmoothScroll.checked = true;
+        if (effectTrail) effectTrail.checked = true;
         const pulseVal = data.muzen_animation === 'breathe' ? 'breathe' : data.muzen_animation === 'blink' ? 'blink' : 'none';
         pulseRadios.forEach((r) => { r.checked = r.value === pulseVal; });
       } else {
-        // 預設為 mugen-yomu 經典閃爍
+        // 預設為經典閃爍
         pulseRadios.forEach((r) => { r.checked = r.value === 'blink'; });
       }
 
@@ -388,6 +391,7 @@ document.addEventListener('DOMContentLoaded', () => {
       smooth: effectSmooth ? effectSmooth.checked : true,
       bounce: effectBounce ? effectBounce.checked : true,
       smoothScroll: effectSmoothScroll ? effectSmoothScroll.checked : true,
+      trail: effectTrail ? effectTrail.checked : true,
       breathe: activePulse === 'breathe',
       blink: activePulse === 'blink'
     };
@@ -401,6 +405,7 @@ document.addEventListener('DOMContentLoaded', () => {
   effectSmooth?.addEventListener('change', onEffectsChanged);
   effectBounce?.addEventListener('change', onEffectsChanged);
   effectSmoothScroll?.addEventListener('change', onEffectsChanged);
+  effectTrail?.addEventListener('change', onEffectsChanged);
   pulseRadios.forEach((r) => r.addEventListener('change', onEffectsChanged));
 
   // 14.5 開啟進階設定頁面
@@ -412,9 +417,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // 15. 回復 mugen-yomu 預設值事件
+  // 15. 回復預設值事件
   btnResetDefaults?.addEventListener('click', () => {
-    // 預設參數對齊 mugen-yomu 經典體驗
+    // 預設參數對齊經典體驗
     const defaultTheme = 'gruvbox-dark';
     const defaultShape = 'block';
     const defaultThickness = 1.5;
@@ -423,6 +428,7 @@ document.addEventListener('DOMContentLoaded', () => {
       smooth: true,
       bounce: true,
       smoothScroll: true,
+      trail: true,
       breathe: false,
       blink: true
     };
@@ -440,6 +446,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (effectSmooth) effectSmooth.checked = true;
     if (effectBounce) effectBounce.checked = true;
     if (effectSmoothScroll) effectSmoothScroll.checked = true;
+    if (effectTrail) effectTrail.checked = true;
     pulseRadios.forEach((r) => { r.checked = r.value === 'blink'; });
     if (toggleStatusBar) toggleStatusBar.checked = defaultShowStatusBar;
     if (togglePdf) togglePdf.checked = defaultInterceptPdf;

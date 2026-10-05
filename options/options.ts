@@ -192,6 +192,21 @@ function startPreview(key: keyof AdvancedConfig): void {
       break;
     }
 
+    case 'trailMode':
+    case 'trailCount':
+    case 'trailDurationMs':
+    case 'trailDecayExponent':
+    case 'trailMaxOpacity':
+    case 'trailPreserveTrapezoid':
+      cursorStore.setState({
+        effects: { ...cursorStore.getState().effects, trail: true }
+      });
+      controller?.moveVertical(2);
+      previewTimer = setTimeout(() => {
+        controller?.moveVertical(-2);
+      }, 420);
+      break;
+
     default:
       controller?.moveHorizontal(1);
       previewTimer = setTimeout(() => {
@@ -230,8 +245,20 @@ function populateForm(config: AdvancedConfig): void {
   const inputs = document.querySelectorAll<HTMLInputElement>('input[data-key]');
   inputs.forEach((input) => {
     const key = input.getAttribute('data-key') as keyof AdvancedConfig;
-    if (key && typeof config[key] === 'number') {
+    if (!key) return;
+    if (input.type === 'checkbox') {
+      input.checked = !!config[key];
+    } else if (typeof config[key] === 'number') {
       input.value = String(config[key]);
+    }
+  });
+
+  const selects = document.querySelectorAll<HTMLSelectElement>('select[data-key]');
+  selects.forEach((select) => {
+    const key = select.getAttribute('data-key') as keyof AdvancedConfig;
+    if (!key) return;
+    if (config[key] !== undefined) {
+      select.value = String(config[key]);
     }
   });
 
@@ -339,22 +366,38 @@ function initEvents(): void {
     });
   }
 
-  // 1. 數值輸入框即時同步
+  // 1. 數值與核取方塊輸入框即時同步
   const inputs = document.querySelectorAll<HTMLInputElement>('input[data-key]');
   inputs.forEach((input) => {
     const handleInput = () => {
       const key = input.getAttribute('data-key') as keyof AdvancedConfig;
       if (!key) return;
 
-      const numVal = parseFloat(input.value);
-      if (!isNaN(numVal)) {
-        currentConfig[key] = numVal;
+      if (input.type === 'checkbox') {
+        (currentConfig as any)[key] = input.checked;
         saveConfig(false);
+      } else {
+        const numVal = parseFloat(input.value);
+        if (!isNaN(numVal)) {
+          (currentConfig as any)[key] = numVal;
+          saveConfig(false);
+        }
       }
     };
 
     input.addEventListener('input', handleInput);
     input.addEventListener('change', handleInput);
+  });
+
+  // 1.1 下拉選單即時同步 (如 trailMode)
+  const selects = document.querySelectorAll<HTMLSelectElement>('select[data-key]');
+  selects.forEach((select) => {
+    select.addEventListener('change', () => {
+      const key = select.getAttribute('data-key') as keyof AdvancedConfig;
+      if (!key) return;
+      (currentConfig as any)[key] = select.value;
+      saveConfig(false);
+    });
   });
 
   // 2. 單項重設按鈕
@@ -364,11 +407,15 @@ function initEvents(): void {
       if (!key) return;
 
       const defaultVal = DEFAULT_ADVANCED_CONFIG[key];
-      currentConfig[key] = defaultVal;
+      (currentConfig as any)[key] = defaultVal;
 
-      const targetInput = document.querySelector<HTMLInputElement>(`input[data-key="${key}"]`);
-      if (targetInput) {
-        targetInput.value = String(defaultVal);
+      const targetControl = document.querySelector<HTMLInputElement | HTMLSelectElement>(`[data-key="${key}"]`);
+      if (targetControl) {
+        if (targetControl instanceof HTMLInputElement && targetControl.type === 'checkbox') {
+          targetControl.checked = !!defaultVal;
+        } else {
+          targetControl.value = String(defaultVal);
+        }
       }
 
       saveConfig(false);
@@ -469,8 +516,8 @@ function initEvents(): void {
 
   // 8. 每個選項滑鼠懸浮 (hover) 即時動態效果模擬
   document.querySelectorAll<HTMLElement>('.field-card').forEach((card) => {
-    const input = card.querySelector<HTMLInputElement>('input[data-key]');
-    const key = input?.getAttribute('data-key') as keyof AdvancedConfig | null;
+    const control = card.querySelector<HTMLInputElement | HTMLSelectElement>('input[data-key], select[data-key]');
+    const key = control?.getAttribute('data-key') as keyof AdvancedConfig | null;
     if (!key) return;
 
     card.addEventListener('mouseenter', () => {

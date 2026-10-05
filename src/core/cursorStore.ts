@@ -30,6 +30,7 @@ export interface CursorEffects {
   smoothScroll: boolean; // 平滑視窗捲動 (Smooth Page Scrolling)
   breathe: boolean;      // 禪意呼吸燈 (Breathing Pulse Glow)
   blink: boolean;        // 經典閃爍 (Terminal Blink)
+  trail?: boolean;       // 梯形透視殘影 (Trapezoid Motion Trail)
 }
 
 export interface CursorRect {
@@ -38,6 +39,8 @@ export interface CursorRect {
   width: number;
   height: number;
 }
+
+export type TrailMode = 'line' | 'direct';
 
 export interface AdvancedConfig {
   // 1. 幾何外觀與筆觸
@@ -74,6 +77,14 @@ export interface AdvancedConfig {
   scrollDurationMs: number;   // 視窗捲動時間 (ms)
   viewportPaddingTop: number; // 視窗頂部邊距 (px)
   viewportPaddingBottom: number; // 視窗底部邊距 (px)
+
+  // 6. 流光殘影與動態拖尾物理
+  trailMode: TrailMode;       // 殘影過渡軌跡模式 ('line': 逐行流光 / 'direct': 兩點躍遷)
+  trailCount: number;         // 殘影數量階數 (2 ~ 8，預設 4)
+  trailDurationMs: number;    // 殘影淡出時長 (ms，預設 240)
+  trailDecayExponent: number; // 距離衰減曲率 (預設 1.35)
+  trailMaxOpacity: number;    // 最近端殘影起始透明度 (0.1 ~ 1.0，預設 0.75)
+  trailPreserveTrapezoid: boolean; // 是否全程維持梯形透視形變 (預設 true)
 }
 
 export const DEFAULT_ADVANCED_CONFIG: AdvancedConfig = {
@@ -105,7 +116,14 @@ export const DEFAULT_ADVANCED_CONFIG: AdvancedConfig = {
 
   scrollDurationMs: 380,
   viewportPaddingTop: 120,
-  viewportPaddingBottom: 160
+  viewportPaddingBottom: 160,
+
+  trailMode: 'line',
+  trailCount: 4,
+  trailDurationMs: 260,
+  trailDecayExponent: 1.35,
+  trailMaxOpacity: 0.75,
+  trailPreserveTrapezoid: true
 };
 
 export interface CursorState {
@@ -121,6 +139,7 @@ export interface CursorState {
   advanced: AdvancedConfig; // 進階數值調校配置
   showStatusBar: boolean;
   rect: CursorRect;
+  trailWaypoints?: CursorRect[]; // 跨行移動時由正版 j / k 演算法探測之各行真實路徑點
   visible: boolean;
   isMoving: boolean;      // 是否正在連續鍵盤移動或定位 (移動時常亮不閃爍)
   motionDirection: MotionDirection; // 運動方向（用於計算梯形與透視形變）
@@ -146,7 +165,8 @@ class CursorStore {
       bounce: true,
       smoothScroll: true,
       breathe: false,
-      blink: true
+      blink: true,
+      trail: true
     },
     advanced: { ...DEFAULT_ADVANCED_CONFIG },
     showStatusBar: true,

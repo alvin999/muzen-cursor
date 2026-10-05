@@ -1,4 +1,4 @@
-import { cursorStore, MotionDirection } from './cursorStore';
+import { cursorStore, MotionDirection, CursorRect } from './cursorStore';
 import { isTypingContext } from '../utils/domUtils';
 import { WordNavigator, TextTarget } from './wordNavigator';
 
@@ -83,6 +83,7 @@ export interface CursorControllerOptions {
 export class CursorController {
   private options?: CursorControllerOptions;
   private currentTarget: TextTarget | null = null;
+  private previousTarget: TextTarget | null = null;
   private visualAnchor: TextTarget | null = null;
   private preferredX: number | null = null;
   private lastKeyTime = 0;
@@ -465,6 +466,7 @@ export class CursorController {
 
     const steps = Math.abs(deltaRows);
     const isDownward = deltaRows > 0;
+    const waypoints: CursorRect[] = [];
 
     for (let step = 0; step < steps; step++) {
       if (!this.currentTarget) break;
@@ -495,12 +497,20 @@ export class CursorController {
 
       if (foundTarget) {
         this.currentTarget = foundTarget;
+
+        // 若不是最後一步（代表是中間經過的視覺行），由原本 j / k 演算法決定真實字元邊界（空白自動吸附至行末）
+        if (step < steps - 1) {
+          const rect = this.getCharRectOfTarget(foundTarget);
+          if (rect) {
+            waypoints.push(rect);
+          }
+        }
       } else {
         break;
       }
     }
 
-    this.updateCursorPosition(true);
+    this.updateCursorPosition(true, waypoints);
   }
 
   /**
@@ -689,6 +699,84 @@ export class CursorController {
     }
 
     return { node: best.node, offset: best.offset };
+  }
+
+  /**
+   * 取得指定 TextTarget 所對應字元的螢幕幾何矩形
+   */
+  private getCharRectOfTarget(target: TextTarget): CursorRect | null {
+    try {
+      const text = target.node.textContent || '';
+      const len = text.length;
+      if (len === 0) return null;
+      const safe = Math.min(target.offset, Math.max(0, len - 1));
+      const range = document.createRange();
+      range.setStart(target.node, safe);
+      range.setEnd(target.node, Math.min(safe + 1, len));
+      const rect = range.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        return {
+          x: rect.left,
+          y: rect.top,
+          width: Math.max(rect.width, 8),
+          height: Math.max(rect.height, 16)
+        };
+      }
+    } catch {}
+    return null;
+  }
+
+  /**
+   * 使用原本判斷 j / k 位置的核心函式，計算兩目標點之間穿過每一視覺行的真實路徑點
+   * （遇到空白行或短行時，自動吸附至該行行末）
+   */
+  private computeWaypointsBetween(
+    startTarget: TextTarget,
+    endTarget: TextTarget,
+    targetX: number
+  ): CursorRect[] {
+    const waypoints: CursorRect[] = [];
+    try {
+      const startRect = this.getCharRectOfTarget(startTarget);
+      const endRect = this.getCharRectOfTarget(endTarget);
+      if (!startRect || !endRect) return waypoints;
+
+      const dy = endRect.y - startRect.y;
+      const charHeight = startRect.height > 0 ? startRect.height : 22;
+      const lineThreshold = charHeight * 0.65;
+      if (Math.abs(dy) < lineThreshold * 1.5) {
+        return waypoints;
+      }
+
+      const isDownward = dy > 0;
+      let current = startTarget;
+      let lastTop = startRect.y;
+      const maxSteps = 16;
+      let step = 0;
+
+      while (step < maxSteps) {
+        step++;
+        const nextTarget = isDownward
+          ? this.searchDownwardNextLine(current.node, current.offset, lastTop, lineThreshold, charHeight, targetX)
+          : this.searchUpwardPrevLine(current.node, current.offset, lastTop, lineThreshold, charHeight, targetX);
+
+        if (!nextTarget) break;
+
+        const nextRect = this.getCharRectOfTarget(nextTarget);
+        if (!nextRect) break;
+
+        // 若已經越過或抵達 endTarget 所在的視覺行高度，停止收集
+        if (isDownward && nextRect.y >= endRect.y - lineThreshold * 0.5) break;
+        if (!isDownward && nextRect.y <= endRect.y + lineThreshold * 0.5) break;
+
+        waypoints.push(nextRect);
+        current = nextTarget;
+        lastTop = nextRect.y;
+      }
+    } catch (err) {
+      console.warn('[Muzen Cursor] computeWaypointsBetween error:', err);
+    }
+    return waypoints;
   }
 
   /**
@@ -996,7 +1084,7 @@ export class CursorController {
   /**
    * 計算螢幕座標與微調游標
    */
-  private updateCursorPosition(scrollIntoView: boolean = false): void {
+  private updateCursorPosition(scrollIntoView: boolean = false, waypoints?: CursorRect[]): void {
     if (!this.currentTarget) return;
 
     const { node, offset } = this.currentTarget;
@@ -1109,6 +1197,16 @@ export class CursorController {
         }
       }
 
+      // 若未直接傳入 waypoints，但與前次目標跨越視覺行，自動呼叫正版 j / k 演算法補齊中間經過行
+      let finalWaypoints = waypoints;
+      if (!finalWaypoints && this.previousTarget && this.currentTarget) {
+        finalWaypoints = this.computeWaypointsBetween(
+          this.previousTarget,
+          this.currentTarget,
+          this.preferredX ?? rect.left
+        );
+      }
+
       // 移動避震機制：位移時保持常亮不閃爍，靜止一段時間後平滑恢復閃爍/呼吸
       const settleDelay = cursorStore.getState().advanced?.moveSettleDelayMs ?? 400;
       if (this.moveTimer) clearTimeout(this.moveTimer);
@@ -1127,9 +1225,12 @@ export class CursorController {
           width: Math.max(rect.width, 8),
           height: Math.max(rect.height, 16)
         },
+        trailWaypoints: finalWaypoints && finalWaypoints.length > 0 ? finalWaypoints : undefined,
         readingProgress: progress,
         charOffset: safeOffset
       });
+
+      this.previousTarget = { ...this.currentTarget };
 
       // Visual 模式下即時更新原生選取
       if (cursorStore.getState().mode === 'VISUAL') {
@@ -1212,6 +1313,8 @@ export class CursorController {
     let steps = 0;
     const maxSteps = 80;
 
+    const tempWaypoints: CursorRect[] = [];
+
     // 3. 連續向下或向上推進視覺行，尋找垂直位移達約半頁之最佳目標行
     while (accumulatedDistance < jumpDistance && steps < maxSteps) {
       steps++;
@@ -1234,6 +1337,15 @@ export class CursorController {
       r.setEnd(nextTarget.node, Math.min(nextSafe + 1, nextLen));
       const nextRect = r.getBoundingClientRect();
 
+      if (nextRect.width > 0 && nextRect.height > 0) {
+        tempWaypoints.push({
+          x: nextRect.left,
+          y: nextRect.top,
+          width: nextRect.width,
+          height: nextRect.height
+        });
+      }
+
       const stepDist = Math.abs(nextRect.top - curRect.top);
       accumulatedDistance += stepDist > 0 ? stepDist : charHeight;
       lastFound = nextTarget;
@@ -1252,7 +1364,7 @@ export class CursorController {
 
     this.currentTarget = foundTarget;
 
-    // 4. 執行保證幅度的 mugen-yomu Ease-Out Cubic 物理阻尼平滑滾動
+    // 4. 執行保證幅度的 Ease-Out Cubic 物理阻尼平滑滾動
     const currentScrollTop = scrollParent
       ? scrollParent.scrollTop
       : (window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0);
@@ -1263,9 +1375,20 @@ export class CursorController {
       animateScrollTo(scrollTarget, targetScrollTop, 380);
     }
 
+    // 排除最後一個目標行，取中間經過行（最多保留 8 階代表點）
+    const rawWaypoints = tempWaypoints.slice(0, -1);
+    let waypoints = rawWaypoints;
+    if (rawWaypoints.length > 8) {
+      const stepInterval = rawWaypoints.length / 8;
+      waypoints = [];
+      for (let i = 0; i < 8; i++) {
+        waypoints.push(rawWaypoints[Math.floor(i * stepInterval)]);
+      }
+    }
+
     // 5. 強制保持游標可見並同步更新位置
     cursorStore.setState({ visible: true });
-    this.updateCursorPosition(false);
+    this.updateCursorPosition(false, waypoints);
   }
 
   /**

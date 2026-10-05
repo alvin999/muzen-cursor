@@ -150,7 +150,7 @@
             <span class="group-icon">⚡</span>
             <div class="group-title-wrap">
               <h2 class="group-title" data-i18n="groupPhysicsTitle">梯形彈跳與 3D 透視物理 (Trapezoid & 3D Deformation)</h2>
-              <p class="group-desc" data-i18n="groupPhysicsDesc">mugen-yomu 招牌梯形回彈與立體果凍形變數值</p>
+              <p class="group-desc" data-i18n="groupPhysicsDesc">招牌梯形回彈與立體果凍形變數值</p>
             </div>
           </div>
           <div class="group-grid">
@@ -410,6 +410,97 @@
               <div class="input-with-unit">
                 <input type="number" id="adv-viewportPaddingBottom" data-key="viewportPaddingBottom" min="0" max="400" step="10" value="160">
                 <span class="unit-badge">px</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- 模組 6: 流光殘影與動態拖尾 -->
+        <div class="setting-group">
+          <div class="group-header">
+            <span class="group-icon">☄️</span>
+            <div class="group-title-wrap">
+              <h2 class="group-title" data-i18n="groupTrailTitle">流光殘影與動態拖尾 (Motion Trail & Afterimage)</h2>
+              <p class="group-desc" data-i18n="groupTrailDesc">移動時留下由濃漸淡、且保持 3D 透視梯形角度的水墨流光拖尾</p>
+            </div>
+          </div>
+          <div class="group-grid">
+
+            <div class="field-card">
+              <div class="field-label-row">
+                <label for="adv-trailMode" class="field-label" data-i18n="fieldTrailMode">殘影軌跡模式 (Trail Mode)</label>
+                <button type="button" class="btn-field-reset" data-key="trailMode" title="還原預設值">↺</button>
+              </div>
+              <p class="field-hint" data-i18n="hintTrailMode">選擇換行時殘影貼著每一行穿梭流動，或兩點起終點直線躍遷</p>
+              <div class="select-with-badge">
+                <select id="adv-trailMode" data-key="trailMode" class="adv-select">
+                  <option value="line" data-i18n="trailModeLine">逐行流光 (貼著每一行流動)</option>
+                  <option value="direct" data-i18n="trailModeDirect">兩點躍遷 (起終點直線過渡)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="field-card">
+              <div class="field-label-row">
+                <label for="adv-trailCount" class="field-label" data-i18n="fieldTrailCount">殘影階數/數量 (Trail Count)</label>
+                <button type="button" class="btn-field-reset" data-key="trailCount" title="還原預設值">↺</button>
+              </div>
+              <p class="field-hint" data-i18n="hintTrailCount">拖尾產生的分身殘影階數 (2 ~ 8 階)</p>
+              <div class="input-with-unit">
+                <input type="number" id="adv-trailCount" data-key="trailCount" min="2" max="8" step="1" value="4">
+                <span class="unit-badge">階</span>
+              </div>
+            </div>
+
+            <div class="field-card">
+              <div class="field-label-row">
+                <label for="adv-trailDurationMs" class="field-label" data-i18n="fieldTrailDurationMs">殘影消散時長 (Trail Duration)</label>
+                <button type="button" class="btn-field-reset" data-key="trailDurationMs" title="還原預設值">↺</button>
+              </div>
+              <p class="field-hint" data-i18n="hintTrailDurationMs">殘影從顯現至平滑消散的毫秒數 (ms)</p>
+              <div class="input-with-unit">
+                <input type="number" id="adv-trailDurationMs" data-key="trailDurationMs" min="50" max="800" step="10" value="260">
+                <span class="unit-badge">ms</span>
+              </div>
+            </div>
+
+            <div class="field-card">
+              <div class="field-label-row">
+                <label for="adv-trailDecayExponent" class="field-label" data-i18n="fieldTrailDecayExponent">距離衰減曲率 (Decay Exponent)</label>
+                <button type="button" class="btn-field-reset" data-key="trailDecayExponent" title="還原預設值">↺</button>
+              </div>
+              <p class="field-hint" data-i18n="hintTrailDecayExponent">數值越大，離游標越遠的殘影越快變淡</p>
+              <div class="input-with-unit">
+                <input type="number" id="adv-trailDecayExponent" data-key="trailDecayExponent" min="0.5" max="3.0" step="0.05" value="1.35">
+                <span class="unit-badge">γ</span>
+              </div>
+            </div>
+
+            <div class="field-card">
+              <div class="field-label-row">
+                <label for="adv-trailMaxOpacity" class="field-label" data-i18n="fieldTrailMaxOpacity">近端殘影不透明度 (Peak Opacity)</label>
+                <button type="button" class="btn-field-reset" data-key="trailMaxOpacity" title="還原預設值">↺</button>
+              </div>
+              <p class="field-hint" data-i18n="hintTrailMaxOpacity">最靠近主游標的殘影起始明亮程度 (0.1 ~ 1.0)</p>
+              <div class="input-with-unit">
+                <input type="number" id="adv-trailMaxOpacity" data-key="trailMaxOpacity" min="0.1" max="1.0" step="0.05" value="0.75">
+                <span class="unit-badge">α</span>
+              </div>
+            </div>
+
+            <div class="field-card">
+              <div class="field-label-row">
+                <label for="adv-trailPreserveTrapezoid" class="field-label" data-i18n="fieldTrailPreserveTrapezoid">保持梯形透視 (Preserve Trapezoid)</label>
+                <button type="button" class="btn-field-reset" data-key="trailPreserveTrapezoid" title="還原預設值">↺</button>
+              </div>
+              <p class="field-hint" data-i18n="hintTrailPreserveTrapezoid">殘影淡出全程鎖定 3D 透視梯形形變角度</p>
+              <div class="checkbox-row" style="padding-top: 8px; display: flex; align-items: center;">
+                <label class="switch-small">
+                  <input type="checkbox" id="adv-trailPreserveTrapezoid" data-key="trailPreserveTrapezoid" checked>
+                  <span class="slider-small"></span>
+                </label>
+                <span style="font-size: 13px; color: var(--color-fg-muted, #7c6f64); margin-left: 8px;">鎖定 3D 梯形</span>
               </div>
             </div>
 

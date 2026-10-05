@@ -1,4 +1,4 @@
-import { cursorStore, CursorState, CursorTheme, DEFAULT_ADVANCED_CONFIG } from '../core/cursorStore';
+import { cursorStore, CursorState, CursorTheme, CursorRect, DEFAULT_ADVANCED_CONFIG } from '../core/cursorStore';
 
 interface ThemeColorSet {
   normal: { r: number; g: number; b: number; hex: string };
@@ -68,15 +68,51 @@ const THEME_PALETTES: Record<CursorTheme, ThemeColorSet> = {
  * 沉浸式 Vim 游標覆蓋層 (Shadow DOM 內部渲染，支援呼吸燈與空心形態)
  */
 export class VimCursorOverlay {
+  private container: HTMLElement;
   private element: HTMLElement;
   private styleSheet: HTMLStyleElement;
   private unsubscribe: (() => void) | null = null;
   private settleTimer: number | null = null;
   private lastRenderedSeq = 0;
+  private lastRect: { x: number; y: number; width: number; height: number } | null = null;
+
+  // 殘影節點環狀池 (Ring Buffer: 避免連續鍵盤敲擊時覆蓋未播完的殘影)
+  private readonly MAX_GHOSTS = 16;
+  private ghostPool: HTMLElement[] = [];
+  private ghostTimers: (number | null)[] = [];
+  private ghostIndex = 0;
 
   constructor() {
+    this.container = document.createElement('div');
+    this.container.className = 'muzen-cursor-container';
+    this.container.style.position = 'fixed';
+    this.container.style.top = '0px';
+    this.container.style.left = '0px';
+    this.container.style.width = '0px';
+    this.container.style.height = '0px';
+    this.container.style.pointerEvents = 'none';
+    this.container.style.zIndex = '2147483647';
+
     this.element = document.createElement('div');
     this.element.className = 'muzen-cursor-overlay';
+
+    // 初始化殘影節點池並加入 container（位於主游標下層）
+    for (let i = 0; i < this.MAX_GHOSTS; i++) {
+      const ghost = document.createElement('div');
+      ghost.className = `muzen-cursor-ghost muzen-cursor-ghost-${i}`;
+      ghost.style.position = 'fixed';
+      ghost.style.top = '0px';
+      ghost.style.left = '0px';
+      ghost.style.pointerEvents = 'none';
+      ghost.style.boxSizing = 'border-box';
+      ghost.style.willChange = 'transform, opacity';
+      ghost.style.display = 'none';
+      ghost.style.opacity = '0';
+      this.ghostPool.push(ghost);
+      this.ghostTimers.push(null);
+      this.container.appendChild(ghost);
+    }
+    this.container.appendChild(this.element);
 
     this.styleSheet = document.createElement('style');
     this.styleSheet.textContent = `
@@ -103,6 +139,33 @@ export class VimCursorOverlay {
         57%, 88% { opacity: 0; }
         92%, 100%{ opacity: 1; }
       }
+      @keyframes muzen-ghost-fade {
+        0% {
+          opacity: var(--muzen-ghost-opacity, 0.75);
+          scale: 1;
+        }
+        100% {
+          opacity: 0;
+          scale: 0.94;
+        }
+      }
+      @keyframes muzen-stream-fade {
+        0%, 22% {
+          opacity: var(--muzen-ghost-opacity, 0.75);
+          scale: 1;
+          filter: blur(0px);
+        }
+        60% {
+          opacity: calc(var(--muzen-ghost-opacity, 0.75) * 0.55);
+          scale: 0.94;
+          filter: blur(0.3px);
+        }
+        100% {
+          opacity: 0;
+          scale: 0.88;
+          filter: blur(0.8px);
+        }
+      }
       ::selection {
         background: var(--muzen-selection-bg, rgba(254, 128, 25, 0.35)) !important;
       }
@@ -113,11 +176,25 @@ export class VimCursorOverlay {
   }
 
   public getElement(): HTMLElement {
-    return this.element;
+    return this.container;
   }
 
   public getStyleSheet(): HTMLStyleElement {
     return this.styleSheet;
+  }
+
+  private clearAllGhosts(): void {
+    for (let i = 0; i < this.ghostPool.length; i++) {
+      const ghost = this.ghostPool[i];
+      ghost.style.display = 'none';
+      ghost.style.opacity = '0';
+      ghost.style.animation = 'none';
+      if (this.ghostTimers[i] !== null) {
+        clearTimeout(this.ghostTimers[i]!);
+        this.ghostTimers[i] = null;
+      }
+    }
+    this.ghostIndex = 0;
   }
 
   private applyBaseStyles(): void {
@@ -144,6 +221,8 @@ export class VimCursorOverlay {
     if (!state.enabled || !state.visible || state.isExcluded) {
       this.element.style.opacity = '0';
       this.element.style.display = 'none';
+      this.clearAllGhosts();
+      this.lastRect = null;
       return;
     }
 
@@ -293,8 +372,9 @@ export class VimCursorOverlay {
     const squishX = typeof adv.scaleSquishX === 'number' ? adv.scaleSquishX : 0.90;
     const deformSettleMs = typeof adv.deformSettleMs === 'number' ? adv.deformSettleMs : 75;
 
-    if (effects.bounce && effects.smooth && isNewMotion && state.motionDirection !== 'none') {
-      let deform = '';
+    // 計算梯形透視形變 (Trapezoid Perspective Deformation)
+    let deform = '';
+    if (state.motionDirection !== 'none') {
       switch (state.motionDirection) {
         case 'right':
           deform = `perspective(${persp}px) rotateY(-${tiltX}deg) scale(${stretchX}, ${squishY})`;
@@ -312,7 +392,9 @@ export class VimCursorOverlay {
           deform = `perspective(${persp}px) rotateX(${Math.round(tiltY * 0.44)}deg) scale(${((stretchX + stretchY) / 2).toFixed(2)}, ${((squishX + squishY) / 2).toFixed(2)})`;
           break;
       }
+    }
 
+    if (effects.bounce && effects.smooth && isNewMotion && state.motionDirection !== 'none' && deform) {
       this.element.style.transform = `translate3d(${targetX}px, ${targetY}px, 0) ${deform}`;
 
       if (this.settleTimer !== null) {
@@ -329,6 +411,345 @@ export class VimCursorOverlay {
       }
       this.element.style.transform = `translate3d(${targetX}px, ${targetY}px, 0)`;
     }
+
+    // 5. 梯形透視殘影動畫 (Trapezoid Motion Trail)
+    const isTrailEnabled = effects.trail !== false;
+    if (isTrailEnabled && isNewMotion && this.lastRect !== null && state.motionDirection !== 'none') {
+      const dx = targetX - this.lastRect.x;
+      const dy = targetY - this.lastRect.y;
+      const dist = Math.hypot(dx, dy);
+
+      // 位移超過 4px 時觸發流光殘影，避免微幅像素震顫造成視覺雜訊
+      if (dist >= 4) {
+        this.spawnTrailGhosts({
+          originX: this.lastRect.x,
+          originY: this.lastRect.y,
+          originW: this.lastRect.width,
+          originH: this.lastRect.height,
+          targetX,
+          targetY,
+          targetW,
+          targetH,
+          dx,
+          dy,
+          dist,
+          deform,
+          adv,
+          shape,
+          color,
+          thickness,
+          borderRadius,
+          outlineOffset,
+          glow,
+          waypoints: state.trailWaypoints
+        });
+      }
+    }
+
+    // 紀錄本次位移歷史座標供下一影格計算殘影軌跡
+    this.lastRect = { x: targetX, y: targetY, width: targetW, height: targetH };
+  }
+
+  /**
+   * 啟用單枚殘影節點並啟動 GPU 淡出動畫 (Ring Buffer 分派，支援串流階梯微延遲)
+   */
+  private activateGhost(
+    gx: number,
+    gy: number,
+    gw: number,
+    gh: number,
+    deform: string,
+    opacity: number,
+    durationMs: number,
+    shape: string,
+    color: { r: number; g: number; b: number; hex: string },
+    thickness: number,
+    borderRadius: number,
+    outlineOffset: number,
+    glow: number,
+    delayMs: number = 0,
+    animType: 'stream' | 'static' = 'stream'
+  ): void {
+    const idx = this.ghostIndex;
+    this.ghostIndex = (this.ghostIndex + 1) % this.MAX_GHOSTS;
+
+    const ghost = this.ghostPool[idx];
+    if (!ghost) return;
+
+    if (this.ghostTimers[idx] !== null) {
+      clearTimeout(this.ghostTimers[idx]!);
+      this.ghostTimers[idx] = null;
+    }
+
+    const showGhost = () => {
+      ghost.style.display = 'block';
+      ghost.style.width = `${Math.max(2, Math.round(gw))}px`;
+      ghost.style.height = `${Math.max(2, Math.round(gh))}px`;
+      ghost.style.borderRadius = `${borderRadius}px`;
+      ghost.style.transform = `translate3d(${Math.round(gx)}px, ${Math.round(gy)}px, 0) ${deform}`.trim();
+
+      // 醒目高質感的筆觸與外觀 (逐行流光模式具備清晰飽滿的底色與光暈，呈現連踏跑過的每一步腳印)
+      const isStream = animType === 'stream';
+      switch (shape) {
+        case 'hollow':
+          ghost.style.background = `rgba(${color.r}, ${color.g}, ${color.b}, ${isStream ? 0.12 : 0.15})`;
+          ghost.style.border = `${thickness}px solid ${color.hex}`;
+          ghost.style.outline = 'none';
+          ghost.style.boxShadow = glow > 0
+            ? `0 0 ${glow}px rgba(${color.r}, ${color.g}, ${color.b}, 0.75)`
+            : `0 0 6px rgba(${color.r}, ${color.g}, ${color.b}, 0.40)`;
+          break;
+
+        case 'underline':
+          ghost.style.background = color.hex;
+          ghost.style.border = 'none';
+          ghost.style.outline = 'none';
+          ghost.style.boxShadow = glow > 0
+            ? `0 0 ${glow}px rgba(${color.r}, ${color.g}, ${color.b}, 0.85)`
+            : `0 0 6px rgba(${color.r}, ${color.g}, ${color.b}, 0.50)`;
+          break;
+
+        case 'block':
+        default:
+          // 流光模式使用清晰立體的底色 (0.35)，與實心主游標 (0.42) 及輪廓相呼應，清晰呈現每步跑過的腳印
+          ghost.style.background = `rgba(${color.r}, ${color.g}, ${color.b}, ${isStream ? 0.35 : 0.40})`;
+          ghost.style.border = 'none';
+          ghost.style.outline = `${thickness}px solid ${color.hex}`;
+          ghost.style.outlineOffset = `${outlineOffset}px`;
+          ghost.style.boxShadow = glow > 0
+            ? `0 0 ${Math.max(glow, 6)}px rgba(${color.r}, ${color.g}, ${color.b}, 0.75)`
+            : `0 0 6px rgba(${color.r}, ${color.g}, ${color.b}, 0.45)`;
+          break;
+      }
+
+      // 透過 CSS 變數傳遞初始透明度
+      ghost.style.setProperty('--muzen-ghost-opacity', `${opacity.toFixed(3)}`);
+      ghost.style.animation = 'none';
+      void ghost.offsetWidth; // 強制重置動畫影格
+
+      // 流光模式：自然平順的衰退曲線 (0.2, 0, 0.25, 1)，兼具實體停留與溫潤羽化
+      const animName = isStream ? 'muzen-stream-fade' : 'muzen-ghost-fade';
+      const animTiming = 'cubic-bezier(0.2, 0, 0.25, 1)';
+      ghost.style.animation = `${animName} ${durationMs}ms ${animTiming} forwards`;
+
+      this.ghostTimers[idx] = window.setTimeout(() => {
+        ghost.style.display = 'none';
+        ghost.style.animation = 'none';
+        ghost.style.scale = '1';
+        ghost.style.filter = 'none';
+        this.ghostTimers[idx] = null;
+      }, durationMs);
+    };
+
+    if (delayMs > 0) {
+      this.ghostTimers[idx] = window.setTimeout(showGhost, delayMs);
+    } else {
+      showGhost();
+    }
+  }
+
+  /**
+   * 殘影生成演算法：支援「逐行流光」與「兩點躍遷」兩種模式
+   */
+  private spawnTrailGhosts(params: {
+    originX: number;
+    originY: number;
+    originW: number;
+    originH: number;
+    targetX: number;
+    targetY: number;
+    targetW: number;
+    targetH: number;
+    dx: number;
+    dy: number;
+    dist: number;
+    deform: string;
+    adv: any;
+    shape: string;
+    color: { r: number; g: number; b: number; hex: string };
+    thickness: number;
+    borderRadius: number;
+    outlineOffset: number;
+    glow: number;
+    waypoints?: CursorRect[];
+  }): void {
+    const {
+      originX,
+      originY,
+      originW,
+      originH,
+      targetX,
+      targetY,
+      targetW,
+      targetH,
+      dx,
+      dy,
+      dist,
+      deform,
+      adv,
+      shape,
+      color,
+      thickness,
+      borderRadius,
+      outlineOffset,
+      glow,
+      waypoints
+    } = params;
+
+    const trailMode = (adv.trailMode || 'line') as 'line' | 'direct';
+    const trailCount = Math.max(2, Math.min(this.MAX_GHOSTS, Math.round(adv.trailCount ?? 4)));
+    const trailDurationMs = typeof adv.trailDurationMs === 'number' ? Math.max(100, adv.trailDurationMs) : 260;
+    const trailDecayExponent = typeof adv.trailDecayExponent === 'number' ? Math.max(0.2, adv.trailDecayExponent) : 1.35;
+    const trailMaxOpacity = typeof adv.trailMaxOpacity === 'number' ? Math.min(1, Math.max(0.1, adv.trailMaxOpacity)) : 0.75;
+    const preserveTrapezoid = adv.trailPreserveTrapezoid !== false;
+
+    // 鎖定 3D 透視矩陣
+    const ghostDeform = (preserveTrapezoid && deform) ? deform : '';
+
+    const absDy = Math.abs(dy);
+    const lineHeight = Math.max(16, originH || targetH);
+    const isMultiLine = absDy >= lineHeight * 0.75;
+
+    // 模式 A：逐行流光 (trailMode === 'line' 且存在跨行位移)
+    // 貼著經過的每一行依序產生階梯流光殘影，宛如高速連續敲擊 j / k 跑過去的穿行效果
+    if (trailMode === 'line' && isMultiLine) {
+      // 收集本次移動的所有視覺行足跡（包含出發點與經過的每一行）
+      const footprints: CursorRect[] = [];
+
+      // 1. 出發行足跡
+      footprints.push({
+        x: originX,
+        y: originY,
+        width: originW,
+        height: originH
+      });
+
+      // 2. 經過行足跡
+      if (waypoints && waypoints.length > 0) {
+        // 使用正版 j / k 演算法探測之各行真實邊界
+        for (const wp of waypoints) {
+          footprints.push(wp);
+        }
+      } else {
+        // 若無預先探測（例如超長跨節點跳躍），使用等分階梯直線內插
+        const estimatedLines = Math.max(1, Math.round(absDy / lineHeight));
+        if (estimatedLines > 1) {
+          const stepCount = Math.min(estimatedLines - 1, this.MAX_GHOSTS - 3);
+          for (let m = 1; m <= stepCount; m++) {
+            const ratio = m / estimatedLines;
+            footprints.push({
+              x: originX + (targetX - originX) * ratio,
+              y: originY + dy * ratio,
+              width: originW + (targetW - originW) * ratio,
+              height: originH + (targetH - originH) * ratio
+            });
+          }
+        }
+      }
+
+      const totalSteps = footprints.length;
+      // 擬真連續敲擊 j / k 的步頻節奏（每步約 36ms ~ 40ms）
+      const stepCadenceMs = 38;
+
+      for (let m = 0; m < totalSteps; m++) {
+        const fp = footprints[m];
+        // progress: 0 (出發行) -> 1 (最靠近目標行)
+        const progress = totalSteps > 1 ? m / (totalSteps - 1) : 1;
+
+        // 步態延遲：逐行依序踏下亮起，呈現清晰的穿行動態
+        const staggerDelay = Math.min(240, m * stepCadenceMs);
+
+        // 壽命波浪：維持在 210ms ~ 260ms，既看得一清二楚，又具備自然流光尾韻
+        const stepDuration = Math.round(trailDurationMs * (0.80 + 0.20 * progress));
+
+        // 透明度梯度：單步給滿 trailMaxOpacity；多步時出發點 0.45，最新點 0.75，確保每一格都清晰飽滿
+        const minAlpha = 0.45;
+        const alphaFactor = totalSteps === 1 ? 1 : (minAlpha + (1 - minAlpha) * Math.pow(progress, 0.75));
+        const opacity = Math.max(0.30, trailMaxOpacity * alphaFactor);
+
+        this.activateGhost(
+          fp.x,
+          fp.y,
+          fp.width,
+          fp.height,
+          ghostDeform,
+          opacity,
+          stepDuration,
+          shape,
+          color,
+          thickness,
+          borderRadius,
+          outlineOffset,
+          glow,
+          staggerDelay,
+          'stream'
+        );
+      }
+      return;
+    }
+
+    // 模式 B 或 同行水平移動：
+    // 短距離單字元位移 (h / j / k / l，位移 < 45px)：在出發點原位留下 1 個清晰的 3D 殘影
+    if (dist < 45) {
+      this.activateGhost(
+        originX,
+        originY,
+        originW,
+        originH,
+        ghostDeform,
+        trailMaxOpacity,
+        trailDurationMs,
+        shape,
+        color,
+        thickness,
+        borderRadius,
+        outlineOffset,
+        glow,
+        0,
+        'static'
+      );
+      return;
+    }
+
+    // 長距離跳躍 (w / b / 兩點過渡直線瞬移)：
+    // 沿著跳躍路徑生成階梯殘影，由出發點至目標點依序遞增亮度（越遠越淡）
+    const maxTrailSpan = 400;
+    const spanRatio = dist > maxTrailSpan ? (maxTrailSpan / dist) : 1;
+    const effectiveDx = dx * spanRatio;
+    const effectiveDy = dy * spanRatio;
+
+    const stepCount = Math.min(trailCount, Math.max(2, Math.floor(dist / 32)));
+
+    for (let i = 0; i < stepCount; i++) {
+      const ratio = (i + 1) / (stepCount + 1);
+
+      const gx = targetX - effectiveDx * (1 - ratio);
+      const gy = targetY - effectiveDy * (1 - ratio);
+      const gw = originW + (targetW - originW) * ratio;
+      const gh = originH + (targetH - originH) * ratio;
+
+      const stepDuration = Math.round(trailDurationMs * (0.5 + 0.5 * ratio));
+      const alphaFactor = Math.pow(Math.max(0.1, ratio), trailDecayExponent);
+      const opacity = Math.max(0.12, trailMaxOpacity * alphaFactor);
+
+      this.activateGhost(
+        gx,
+        gy,
+        gw,
+        gh,
+        ghostDeform,
+        opacity,
+        stepDuration,
+        shape,
+        color,
+        thickness,
+        borderRadius,
+        outlineOffset,
+        glow,
+        0,
+        'stream'
+      );
+    }
   }
 
   public destroy(): void {
@@ -336,12 +757,13 @@ export class VimCursorOverlay {
       clearTimeout(this.settleTimer);
       this.settleTimer = null;
     }
+    this.clearAllGhosts();
     if (this.unsubscribe) {
       this.unsubscribe();
       this.unsubscribe = null;
     }
     document.documentElement.style.removeProperty('--muzen-selection-bg');
-    this.element.remove();
+    this.container.remove();
     this.styleSheet.remove();
   }
 }

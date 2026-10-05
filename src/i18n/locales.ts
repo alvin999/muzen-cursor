@@ -44,6 +44,7 @@ export interface Translations {
   effectSmoothScroll: string;
   effectBreathe: string;
   effectBlink: string;
+  effectTrail: string;
   statusBarSectionLabel: string;
   statusBarSectionDesc: string;
   blacklistSectionLabel: string;
@@ -151,6 +152,23 @@ export interface Translations {
   fieldViewportPaddingBottom: string;
   hintViewportPaddingBottom: string;
 
+  groupTrailTitle: string;
+  groupTrailDesc: string;
+  fieldTrailMode: string;
+  hintTrailMode: string;
+  trailModeLine: string;
+  trailModeDirect: string;
+  fieldTrailCount: string;
+  hintTrailCount: string;
+  fieldTrailDurationMs: string;
+  hintTrailDurationMs: string;
+  fieldTrailDecayExponent: string;
+  hintTrailDecayExponent: string;
+  fieldTrailMaxOpacity: string;
+  hintTrailMaxOpacity: string;
+  fieldTrailPreserveTrapezoid: string;
+  hintTrailPreserveTrapezoid: string;
+
   sandboxThemeLabel: string;
   sandboxShapeLabel: string;
   padUpBtn: string;
@@ -218,6 +236,7 @@ export const LOCALES: Record<Locale, Translations> = {
     effectSmoothScroll: '平滑捲動',
     effectBreathe: '禪意呼吸',
     effectBlink: '經典閃爍',
+    effectTrail: '流光殘影',
     statusBarSectionLabel: '顯示底部狀態列',
     statusBarSectionDesc: '畫面右下角呈現目前 Vim 模式與文章進度',
     blacklistSectionLabel: '在此網站停用',
@@ -243,7 +262,7 @@ export const LOCALES: Record<Locale, Translations> = {
     footerTip: '點擊網頁文字即可立即錨定閱讀焦點',
     statusStartPrompt: '點擊文字或按 j 開始',
     advancedSettingsBtn: '⚙️ 進階數值調校 (物理與動態)',
-    resetDefaultsBtn: '回復 mugen-yomu 預設值',
+    resetDefaultsBtn: '回復預設值',
     resetDefaultsSuccess: '已回復預設值',
     optionsTitle: 'Muzen Cursor 進階數值調校',
     optionsSubtitle: '自由輸入精確數值，客製化物理阻尼、梯形形變與視覺筆觸',
@@ -253,7 +272,7 @@ export const LOCALES: Record<Locale, Translations> = {
     groupGeometryTitle: '幾何外觀與筆觸 (Geometry & Appearance)',
     groupGeometryDesc: '控制游標輪廓線條、圓角弧度與色彩半透明度',
     groupPhysicsTitle: '梯形彈跳與 3D 透視物理 (Trapezoid & 3D Deformation)',
-    groupPhysicsDesc: 'mugen-yomu 招牌梯形回彈與立體果凍形變數值',
+    groupPhysicsDesc: '招牌梯形回彈與立體果凍形變數值',
     groupTransitionTitle: '平滑過渡與阻尼時間 (Transition & Spring Physics)',
     groupTransitionDesc: '位移過渡曲線與超調回彈彈力',
     groupAnimationTitle: '動態節奏與避震計時器 (Animation & Rhythm)',
@@ -318,6 +337,22 @@ export const LOCALES: Record<Locale, Translations> = {
     hintViewportPaddingTop: '游標向上接近頂部多少像素時自動推動頁面',
     fieldViewportPaddingBottom: '視窗底部安全邊距 (Padding Bottom)',
     hintViewportPaddingBottom: '游標向下接近底部多少像素時自動推動頁面',
+    groupTrailTitle: '流光殘影與動態拖尾 (Motion Trail & Afterimage)',
+    groupTrailDesc: '移動時留下由濃漸淡、且保持 3D 透視梯形角度的水墨流光拖尾',
+    fieldTrailMode: '殘影軌跡模式 (Trail Mode)',
+    hintTrailMode: '選擇換行時殘影貼著每一行穿梭流動，或兩點起終點直線躍遷',
+    trailModeLine: '逐行流光 (貼著每一行流動)',
+    trailModeDirect: '兩點躍遷 (起終點直線過渡)',
+    fieldTrailCount: '殘影階數/數量 (Trail Count)',
+    hintTrailCount: '拖尾產生的分身殘影階數 (2 ~ 8 階)',
+    fieldTrailDurationMs: '殘影消散時長 (Trail Duration)',
+    hintTrailDurationMs: '殘影從顯現至平滑消散的毫秒數 (ms)',
+    fieldTrailDecayExponent: '距離衰減曲率 (Decay Exponent)',
+    hintTrailDecayExponent: '數值越大，離游標越遠的殘影越快變淡',
+    fieldTrailMaxOpacity: '近端殘影不透明度 (Peak Opacity)',
+    hintTrailMaxOpacity: '最靠近主游標的殘影起始明亮程度 (0.1 ~ 1.0)',
+    fieldTrailPreserveTrapezoid: '保持梯形透視 (Preserve Trapezoid)',
+    hintTrailPreserveTrapezoid: '殘影淡出全程鎖定 3D 透視梯形形變角度',
     sandboxThemeLabel: '色彩主題：',
     sandboxShapeLabel: '游標形態：',
     padUpBtn: '↑ k (上行)',
@@ -382,6 +417,7 @@ export const LOCALES: Record<Locale, Translations> = {
     effectSmoothScroll: 'Smooth Scroll',
     effectBreathe: 'Zen Pulse',
     effectBlink: 'Classic Blink',
+    effectTrail: 'Motion Trail',
     statusBarSectionLabel: 'Show Status Bar',
     statusBarSectionDesc: 'Display Vim mode & reading progress at bottom-right',
     blacklistSectionLabel: 'Disable on Current Site',
@@ -417,7 +453,7 @@ export const LOCALES: Record<Locale, Translations> = {
     groupGeometryTitle: 'Geometry & Appearance',
     groupGeometryDesc: 'Configure cursor outline thickness, border radius, and opacities',
     groupPhysicsTitle: 'Trapezoid & 3D Deformation Physics',
-    groupPhysicsDesc: 'mugen-yomu signature 3D perspective bounce and jelly stretch ratios',
+    groupPhysicsDesc: 'Signature 3D perspective bounce and jelly stretch ratios',
     groupTransitionTitle: 'Transition Dynamics & Spring Physics',
     groupTransitionDesc: 'Smooth transition durations and spring tension curve overshoot',
     groupAnimationTitle: 'Animation Rhythm & Motion Settle',
@@ -482,6 +518,22 @@ export const LOCALES: Record<Locale, Translations> = {
     hintViewportPaddingTop: 'Minimum distance from top edge before page scrolls',
     fieldViewportPaddingBottom: 'Bottom Viewport Padding',
     hintViewportPaddingBottom: 'Minimum distance from bottom edge before page scrolls',
+    groupTrailTitle: 'Motion Trail & Afterimages',
+    groupTrailDesc: 'Leave behind fading luminous echoes that preserve 3D trapezoid perspective',
+    fieldTrailMode: 'Trail Motion Mode',
+    hintTrailMode: 'Cascade afterimages across each line or transition directly between endpoints',
+    trailModeLine: 'Line Cascade (Pass through every line)',
+    trailModeDirect: 'Direct Leap (Straight two-point transition)',
+    fieldTrailCount: 'Trail Ghost Count',
+    hintTrailCount: 'Number of discrete afterimage steps (2 - 8)',
+    fieldTrailDurationMs: 'Trail Fade Duration',
+    hintTrailDurationMs: 'Duration in milliseconds for ghosts to dissolve into the page (ms)',
+    fieldTrailDecayExponent: 'Distance Decay Exponent',
+    hintTrailDecayExponent: 'Higher values cause distant ghosts to fade out more sharply',
+    fieldTrailMaxOpacity: 'Leading Ghost Opacity',
+    hintTrailMaxOpacity: 'Peak initial opacity for the ghost nearest to cursor (0.1 - 1.0)',
+    fieldTrailPreserveTrapezoid: 'Preserve 3D Trapezoid',
+    hintTrailPreserveTrapezoid: 'Lock 3D perspective trapezoid deformation throughout ghost dissolution',
     sandboxThemeLabel: 'Theme:',
     sandboxShapeLabel: 'Cursor Shape:',
     padUpBtn: '↑ k (Up)',
@@ -546,6 +598,7 @@ export const LOCALES: Record<Locale, Translations> = {
     effectSmoothScroll: 'スムーズスクロール',
     effectBreathe: '禅の呼吸',
     effectBlink: 'クラシック点滅',
+    effectTrail: '流光残像',
     statusBarSectionLabel: 'ステータスバーを表示',
     statusBarSectionDesc: '画面右下に現在のVimモードと読書進捗を表示',
     blacklistSectionLabel: 'このサイトで無効化',
@@ -581,7 +634,7 @@ export const LOCALES: Record<Locale, Translations> = {
     groupGeometryTitle: '幾何学的外観と筆跡 (Geometry & Appearance)',
     groupGeometryDesc: 'カーソルの輪郭の太さ、角丸、透明度を制御',
     groupPhysicsTitle: '台形バウンスと3D透視物理 (Trapezoid & 3D Deformation)',
-    groupPhysicsDesc: 'mugen-yomu特有の3D立体傾斜とゼリー状伸縮比率',
+    groupPhysicsDesc: '独自の3D立体傾斜とゼリー状伸縮比率',
     groupTransitionTitle: 'スムーズ遷移とスプリング物理 (Transition & Spring Physics)',
     groupTransitionDesc: '変位遷移時間とスプリング張力曲線の反発強度',
     groupAnimationTitle: 'アニメーションリズムと静止タイマー (Animation & Rhythm)',
@@ -646,6 +699,22 @@ export const LOCALES: Record<Locale, Translations> = {
     hintViewportPaddingTop: 'カーソルが上端に近づいた際に自動追従する距離',
     fieldViewportPaddingBottom: '視界下部マージン (Padding Bottom)',
     hintViewportPaddingBottom: 'カーソルが下端に近づいた際に自動追従する距離',
+    groupTrailTitle: '流光残像と動態トレイル (Motion Trail & Afterimage)',
+    groupTrailDesc: '移動時に遠くほど薄れ、3D台形パースペクティブを保持した流麗な残像を生成',
+    fieldTrailMode: '残像トレイルモード (Trail Mode)',
+    hintTrailMode: '行移動時に各行を流れるように通過するか、始点終点の直線遷移かを選択',
+    trailModeLine: '逐行流光（行ごとに流れるカスケード）',
+    trailModeDirect: '二点跳躍（始点・終点の直線トランジション）',
+    fieldTrailCount: '残像ステップ数 (Trail Count)',
+    hintTrailCount: '生成される残像の階数 (2 ~ 8 段階)',
+    fieldTrailDurationMs: '残像消失時間 (Trail Duration)',
+    hintTrailDurationMs: '残像が出現してから完全に消失するまでのミリ秒 (ms)',
+    fieldTrailDecayExponent: '距離減衰指数 (Decay Exponent)',
+    hintTrailDecayExponent: '値が大きいほど、カーソルから離れた残像がより急峻にフェードアウト',
+    fieldTrailMaxOpacity: '最前面残像の不透明度 (Peak Opacity)',
+    hintTrailMaxOpacity: 'カーソルに最も近い残像の初期不透明度 (0.1 ~ 1.0)',
+    fieldTrailPreserveTrapezoid: '3D台形パースを保持 (Preserve Trapezoid)',
+    hintTrailPreserveTrapezoid: '残像が消えるまで台形の立体パースペクティブ傾斜角を固定保持',
     sandboxThemeLabel: 'カラースキーム：',
     sandboxShapeLabel: 'カーソル形状：',
     padUpBtn: '↑ k (上行)',
