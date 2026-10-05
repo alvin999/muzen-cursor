@@ -113,7 +113,7 @@ export class CursorController {
       if (!ticking) {
         window.requestAnimationFrame(() => {
           if (this.currentTarget && cursorStore.getState().enabled && !cursorStore.getState().isExcluded) {
-            this.updateCursorPosition();
+            this.updateCursorPosition(false, undefined, true);
           }
           ticking = false;
         });
@@ -480,25 +480,38 @@ export class CursorController {
 
     const { node, offset } = this.currentTarget;
     const textLength = node.textContent?.length || 0;
-    const nextOffset = offset + delta;
 
-    if (nextOffset >= 0 && nextOffset <= textLength) {
-      this.currentTarget.offset = nextOffset;
-      this.updateCursorPosition(true);
-    } else if (nextOffset > textLength) {
-      const nextNode = this.findNextTextNode(node);
-      if (nextNode) {
-        this.currentTarget = { node: nextNode, offset: 0 };
+    if (delta > 0) {
+      // 向右移動 (l)
+      const nextOffset = offset + delta;
+      if (nextOffset < textLength) {
+        this.currentTarget.offset = nextOffset;
         this.updateCursorPosition(true);
+      } else {
+        // 到達當前文字節點末尾，平滑無縫跨入下一個文字標籤（如 <code>）之首字元
+        const nextNode = this.findNextTextNode(node);
+        if (nextNode) {
+          this.currentTarget = { node: nextNode, offset: 0 };
+          this.updateCursorPosition(true);
+        }
       }
-    } else if (nextOffset < 0) {
-      const prevNode = this.findPrevTextNode(node);
-      if (prevNode) {
-        this.currentTarget = {
-          node: prevNode,
-          offset: prevNode.textContent?.length || 0
-        };
+    } else if (delta < 0) {
+      // 向左移動 (h)
+      const nextOffset = offset + delta;
+      if (nextOffset >= 0) {
+        this.currentTarget.offset = nextOffset;
         this.updateCursorPosition(true);
+      } else {
+        // 到達當前文字節點開頭，平滑跨入前一個文字節點之末尾字元
+        const prevNode = this.findPrevTextNode(node);
+        if (prevNode) {
+          const prevLen = prevNode.textContent?.length || 0;
+          this.currentTarget = {
+            node: prevNode,
+            offset: Math.max(0, prevLen - 1)
+          };
+          this.updateCursorPosition(true);
+        }
       }
     }
   }
@@ -601,7 +614,11 @@ export class CursorController {
 
         if (targetLineTop === null) {
           // 階段 1：尋找下一視覺行的第一個實體字元
-          if (rect.top - currentCharTop > lineThreshold) {
+          const diffY = rect.top - currentCharTop;
+          if (diffY > lineThreshold) {
+            if (diffY > charHeight * 5.0) {
+              break;
+            }
             targetLineTop = rect.top;
             targetCharHeight = rect.height > 0 ? rect.height : charHeight;
             lineCandidates.push({ node: currentNode, offset: i, rect });
@@ -673,7 +690,11 @@ export class CursorController {
 
         if (targetLineTop === null) {
           // 階段 1：逆向尋找上一視覺行的最後一個實體字元（最右端）
-          if (currentCharTop - rect.top > lineThreshold) {
+          const diffY = currentCharTop - rect.top;
+          if (diffY > lineThreshold) {
+            if (diffY > charHeight * 5.0) {
+              break;
+            }
             targetLineTop = rect.top;
             targetCharHeight = rect.height > 0 ? rect.height : charHeight;
             lineCandidates.unshift({ node: currentNode, offset: i, rect });
@@ -1152,7 +1173,7 @@ export class CursorController {
   /**
    * 計算螢幕座標與微調游標
    */
-  private updateCursorPosition(scrollIntoView: boolean = false, waypoints?: CursorRect[]): void {
+  private updateCursorPosition(scrollIntoView: boolean = false, waypoints?: CursorRect[], isScrollUpdate: boolean = false): void {
     if (!this.currentTarget) return;
 
     const { node, offset } = this.currentTarget;
@@ -1211,12 +1232,16 @@ export class CursorController {
           range.setStart(node, safeOffset - 1);
           range.setEnd(node, safeOffset);
           const prevRect = range.getBoundingClientRect();
+          const charH = prevRect.height > 0 ? prevRect.height : fallbackH;
           rect = {
-            ...prevRect,
             x: prevRect.right,
             left: prevRect.right,
+            y: prevRect.top,
+            top: prevRect.top,
+            right: prevRect.right + 8,
+            bottom: prevRect.bottom > 0 ? prevRect.bottom : prevRect.top + charH,
             width: 8,
-            height: prevRect.height > 0 ? prevRect.height : fallbackH
+            height: charH
           } as DOMRect;
         } else if (parentRect) {
           rect = {
@@ -1240,8 +1265,31 @@ export class CursorController {
       ) - window.innerHeight;
       const progress = totalHeight > 0 ? Math.min(100, Math.max(0, (scrollY / totalHeight) * 100)) : 100;
 
-      // 容許適度邊界緩衝，避免邊界滾動時游標閃現閃退
-      const isVisibleInViewport = rect.bottom >= -80 && rect.top <= window.innerHeight + 80;
+      // 容許適度邊界緩衝，避免邊界滾動時游標閃現閃退；若座標暫未就緒，安全維持當前可見狀態
+      const hasValidCoords = typeof rect.top === 'number' && typeof rect.bottom === 'number' && !isNaN(rect.top) && !isNaN(rect.bottom);
+      const isVisibleInViewport = hasValidCoords
+        ? (rect.bottom >= -80 && rect.top <= window.innerHeight + 80)
+        : (cursorStore.getState().visible ?? true);
+
+      // 視窗純捲動/縮放更新：僅靜默貼齊游標位置，嚴格抑制殘影與運動序列遞增
+      if (isScrollUpdate) {
+        cursorStore.setState({
+          visible: isVisibleInViewport,
+          isMoving: false,
+          motionDirection: 'none',
+          isScrollUpdate: true,
+          rect: {
+            x: rect.left,
+            y: rect.top,
+            width: Math.max(rect.width, 8),
+            height: Math.max(rect.height, 16)
+          },
+          readingProgress: progress,
+          charOffset: safeOffset
+        });
+        this.previousTarget = { ...this.currentTarget };
+        return;
+      }
 
       // 計算本次位移向量與方向 (提供 3D 透視梯形動態反饋使用)
       const prevState = cursorStore.getState();
@@ -1287,6 +1335,7 @@ export class CursorController {
         isMoving: true,
         motionDirection: motionDir,
         motionSequence: (prevState.motionSequence || 0) + 1,
+        isScrollUpdate: false,
         rect: {
           x: rect.left,
           y: rect.top,

@@ -252,6 +252,7 @@ export interface CursorState {
   isMoving: boolean;      // 是否正在連續鍵盤移動或定位 (移動時常亮不閃爍)
   motionDirection: MotionDirection; // 運動方向（用於計算梯形與透視形變）
   motionSequence: number;  // 運動計數序號（即使同方向連續移動亦可感知每次跳躍）
+  isScrollUpdate?: boolean; // 視窗捲動或縮放造成的座標貼齊（抑制殘影生成）
   readingProgress: number; // 0 - 100
   charOffset: number;
 }

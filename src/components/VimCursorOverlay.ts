@@ -81,6 +81,7 @@ export class VimCursorOverlay {
   private ghostPool: HTMLElement[] = [];
   private ghostTimers: (number | null)[] = [];
   private ghostIndex = 0;
+  private trajectoryTimers: number[] = [];
 
   constructor() {
     this.container = document.createElement('div');
@@ -184,7 +185,86 @@ export class VimCursorOverlay {
     return this.styleSheet;
   }
 
+  private clearTrajectoryTimers(): void {
+    if (this.trajectoryTimers.length > 0) {
+      for (const t of this.trajectoryTimers) {
+        clearTimeout(t);
+      }
+      this.trajectoryTimers = [];
+    }
+  }
+
+  private settleDeform(targetX: number, targetY: number, persp: number, deformSettleMs: number): void {
+    if (this.settleTimer !== null) {
+      clearTimeout(this.settleTimer);
+    }
+    this.settleTimer = window.setTimeout(() => {
+      this.element.style.transform = `translate3d(${targetX}px, ${targetY}px, 0) perspective(${persp}px) rotateX(0deg) rotateY(0deg) scale(1, 1)`;
+      this.settleTimer = null;
+    }, deformSettleMs);
+  }
+
+  /**
+   * 計算本次位移的統一換行軌跡清單 (主游標與殘影走完全相同的軌跡)
+   */
+  private buildTrajectory(
+    origin: { x: number; y: number; width: number; height: number },
+    target: { x: number; y: number; width: number; height: number },
+    waypoints: CursorRect[] | undefined,
+    trailMode: string
+  ): CursorRect[] {
+    const trajectory: CursorRect[] = [];
+    const dy = target.y - origin.y;
+    const absDy = Math.abs(dy);
+    const lineHeight = Math.max(16, origin.height || target.height);
+    const isMultiLine = absDy >= lineHeight * 0.75;
+
+    if (trailMode === 'line' && isMultiLine) {
+      if (waypoints && waypoints.length > 0) {
+        // 使用正版 j / k 演算法探測之各行真實邊界
+        for (const wp of waypoints) {
+          trajectory.push(wp);
+        }
+      } else {
+        // 若無預先探測之 waypoints，使用等分階梯直線內插補齊經過的行
+        const estimatedLines = Math.max(1, Math.round(absDy / lineHeight));
+        if (estimatedLines > 1) {
+          const stepCount = Math.min(estimatedLines - 1, this.MAX_GHOSTS - 3);
+          for (let m = 1; m <= stepCount; m++) {
+            const ratio = m / estimatedLines;
+            trajectory.push({
+              x: origin.x + (target.x - origin.x) * ratio,
+              y: origin.y + dy * ratio,
+              width: origin.width + (target.width - origin.width) * ratio,
+              height: origin.height + (target.height - origin.height) * ratio
+            });
+          }
+        }
+      }
+    }
+
+    // 最後一點必定為目標終點
+    trajectory.push({
+      x: target.x,
+      y: target.y,
+      width: target.width,
+      height: target.height
+    });
+
+    // 向上移動時，軌跡點不能越過目標點上方；向下移動時，軌跡點不能越過目標點下方
+    for (const pt of trajectory) {
+      if (dy < 0 && pt.y < target.y) {
+        pt.y = target.y;
+      } else if (dy > 0 && pt.y > target.y) {
+        pt.y = target.y;
+      }
+    }
+
+    return trajectory;
+  }
+
   private clearAllGhosts(): void {
+    this.clearTrajectoryTimers();
     for (let i = 0; i < this.ghostPool.length; i++) {
       const ghost = this.ghostPool[i];
       ghost.style.display = 'none';
@@ -357,10 +437,18 @@ export class VimCursorOverlay {
       this.element.style.opacity = '1'; // 移動中或無動畫時維持 100% 滿格全亮常駐
     }
 
-    // 4. 利用 translate3d 與 3D 透視矩陣走 GPU 合成層渲染
-    this.element.style.width = `${targetW}px`;
-    this.element.style.height = `${targetH}px`;
+    if (state.isScrollUpdate) {
+      // 視窗純捲動/縮放更新：僅靜默貼齊游標位置，嚴格抑制殘影
+      this.clearTrajectoryTimers();
+      this.element.style.width = `${targetW}px`;
+      this.element.style.height = `${targetH}px`;
+      this.element.style.transition = 'none';
+      this.element.style.transform = `translate3d(${targetX}px, ${targetY}px, 0)`;
+      this.lastRect = { x: targetX, y: targetY, width: targetW, height: targetH };
+      return;
+    }
 
+    // 4. 利用 translate3d 與 3D 透視矩陣走 GPU 合成層渲染
     const isNewMotion = state.motionSequence !== this.lastRenderedSeq;
     this.lastRenderedSeq = state.motionSequence;
 
@@ -395,56 +483,141 @@ export class VimCursorOverlay {
       }
     }
 
-    if (effects.bounce && effects.smooth && isNewMotion && state.motionDirection !== 'none' && deform) {
-      this.element.style.transform = `translate3d(${targetX}px, ${targetY}px, 0) ${deform}`;
-
-      if (this.settleTimer !== null) {
-        clearTimeout(this.settleTimer);
-      }
-      this.settleTimer = window.setTimeout(() => {
-        this.element.style.transform = `translate3d(${targetX}px, ${targetY}px, 0) perspective(${persp}px) rotateX(0deg) rotateY(0deg) scale(1, 1)`;
-        this.settleTimer = null;
-      }, deformSettleMs);
-    } else {
-      if (this.settleTimer !== null) {
-        clearTimeout(this.settleTimer);
-        this.settleTimer = null;
-      }
-      this.element.style.transform = `translate3d(${targetX}px, ${targetY}px, 0)`;
-    }
-
-    // 5. 梯形透視殘影動畫 (Trapezoid Motion Trail)
     const isTrailEnabled = effects.trail !== false;
-    if (isTrailEnabled && isNewMotion && this.lastRect !== null && state.motionDirection !== 'none') {
-      const dx = targetX - this.lastRect.x;
-      const dy = targetY - this.lastRect.y;
+    const trailMode = (adv.trailMode || 'line') as 'line' | 'direct';
+    const trailDurationMs = typeof adv.trailDurationMs === 'number' ? Math.max(100, adv.trailDurationMs) : 260;
+    const trailMaxOpacity = typeof adv.trailMaxOpacity === 'number' ? Math.min(1, Math.max(0.1, adv.trailMaxOpacity)) : 0.75;
+    const ghostDeform = (adv.trailPreserveTrapezoid !== false && deform) ? deform : '';
+
+    this.clearTrajectoryTimers();
+
+    if (isNewMotion && this.lastRect !== null && state.motionDirection !== 'none') {
+      const originRect = this.lastRect;
+      const targetRect = { x: targetX, y: targetY, width: targetW, height: targetH };
+      const dx = targetX - originRect.x;
+      const dy = targetY - originRect.y;
       const dist = Math.hypot(dx, dy);
 
-      // 位移超過 4px 時觸發流光殘影，避免微幅像素震顫造成視覺雜訊
-      if (dist >= 4) {
-        this.spawnTrailGhosts({
-          originX: this.lastRect.x,
-          originY: this.lastRect.y,
-          originW: this.lastRect.width,
-          originH: this.lastRect.height,
-          targetX,
-          targetY,
-          targetW,
-          targetH,
-          dx,
-          dy,
-          dist,
-          deform,
-          adv,
-          shape,
-          color,
-          thickness,
-          borderRadius,
-          outlineOffset,
-          glow,
-          waypoints: state.trailWaypoints
-        });
+      // 取得統一的換行軌跡 (主游標與殘影走完全相同的軌跡)
+      const trajectory = this.buildTrajectory(originRect, targetRect, state.trailWaypoints, trailMode);
+
+      if (trajectory.length > 1 && effects.smooth) {
+        // 多行換行飛躍模式：主游標沿著 waypoints 逐行飛躍，殘影緊隨身後即時釋放
+        const stepMs = Math.max(22, Math.min(30, Math.round(110 / trajectory.length)));
+
+        // 游標在出發點起飛瞬間，起點立即留下一抹殘影
+        if (isTrailEnabled) {
+          this.activateGhost(
+            originRect.x,
+            originRect.y,
+            originRect.width,
+            originRect.height,
+            ghostDeform,
+            trailMaxOpacity * 0.45,
+            trailDurationMs,
+            shape,
+            color,
+            thickness,
+            borderRadius,
+            outlineOffset,
+            glow,
+            0,
+            'stream'
+          );
+        }
+
+        for (let k = 0; k < trajectory.length; k++) {
+          const pt = trajectory[k];
+          const isFinal = k === trajectory.length - 1;
+          const stepDelay = k * stepMs;
+
+          const runStep = () => {
+            this.element.style.width = `${Math.round(pt.width)}px`;
+            this.element.style.height = `${Math.round(pt.height)}px`;
+
+            if (isFinal) {
+              if (effects.bounce) {
+                this.element.style.transition = `transform ${springDurationSec}s cubic-bezier(0.34, ${springOvershoot}, 0.64, 1), width 0.08s ease, height 0.08s ease`;
+              } else {
+                this.element.style.transition = `transform ${smoothDurationSec}s cubic-bezier(0.2, 0, 0, 1), width 0.08s ease, height 0.08s ease`;
+              }
+              this.element.style.transform = `translate3d(${pt.x}px, ${pt.y}px, 0) ${deform}`;
+              this.settleDeform(pt.x, pt.y, persp, deformSettleMs);
+            } else {
+              this.element.style.transition = `transform ${stepMs}ms linear, width ${stepMs}ms ease, height ${stepMs}ms ease`;
+              this.element.style.transform = `translate3d(${pt.x}px, ${pt.y}px, 0) ${ghostDeform}`;
+
+              if (isTrailEnabled) {
+                const progress = (k + 1) / trajectory.length;
+                const opacity = Math.max(0.30, trailMaxOpacity * (0.45 + 0.55 * progress));
+                this.activateGhost(
+                  pt.x,
+                  pt.y,
+                  pt.width,
+                  pt.height,
+                  ghostDeform,
+                  opacity,
+                  trailDurationMs,
+                  shape,
+                  color,
+                  thickness,
+                  borderRadius,
+                  outlineOffset,
+                  glow,
+                  0,
+                  'stream'
+                );
+              }
+            }
+          };
+
+          if (stepDelay === 0) {
+            runStep();
+          } else {
+            this.trajectoryTimers.push(window.setTimeout(runStep, stepDelay));
+          }
+        }
+      } else {
+        // 單步或無中繼行位移 (同行水平或兩點過渡)：主游標直接過渡，殘影緊隨
+        this.element.style.width = `${targetW}px`;
+        this.element.style.height = `${targetH}px`;
+
+        if (effects.bounce && effects.smooth && deform) {
+          this.element.style.transform = `translate3d(${targetX}px, ${targetY}px, 0) ${deform}`;
+          this.settleDeform(targetX, targetY, persp, deformSettleMs);
+        } else {
+          this.element.style.transform = `translate3d(${targetX}px, ${targetY}px, 0)`;
+        }
+
+        if (isTrailEnabled && dist >= 4) {
+          this.spawnSingleStepGhosts({
+            originX: originRect.x,
+            originY: originRect.y,
+            originW: originRect.width,
+            originH: originRect.height,
+            targetX,
+            targetY,
+            targetW,
+            targetH,
+            dx,
+            dy,
+            dist,
+            ghostDeform,
+            adv,
+            shape,
+            color,
+            thickness,
+            borderRadius,
+            outlineOffset,
+            glow
+          });
+        }
       }
+    } else {
+      // 靜止渲染或首次加載
+      this.element.style.width = `${targetW}px`;
+      this.element.style.height = `${targetH}px`;
+      this.element.style.transform = `translate3d(${targetX}px, ${targetY}px, 0)`;
     }
 
     // 紀錄本次位移歷史座標供下一影格計算殘影軌跡
@@ -452,7 +625,7 @@ export class VimCursorOverlay {
   }
 
   /**
-   * 啟用單枚殘影節點並啟動 GPU 淡出動畫 (Ring Buffer 分派，支援串流階梯微延遲)
+   * 啟用單枚殘影節點並啟動 GPU 淡出動畫 (Ring Buffer 分派，支援即時釋放與流光淡出)
    */
   private activateGhost(
     gx: number,
@@ -489,7 +662,7 @@ export class VimCursorOverlay {
       ghost.style.borderRadius = `${borderRadius}px`;
       ghost.style.transform = `translate3d(${Math.round(gx)}px, ${Math.round(gy)}px, 0) ${deform}`.trim();
 
-      // 醒目高質感的筆觸與外觀 (逐行流光模式具備清晰飽滿的底色與光暈，呈現連踏跑過的每一步腳印)
+      // 醒目高質感的筆觸與外觀
       const isStream = animType === 'stream';
       switch (shape) {
         case 'hollow':
@@ -512,7 +685,6 @@ export class VimCursorOverlay {
 
         case 'block':
         default:
-          // 流光模式使用清晰立體的底色 (0.35)，與實心主游標 (0.42) 及輪廓相呼應，清晰呈現每步跑過的腳印
           ghost.style.background = `rgba(${color.r}, ${color.g}, ${color.b}, ${isStream ? 0.35 : 0.40})`;
           ghost.style.border = 'none';
           ghost.style.outline = `${thickness}px solid ${color.hex}`;
@@ -528,7 +700,6 @@ export class VimCursorOverlay {
       ghost.style.animation = 'none';
       void ghost.offsetWidth; // 強制重置動畫影格
 
-      // 流光模式：自然平順的衰退曲線 (0.2, 0, 0.25, 1)，兼具實體停留與溫潤羽化
       const animName = isStream ? 'muzen-stream-fade' : 'muzen-ghost-fade';
       const animTiming = 'cubic-bezier(0.2, 0, 0.25, 1)';
       ghost.style.animation = `${animName} ${durationMs}ms ${animTiming} forwards`;
@@ -550,9 +721,10 @@ export class VimCursorOverlay {
   }
 
   /**
-   * 殘影生成演算法：支援「逐行流光」與「兩點躍遷」兩種模式
+   * 單步位移殘影（同行水平移動 h/l/w/b 或兩點過渡）：
+   * 殘影在起點或軌跡上即刻生成 (delayMs = 0)，緊隨主游標身後消散
    */
-  private spawnTrailGhosts(params: {
+  private spawnSingleStepGhosts(params: {
     originX: number;
     originY: number;
     originW: number;
@@ -564,7 +736,7 @@ export class VimCursorOverlay {
     dx: number;
     dy: number;
     dist: number;
-    deform: string;
+    ghostDeform: string;
     adv: any;
     shape: string;
     color: { r: number; g: number; b: number; hex: string };
@@ -572,7 +744,6 @@ export class VimCursorOverlay {
     borderRadius: number;
     outlineOffset: number;
     glow: number;
-    waypoints?: CursorRect[];
   }): void {
     const {
       originX,
@@ -586,151 +757,57 @@ export class VimCursorOverlay {
       dx,
       dy,
       dist,
-      deform,
+      ghostDeform,
       adv,
       shape,
       color,
       thickness,
       borderRadius,
       outlineOffset,
-      glow,
-      waypoints
+      glow
     } = params;
 
-    const trailMode = (adv.trailMode || 'line') as 'line' | 'direct';
     const trailCount = Math.max(2, Math.min(this.MAX_GHOSTS, Math.round(adv.trailCount ?? 4)));
     const trailDurationMs = typeof adv.trailDurationMs === 'number' ? Math.max(100, adv.trailDurationMs) : 260;
     const trailDecayExponent = typeof adv.trailDecayExponent === 'number' ? Math.max(0.2, adv.trailDecayExponent) : 1.35;
     const trailMaxOpacity = typeof adv.trailMaxOpacity === 'number' ? Math.min(1, Math.max(0.1, adv.trailMaxOpacity)) : 0.75;
-    const preserveTrapezoid = adv.trailPreserveTrapezoid !== false;
-
-    // 鎖定 3D 透視矩陣
-    const ghostDeform = (preserveTrapezoid && deform) ? deform : '';
 
     const absDy = Math.abs(dy);
     const lineHeight = Math.max(16, originH || targetH);
-    const isMultiLine = absDy >= lineHeight * 0.75;
+    const isHorizontal = absDy < lineHeight * 0.75;
 
-    // 模式 A：逐行流光 (trailMode === 'line' 且存在跨行位移)
-    // 貼著經過的每一行依序產生階梯流光殘影，宛如高速連續敲擊 j / k 跑過去的穿行效果
-    if (trailMode === 'line' && isMultiLine) {
-      // 收集本次移動的所有視覺行足跡（包含出發點與經過的每一行）
-      const footprints: CursorRect[] = [];
-
-      // 1. 出發行足跡
-      footprints.push({
-        x: originX,
-        y: originY,
-        width: originW,
-        height: originH
-      });
-
-      // 2. 經過行足跡
-      if (waypoints && waypoints.length > 0) {
-        // 使用正版 j / k 演算法探測之各行真實邊界
-        for (const wp of waypoints) {
-          footprints.push(wp);
-        }
-      } else {
-        // 若無預先探測（例如超長跨節點跳躍），使用等分階梯直線內插
-        const estimatedLines = Math.max(1, Math.round(absDy / lineHeight));
-        if (estimatedLines > 1) {
-          const stepCount = Math.min(estimatedLines - 1, this.MAX_GHOSTS - 3);
-          for (let m = 1; m <= stepCount; m++) {
-            const ratio = m / estimatedLines;
-            footprints.push({
-              x: originX + (targetX - originX) * ratio,
-              y: originY + dy * ratio,
-              width: originW + (targetW - originW) * ratio,
-              height: originH + (targetH - originH) * ratio
-            });
-          }
-        }
+    if (isHorizontal && dist < 45) {
+      // 短距離單字元位移 (h / l)：正後方即時留下單枚殘影
+      let gx = originX;
+      const gw = originW || targetW;
+      if (dx > 0) {
+        gx = originX < targetX ? originX : targetX - gw;
+      } else if (dx < 0) {
+        gx = originX > targetX ? originX : targetX + targetW;
       }
 
-      const totalSteps = footprints.length;
-      // 擬真連續敲擊 j / k 的步頻節奏（每步約 36ms ~ 40ms）
-      const stepCadenceMs = 38;
-
-      for (let m = 0; m < totalSteps; m++) {
-        const fp = footprints[m];
-        // progress: 0 (出發行) -> 1 (最靠近目標行)
-        const progress = totalSteps > 1 ? m / (totalSteps - 1) : 1;
-
-        // 步態延遲：逐行依序踏下亮起，呈現清晰的穿行動態
-        const staggerDelay = Math.min(240, m * stepCadenceMs);
-
-        // 壽命波浪：維持在 210ms ~ 260ms，既看得一清二楚，又具備自然流光尾韻
-        const stepDuration = Math.round(trailDurationMs * (0.80 + 0.20 * progress));
-
-        // 透明度梯度：單步給滿 trailMaxOpacity；多步時出發點 0.45，最新點 0.75，確保每一格都清晰飽滿
-        const minAlpha = 0.45;
-        const alphaFactor = totalSteps === 1 ? 1 : (minAlpha + (1 - minAlpha) * Math.pow(progress, 0.75));
-        const opacity = Math.max(0.30, trailMaxOpacity * alphaFactor);
-
-        this.activateGhost(
-          fp.x,
-          fp.y,
-          fp.width,
-          fp.height,
-          ghostDeform,
-          opacity,
-          stepDuration,
-          shape,
-          color,
-          thickness,
-          borderRadius,
-          outlineOffset,
-          glow,
-          staggerDelay,
-          'stream'
-        );
-      }
+      this.activateGhost(
+        gx,
+        targetY,
+        gw,
+        targetH,
+        '',
+        trailMaxOpacity,
+        trailDurationMs,
+        shape,
+        color,
+        thickness,
+        borderRadius,
+        outlineOffset,
+        glow,
+        0,
+        'static'
+      );
       return;
     }
 
-    // 模式 B 或 同行水平移動：
-    // 單行水平位移 (h / l 或同行微步移動)：殘影鎖定於當前行水平基準線的正後方
-    const isHorizontal = absDy < lineHeight * 0.75;
-    if (isHorizontal) {
-      // 確保殘影嚴格鎖定於當前行垂直基準 (gy = targetY, gh = targetH)，杜絕因不同字元邊界微差導致偏移至左上方
-      const gy = targetY;
-      const gh = targetH;
-
-      if (dist < 45) {
-        // 短距離單字元位移 (h / l)：
-        // 若向右移動 (l)，正後方必定在左側；若向左移動 (h)，正後方必定在右側
-        let gx = originX;
-        const gw = originW || targetW;
-        if (dx > 0) {
-          // 向右移動 (l)：正後方在左
-          gx = originX < targetX ? originX : targetX - gw;
-        } else if (dx < 0) {
-          // 向左移動 (h)：正後方在右
-          gx = originX > targetX ? originX : targetX + targetW;
-        }
-
-        this.activateGhost(
-          gx,
-          gy,
-          gw,
-          gh,
-          '', // 同行正後方殘影使用平正錨定，不套用傾斜形變，避免透視旋轉造成視覺位置上浮偏移
-          trailMaxOpacity,
-          trailDurationMs,
-          shape,
-          color,
-          thickness,
-          borderRadius,
-          outlineOffset,
-          glow,
-          0,
-          'static'
-        );
-        return;
-      }
-    } else if (dist < 45) {
-      // 垂直小微步回退方案
+    if (dist < 45) {
+      // 垂直微步回退方案
       this.activateGhost(
         originX,
         originY,
@@ -751,26 +828,23 @@ export class VimCursorOverlay {
       return;
     }
 
-    // 長距離跳躍 (w / b / 兩點過渡直線瞬移)：
-    // 沿著跳躍路徑生成階梯殘影，由出發點至目標點依序遞增亮度（越遠越淡）
+    // 長距離跳躍 (w / b)：沿著起點到終點生成階梯殘影，全部 0 延遲同步生成，緊貼游標身後
     const maxTrailSpan = 400;
     const spanRatio = dist > maxTrailSpan ? (maxTrailSpan / dist) : 1;
     const effectiveDx = dx * spanRatio;
     const effectiveDy = dy * spanRatio;
-
     const stepCount = Math.min(trailCount, Math.max(2, Math.floor(dist / 32)));
 
     for (let i = 0; i < stepCount; i++) {
       const ratio = (i + 1) / (stepCount + 1);
-
       const gx = targetX - effectiveDx * (1 - ratio);
       const gy = targetY - effectiveDy * (1 - ratio);
       const gw = originW + (targetW - originW) * ratio;
       const gh = originH + (targetH - originH) * ratio;
 
-      const stepDuration = Math.round(trailDurationMs * (0.5 + 0.5 * ratio));
+      const stepDuration = Math.round(trailDurationMs * (0.6 + 0.4 * ratio));
       const alphaFactor = Math.pow(Math.max(0.1, ratio), trailDecayExponent);
-      const opacity = Math.max(0.12, trailMaxOpacity * alphaFactor);
+      const opacity = Math.max(0.15, trailMaxOpacity * alphaFactor);
 
       this.activateGhost(
         gx,
