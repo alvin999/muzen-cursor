@@ -5,7 +5,7 @@ import { WordNavigator, TextTarget } from './wordNavigator';
 let activeScrollRafId: number | null = null;
 
 /**
- * 具有物理阻尼感之 Ease-Out Cubic 平滑捲動引擎 (移植自 mugen-yomu 核心演算法)
+ * 具有物理阻尼感之 Ease-Out Cubic 平滑捲動引擎
  */
 function animateScrollTo(
   target: HTMLElement | Window,
@@ -47,7 +47,7 @@ function animateScrollTo(
   function step(currentTime: number) {
     const elapsed = currentTime - startTime;
     const progress = Math.min(1, elapsed / actualDuration);
-    // Ease-Out Cubic: mugen-yomu 招牌物理阻尼曲線，確保極致絲滑
+    // Ease-Out Cubic: 物理阻尼曲線
     const ease = 1 - Math.pow(1 - progress, 3);
     const currentPos = startTop + distance * ease;
 
@@ -617,13 +617,7 @@ export class CursorController {
 
       for (let i = nodeOffsetStart; i < len; i++) {
         const char = text[i];
-        if (char === '\r') continue;
-
-        // 若已鎖定目標行且遇到 \n（如在 pre 或程式碼區塊換行），表示該目標視覺行已結束
-        if (targetLineTop !== null && char === '\n') {
-          return this.pickBestCandidate(lineCandidates, targetX);
-        }
-        if (char === '\n') continue;
+        if (char === '\r' || char === '\n') continue;
 
         range.setStart(currentNode, i);
         range.setEnd(currentNode, i + 1);
@@ -642,10 +636,10 @@ export class CursorController {
           // 階段 2：收集屬於該視覺行的所有字元（允許跨越 <a>, <code>, <span> 等 inline 標籤）
           const diffFromTarget = rect.top - targetLineTop;
           // 若明顯進入再下一行（下下行），表示目標行已完整收集結束
-          if (diffFromTarget > targetCharHeight * 0.65) {
+          if (diffFromTarget > targetCharHeight * 0.7) {
             return this.pickBestCandidate(lineCandidates, targetX);
           }
-          if (Math.abs(diffFromTarget) <= targetCharHeight * 0.65) {
+          if (Math.abs(diffFromTarget) <= targetCharHeight * 0.7) {
             lineCandidates.push({ node: currentNode, offset: i, rect });
           }
         }
@@ -690,13 +684,7 @@ export class CursorController {
 
       for (let i = startFrom; i >= 0; i--) {
         const char = text[i];
-        if (char === '\r') continue;
-
-        // 若已鎖定目標行且逆向遇到 \n（如在 pre 或程式碼換行），表示該目標視覺行開頭已結束
-        if (targetLineTop !== null && char === '\n') {
-          return this.pickBestCandidate(lineCandidates, targetX);
-        }
-        if (char === '\n') continue;
+        if (char === '\r' || char === '\n') continue;
 
         range.setStart(currentNode, i);
         range.setEnd(currentNode, i + 1);
@@ -715,10 +703,10 @@ export class CursorController {
           // 階段 2：逆向收集屬於該視覺行的所有字元
           const diffFromTarget = targetLineTop - rect.top;
           // 若明顯進入更上一行（上上一行），表示目標行已逆向收集完畢
-          if (diffFromTarget > targetCharHeight * 0.65) {
+          if (diffFromTarget > targetCharHeight * 0.7) {
             return this.pickBestCandidate(lineCandidates, targetX);
           }
-          if (Math.abs(diffFromTarget) <= targetCharHeight * 0.65) {
+          if (Math.abs(diffFromTarget) <= targetCharHeight * 0.7) {
             lineCandidates.push({ node: currentNode, offset: i, rect });
           }
         }
@@ -805,7 +793,7 @@ export class CursorController {
           height: Math.max(rect.height, 16)
         };
       }
-    } catch {}
+    } catch { }
     return null;
   }
 
@@ -1178,7 +1166,7 @@ export class CursorController {
             this.updateCursorPosition();
             return;
           }
-        } catch {}
+        } catch { }
       }
       n = walker.nextNode();
     }
@@ -1550,7 +1538,7 @@ export class CursorController {
           if (overflowY === 'auto' || overflowY === 'scroll') {
             return p;
           }
-        } catch {}
+        } catch { }
         p = p.parentElement;
       }
     }
