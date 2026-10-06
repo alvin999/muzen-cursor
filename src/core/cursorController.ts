@@ -550,18 +550,20 @@ export class CursorController {
       if (len === 0) break;
 
       // 1. 取得當前真實字元的螢幕基準線
+      const charRect = this.getCharRectOfTarget(target);
       const baseRange = document.createRange();
       const safeFrom = Math.min(offset, Math.max(0, len - 1));
       baseRange.setStart(node, safeFrom);
       baseRange.setEnd(node, Math.min(safeFrom + 1, len));
       const baseRect = baseRange.getBoundingClientRect();
-      const currentCharTop = baseRect.top;
-      const charHeight = baseRect.height > 0 ? baseRect.height : 22;
+
+      const currentCharTop = charRect ? charRect.y : (baseRect.height > 0 ? baseRect.top : 0);
+      const charHeight = charRect ? charRect.height : (baseRect.height > 0 ? baseRect.height : 22);
       const lineThreshold = charHeight * 0.65;
 
       // 2. 鎖定或保持基準水平 X 座標 (Vim 經典行為)
       if (this.preferredX === null) {
-        this.preferredX = baseRect.left;
+        this.preferredX = charRect ? charRect.x : (baseRect.width > 0 ? baseRect.left : 0);
       }
       const targetX = this.preferredX;
 
@@ -605,8 +607,11 @@ export class CursorController {
 
     let currentNode: Text | null = startNode;
     let nodeOffsetStart = startOffset + 1;
+    let nodesScanned = 0;
+    const MAX_NODES_TO_SCAN = 300;
 
-    while (currentNode) {
+    while (currentNode && nodesScanned < MAX_NODES_TO_SCAN) {
+      nodesScanned++;
       const text = currentNode.textContent || '';
       const len = text.length;
 
@@ -614,7 +619,7 @@ export class CursorController {
         const char = text[i];
         if (char === '\r') continue;
 
-        // 若已鎖定目標行且遇到 \n（如在 pre 或程式碼區塊換行），表示該行已結束
+        // 若已鎖定目標行且遇到 \n（如在 pre 或程式碼區塊換行），表示該目標視覺行已結束
         if (targetLineTop !== null && char === '\n') {
           return this.pickBestCandidate(lineCandidates, targetX);
         }
@@ -626,34 +631,28 @@ export class CursorController {
         if (rect.width === 0 || rect.height === 0) continue;
 
         if (targetLineTop === null) {
-          // 階段 1：尋找下一視覺行的第一個實體字元
+          // 階段 1：尋找下一視覺行的第一個實體字元（解除原本 5 倍行高的過度防禦限制）
           const diffY = rect.top - currentCharTop;
           if (diffY > lineThreshold) {
-            if (diffY > charHeight * 5.0) {
-              break;
-            }
             targetLineTop = rect.top;
             targetCharHeight = rect.height > 0 ? rect.height : charHeight;
             lineCandidates.push({ node: currentNode, offset: i, rect });
           }
         } else {
-          // 階段 2：收集屬於該視覺行的所有字元（允許跨越 <a>, <code>, <span> 標籤）
-          if (rect.top - targetLineTop > targetCharHeight * 0.6) {
+          // 階段 2：收集屬於該視覺行的所有字元（允許跨越 <a>, <code>, <span> 等 inline 標籤）
+          const diffFromTarget = rect.top - targetLineTop;
+          // 若明顯進入再下一行（下下行），表示目標行已完整收集結束
+          if (diffFromTarget > targetCharHeight * 0.65) {
             return this.pickBestCandidate(lineCandidates, targetX);
           }
-          if (Math.abs(rect.top - targetLineTop) <= targetCharHeight * 0.5) {
+          if (Math.abs(diffFromTarget) <= targetCharHeight * 0.65) {
             lineCandidates.push({ node: currentNode, offset: i, rect });
           }
         }
       }
 
-      // 前往後續文字節點繼續收集同行跨標籤字元（穿透 <a>, <code> 等）
       currentNode = this.findNextTextNode(currentNode);
       nodeOffsetStart = 0;
-
-      if (targetLineTop !== null && lineCandidates.length > 80) {
-        break;
-      }
     }
 
     if (lineCandidates.length > 0) {
@@ -681,8 +680,11 @@ export class CursorController {
 
     let currentNode: Text | null = startNode;
     let nodeOffsetStart = startOffset - 1;
+    let nodesScanned = 0;
+    const MAX_NODES_TO_SCAN = 300;
 
-    while (currentNode) {
+    while (currentNode && nodesScanned < MAX_NODES_TO_SCAN) {
+      nodesScanned++;
       const text = currentNode.textContent || '';
       const startFrom = nodeOffsetStart >= 0 ? Math.min(nodeOffsetStart, text.length - 1) : -1;
 
@@ -690,7 +692,7 @@ export class CursorController {
         const char = text[i];
         if (char === '\r') continue;
 
-        // 若已鎖定目標行且逆向遇到 \n（如在 pre 或程式碼換行），表示該行開頭已結束
+        // 若已鎖定目標行且逆向遇到 \n（如在 pre 或程式碼換行），表示該目標視覺行開頭已結束
         if (targetLineTop !== null && char === '\n') {
           return this.pickBestCandidate(lineCandidates, targetX);
         }
@@ -702,35 +704,29 @@ export class CursorController {
         if (rect.width === 0 || rect.height === 0) continue;
 
         if (targetLineTop === null) {
-          // 階段 1：逆向尋找上一視覺行的最後一個實體字元（最右端）
+          // 階段 1：逆向尋找上一視覺行的第一個實體字元（解除原本 5 倍行高的過度防禦限制）
           const diffY = currentCharTop - rect.top;
           if (diffY > lineThreshold) {
-            if (diffY > charHeight * 5.0) {
-              break;
-            }
             targetLineTop = rect.top;
             targetCharHeight = rect.height > 0 ? rect.height : charHeight;
-            lineCandidates.unshift({ node: currentNode, offset: i, rect });
+            lineCandidates.push({ node: currentNode, offset: i, rect });
           }
         } else {
-          // 階段 2：逆向收集屬於該視覺行的所有字元（保持由左至右順序）
-          if (targetLineTop - rect.top > targetCharHeight * 0.6) {
+          // 階段 2：逆向收集屬於該視覺行的所有字元
+          const diffFromTarget = targetLineTop - rect.top;
+          // 若明顯進入更上一行（上上一行），表示目標行已逆向收集完畢
+          if (diffFromTarget > targetCharHeight * 0.65) {
             return this.pickBestCandidate(lineCandidates, targetX);
           }
-          if (Math.abs(rect.top - targetLineTop) <= targetCharHeight * 0.5) {
-            lineCandidates.unshift({ node: currentNode, offset: i, rect });
+          if (Math.abs(diffFromTarget) <= targetCharHeight * 0.65) {
+            lineCandidates.push({ node: currentNode, offset: i, rect });
           }
         }
       }
 
-      // 前往更前面的文字節點繼續收集
       currentNode = this.findPrevTextNode(currentNode);
       if (currentNode) {
         nodeOffsetStart = (currentNode.textContent?.length || 1) - 1;
-      }
-
-      if (targetLineTop !== null && lineCandidates.length > 80) {
-        break;
       }
     }
 
@@ -743,6 +739,7 @@ export class CursorController {
 
   /**
    * 在跨節點視覺行候選字元清單中，挑選與 targetX 水平最匹配的字元
+   * 確保水平對齊具備嚴格一致性與對稱性，避免連續 j / k 游標漂移
    */
   private pickBestCandidate(
     candidates: { node: Text; offset: number; rect: DOMRect }[],
@@ -750,30 +747,34 @@ export class CursorController {
   ): { node: Text; offset: number } | null {
     if (candidates.length === 0) return null;
 
-    // 1. 若有字元水平涵蓋 targetX（完美命中）
+    // 嚴格依水平左座標排序，消除正向/逆向掃描帶來的順序偏差
+    candidates.sort((a, b) => a.rect.left - b.rect.left);
+
+    // 1. 若整行都在 targetX 右邊（目標在整行左側之外）：取第 1 個字元
+    const firstItem = candidates[0];
+    if (targetX <= firstItem.rect.left) {
+      return { node: firstItem.node, offset: firstItem.offset };
+    }
+
+    // 2. 若整行都在 targetX 左邊（行較短，正下方為空白）：取最後 1 個字元
+    const lastItem = candidates[candidates.length - 1];
+    if (targetX >= lastItem.rect.right) {
+      return { node: lastItem.node, offset: lastItem.offset };
+    }
+
+    // 3. 若有字元水平涵蓋 targetX（包含 subpixel 浮點數微小容差）
     for (const item of candidates) {
-      if (targetX >= item.rect.left && targetX <= item.rect.right) {
+      if (targetX >= item.rect.left - 0.5 && targetX <= item.rect.right + 0.5) {
         return { node: item.node, offset: item.offset };
       }
     }
 
-    // 2. 若整行都在 targetX 左邊（行較短，正下方為空白）：取該行最後一字
-    const lastItem = candidates[candidates.length - 1];
-    if (targetX > lastItem.rect.right) {
-      return { node: lastItem.node, offset: lastItem.offset };
-    }
-
-    // 3. 若整行都在 targetX 右邊：取第一字
-    const firstItem = candidates[0];
-    if (targetX < firstItem.rect.left) {
-      return { node: firstItem.node, offset: firstItem.offset };
-    }
-
-    // 4. 否則取水平距離最近之字元
+    // 4. 否則取字元水平中心點（center）與 targetX 距離最近者
     let best = candidates[0];
     let minDiff = Infinity;
     for (const item of candidates) {
-      const diff = Math.abs(item.rect.left - targetX);
+      const centerX = (item.rect.left + item.rect.right) / 2;
+      const diff = Math.abs(centerX - targetX);
       if (diff < minDiff) {
         minDiff = diff;
         best = item;
