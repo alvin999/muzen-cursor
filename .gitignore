@@ -28,3 +28,6 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+
+# Test Artifacts
+tests/**/report.json

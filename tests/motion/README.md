@@ -24,8 +24,10 @@ tests/motion/
 ├── README.md      # AI Agent guidance & architectural specification (this file)
 ├── run.mjs        # Node.js supervisor: starts micro HTTP server & launches Headless Chrome
 ├── index.html     # Browser fixture harness hosting Muzen Cursor Shadow DOM & sampling engine
-└── report.json    # JSON report generated after test execution containing raw frame logs
+└── report.json    # [Ephemeral] JSON report generated after test execution (ignored by git)
 ```
+
+> **Note**: `report.json` is an ephemeral test artifact used by AI Agents during diagnosis and verification. It is intentionally excluded from version control via `.gitignore`.
 
 ---
 
