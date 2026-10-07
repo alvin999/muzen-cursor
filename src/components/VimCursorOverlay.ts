@@ -144,27 +144,22 @@ export class VimCursorOverlay {
       @keyframes muzen-ghost-fade {
         0% {
           opacity: var(--muzen-ghost-opacity, 0.75);
-          scale: 1;
         }
         100% {
           opacity: 0;
-          scale: 0.94;
         }
       }
       @keyframes muzen-stream-fade {
-        0%, 22% {
+        0%, 20% {
           opacity: var(--muzen-ghost-opacity, 0.75);
-          scale: 1;
           filter: blur(0px);
         }
         60% {
           opacity: calc(var(--muzen-ghost-opacity, 0.75) * 0.55);
-          scale: 0.94;
           filter: blur(0.3px);
         }
         100% {
           opacity: 0;
-          scale: 0.88;
           filter: blur(0.8px);
         }
       }
@@ -501,7 +496,19 @@ export class VimCursorOverlay {
       // 取得統一的換行軌跡 (主游標與殘影走完全相同的軌跡)
       const trajectory = this.buildTrajectory(originRect, targetRect, state.trailWaypoints, trailMode);
 
+      console.log('[Muzen Trail] 位移事件 ->', {
+        direction: state.motionDirection,
+        dx: Math.round(dx),
+        dy: Math.round(dy),
+        dist: Math.round(dist),
+        trajectoryLength: trajectory.length,
+        hasWaypoints: !!(state.trailWaypoints && state.trailWaypoints.length > 0),
+        origin: { x: Math.round(originRect.x), y: Math.round(originRect.y) },
+        target: { x: Math.round(targetRect.x), y: Math.round(targetRect.y) }
+      });
+
       if (trajectory.length > 1 && effects.smooth) {
+        console.log('[Muzen Trail] 命中分支 -> 多行飛躍模式 (Multi-line trajectory mode)', trajectory);
         // 多行換行飛躍模式：主游標沿著 waypoints 逐行飛躍，殘影緊隨身後即時釋放
         const stepMs = Math.max(22, Math.min(30, Math.round(110 / trajectory.length)));
 
@@ -578,6 +585,11 @@ export class VimCursorOverlay {
           }
         }
       } else {
+        console.log('[Muzen Trail] 命中分支 -> 單步/同行模式 (Single-step mode)', {
+          dist: Math.round(dist),
+          isTrailEnabled,
+          canSpawnGhosts: isTrailEnabled && dist >= 4
+        });
         // 單步或無中繼行位移 (同行水平或兩點過渡)：主游標直接過渡，殘影緊隨
         this.element.style.width = `${targetW}px`;
         this.element.style.height = `${targetH}px`;
@@ -662,6 +674,15 @@ export class VimCursorOverlay {
       ghost.style.borderRadius = `${borderRadius}px`;
       ghost.style.transform = `translate3d(${Math.round(gx)}px, ${Math.round(gy)}px, 0) ${deform}`.trim();
 
+      console.log(`[Muzen Trail Ghost #${idx}] 節點渲染 ->`, {
+        x: Math.round(gx),
+        y: Math.round(gy),
+        w: Math.round(gw),
+        h: Math.round(gh),
+        deform: deform || '(無形變/平正)',
+        animType
+      });
+
       // 醒目高質感的筆觸與外觀
       const isStream = animType === 'stream';
       switch (shape) {
@@ -704,10 +725,28 @@ export class VimCursorOverlay {
       const animTiming = 'cubic-bezier(0.2, 0, 0.25, 1)';
       ghost.style.animation = `${animName} ${durationMs}ms ${animTiming} forwards`;
 
+      requestAnimationFrame(() => {
+        const gRect = ghost.getBoundingClientRect();
+        const cRect = this.element.getBoundingClientRect();
+        const diffX = Math.round(gRect.left - cRect.left);
+        const diffY = Math.round(gRect.top - cRect.top);
+        console.log(`[Muzen Trail DOM 實測 #${idx}]`, {
+          '殘影實體坐標': { left: Math.round(gRect.left), top: Math.round(gRect.top), w: Math.round(gRect.width), h: Math.round(gRect.height) },
+          '主游標實體坐標': { left: Math.round(cRect.left), top: Math.round(cRect.top), w: Math.round(cRect.width), h: Math.round(cRect.height) },
+          '相對位置 (殘影 vs 主游標)': {
+            水平方位: diffX < 0 ? `正左方 (${Math.abs(diffX)}px)` : (diffX > 0 ? `正右方 (${diffX}px)` : '水平完全重疊'),
+            垂直方位: Math.abs(diffY) <= 1 ? '垂直完全平齊 (0px)' : (diffY < 0 ? `偏上方 (${Math.abs(diffY)}px ⚠️)` : `偏下方 (${diffY}px ⚠️)`),
+            diffX,
+            diffY
+          },
+          '殘影 Transform': window.getComputedStyle(ghost).transform,
+          '主游標 Transform': window.getComputedStyle(this.element).transform
+        });
+      });
+
       this.ghostTimers[idx] = window.setTimeout(() => {
         ghost.style.display = 'none';
         ghost.style.animation = 'none';
-        ghost.style.scale = '1';
         ghost.style.filter = 'none';
         this.ghostTimers[idx] = null;
       }, durationMs);
@@ -777,21 +816,33 @@ export class VimCursorOverlay {
     const isHorizontal = absDy < lineHeight * 0.75;
 
     if (isHorizontal && dist < 45) {
-      // 短距離單字元位移 (h / l)：正後方即時留下單枚殘影
-      let gx = originX;
+      // 短距離單字元位移 (h / l)：嚴格錨定在運動軌跡正後方的出發點基準
       const gw = originW || targetW;
+      let gx = originX;
       if (dx > 0) {
-        gx = originX < targetX ? originX : targetX - gw;
+        // 向右前進 (l)：殘影必須嚴格留在主游標正左方 (身後起點)
+        gx = Math.min(originX, targetX - gw);
       } else if (dx < 0) {
-        gx = originX > targetX ? originX : targetX + targetW;
+        // 向左前進 (h)：殘影必須嚴格留在主游標正右方 (身後起點)
+        gx = Math.max(originX, targetX + targetW);
       }
+
+      console.log('[Muzen Trail] spawn -> 水平單字元 (h/l)', {
+        gx: Math.round(gx),
+        gy: Math.round(targetY),
+        gw: Math.round(gw),
+        gh: Math.round(targetH),
+        dx: Math.round(dx),
+        originX: Math.round(originX),
+        targetX: Math.round(targetX)
+      });
 
       this.activateGhost(
         gx,
-        targetY,
+        targetY, // 垂直坐標嚴格鎖定目標行基準線，消除 Y 軸向上浮動偏差
         gw,
         targetH,
-        '',
+        '',      // 同行正後方殘影使用平正錨定，移除 3D 透視旋轉形變，杜絕視覺中心上浮至左上方
         trailMaxOpacity,
         trailDurationMs,
         shape,
@@ -807,7 +858,12 @@ export class VimCursorOverlay {
     }
 
     if (dist < 45) {
-      // 垂直微步回退方案
+      console.log('[Muzen Trail] spawn -> 垂直微步 (j/k)', {
+        originX: Math.round(originX),
+        originY: Math.round(originY),
+        dy: Math.round(dy)
+      });
+      // 垂直微步回退方案 (j / k 單步位移)
       this.activateGhost(
         originX,
         originY,
@@ -828,19 +884,25 @@ export class VimCursorOverlay {
       return;
     }
 
-    // 長距離跳躍 (w / b)：沿著起點到終點生成階梯殘影，全部 0 延遲同步生成，緊貼游標身後
+    console.log('[Muzen Trail] spawn -> 長距離/跳躍模式', {
+      dist: Math.round(dist),
+      isHorizontal,
+      stepCount: Math.min(trailCount, Math.max(2, Math.floor(dist / 32)))
+    });
+
+    // 長距離跳躍 (w / b / e)：沿著起點到終點生成階梯殘影，緊隨身後
     const maxTrailSpan = 400;
     const spanRatio = dist > maxTrailSpan ? (maxTrailSpan / dist) : 1;
     const effectiveDx = dx * spanRatio;
-    const effectiveDy = dy * spanRatio;
+    const effectiveDy = isHorizontal ? 0 : dy * spanRatio;
     const stepCount = Math.min(trailCount, Math.max(2, Math.floor(dist / 32)));
 
     for (let i = 0; i < stepCount; i++) {
       const ratio = (i + 1) / (stepCount + 1);
       const gx = targetX - effectiveDx * (1 - ratio);
-      const gy = targetY - effectiveDy * (1 - ratio);
+      const gy = isHorizontal ? targetY : targetY - effectiveDy * (1 - ratio);
       const gw = originW + (targetW - originW) * ratio;
-      const gh = originH + (targetH - originH) * ratio;
+      const gh = isHorizontal ? targetH : originH + (targetH - originH) * ratio;
 
       const stepDuration = Math.round(trailDurationMs * (0.6 + 0.4 * ratio));
       const alphaFactor = Math.pow(Math.max(0.1, ratio), trailDecayExponent);
@@ -851,7 +913,7 @@ export class VimCursorOverlay {
         gy,
         gw,
         gh,
-        ghostDeform,
+        isHorizontal ? '' : ghostDeform, // 同行長移動亦保持平正基準，杜絕上浮
         opacity,
         stepDuration,
         shape,

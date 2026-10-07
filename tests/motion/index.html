@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="utf-8">
+  <title>Muzen Cursor Motion Symmetry Test Harness</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 60px;
+      background: #1d2021;
+      color: #ebdbb2;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 20px;
+      line-height: 36px;
+    }
+    .test-box {
+      max-width: 800px;
+      padding: 30px;
+      background: #282828;
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    }
+    #test-text {
+      letter-spacing: 2px;
+      white-space: pre;
+    }
+  </style>
+</head>
+<body>
+  <div class="test-box">
+    <h2>Muzen Cursor 游標位移與殘影對稱性自動測試</h2>
+    <p id="test-text">The quick brown fox jumps over the lazy dog. 1234567890</p>
+  </div>
+
+  <script src="/dist/content/index.js"></script>
+
+  <script>
+    const interceptedLogs = [];
+    const origLog = console.log;
+    console.log = function(...args) {
+      origLog.apply(console, args);
+      try {
+        const text = args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
+        if (text.includes('[Muzen Trail]')) {
+          interceptedLogs.push(text);
+        }
+      } catch {}
+    };
+
+    function getElements() {
+      const host = document.getElementById('muzen-cursor-host-root');
+      if (!host || !host.shadowRoot) return null;
+      const root = host.shadowRoot;
+      const cursor = root.querySelector('.muzen-cursor-overlay');
+      const ghosts = Array.from(root.querySelectorAll('.muzen-cursor-ghost'));
+      return { cursor, ghosts };
+    }
+
+    async function sampleKeyStroke(cursor, ghosts, key, durationMs = 280) {
+      const samples = [];
+      const startTime = performance.now();
+
+      // 捕捉按鍵發送前的初始基底座標 (t = 0)
+      const initCRect = cursor.getBoundingClientRect();
+      samples.push({
+        elapsedMs: 0,
+        cursor: {
+          x: Math.round(initCRect.left * 100) / 100,
+          y: Math.round(initCRect.top * 100) / 100,
+          w: Math.round(initCRect.width),
+          h: Math.round(initCRect.height),
+          transform: window.getComputedStyle(cursor).transform,
+          opacity: parseFloat(window.getComputedStyle(cursor).opacity)
+        },
+        ghosts: []
+      });
+
+      // 發送鍵盤事件
+      const keyEvent = new KeyboardEvent('keydown', {
+        key: key,
+        code: key === 'l' ? 'KeyL' : 'KeyH',
+        bubbles: true,
+        cancelable: true
+      });
+      window.dispatchEvent(keyEvent);
+
+      return new Promise((resolve) => {
+        function captureFrame() {
+          const now = performance.now();
+          const elapsed = Math.round(now - startTime);
+
+          const cRect = cursor.getBoundingClientRect();
+          const cTransform = window.getComputedStyle(cursor).transform;
+          const cOpacity = window.getComputedStyle(cursor).opacity;
+
+          const activeGhosts = ghosts.map((g, idx) => {
+            const display = window.getComputedStyle(g).display;
+            const opacity = parseFloat(window.getComputedStyle(g).opacity || '0');
+            if (display !== 'none' && opacity > 0.02) {
+              const gRect = g.getBoundingClientRect();
+              const gTransform = window.getComputedStyle(g).transform;
+              return {
+                index: idx,
+                opacity: Math.round(opacity * 100) / 100,
+                rect: {
+                  x: Math.round(gRect.left),
+                  y: Math.round(gRect.top),
+                  w: Math.round(gRect.width),
+                  h: Math.round(gRect.height)
+                },
+                transform: gTransform
+              };
+            }
+            return null;
+          }).filter(Boolean);
+
+          samples.push({
+            elapsedMs: elapsed,
+            cursor: {
+              x: Math.round(cRect.left * 100) / 100,
+              y: Math.round(cRect.top * 100) / 100,
+              w: Math.round(cRect.width),
+              h: Math.round(cRect.height),
+              transform: cTransform,
+              opacity: parseFloat(cOpacity)
+            },
+            ghosts: activeGhosts
+          });
+
+          if (elapsed < durationMs) {
+            requestAnimationFrame(captureFrame);
+          } else {
+            resolve(samples);
+          }
+        }
+        requestAnimationFrame(captureFrame);
+      });
+    }
+
+    async function runAutoMotionTest() {
+      // 1. 等待游標宿主完全建立
+      let els = null;
+      for (let i = 0; i < 40; i++) {
+        els = getElements();
+        if (els && els.cursor) break;
+        await new Promise(r => setTimeout(r, 100));
+      }
+
+      if (!els || !els.cursor) {
+        await reportResult({ error: '找不到 .muzen-cursor-overlay 節點' });
+        return;
+      }
+
+      // 2. 模擬點擊文字節點聚焦
+      const p = document.getElementById('test-text');
+      const textNode = p.firstChild;
+      const range = document.createRange();
+      range.setStart(textNode, 10);
+      range.setEnd(textNode, 11);
+      const rect = range.getBoundingClientRect();
+
+      const clickEvent = new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+        clientX: rect.left + rect.width / 2,
+        clientY: rect.top + rect.height / 2
+      });
+      p.dispatchEvent(clickEvent);
+
+      await new Promise(r => setTimeout(r, 450));
+
+      // 3. 測試向右 (按 l)
+      const rightSamples = await sampleKeyStroke(els.cursor, els.ghosts, 'l', 280);
+      await new Promise(r => setTimeout(r, 450));
+
+      // 4. 測試向左 (按 h)
+      const leftSamples = await sampleKeyStroke(els.cursor, els.ghosts, 'h', 280);
+      await new Promise(r => setTimeout(r, 350));
+
+      // 5. 回報結果至 Node.js
+      await reportResult({
+        success: true,
+        rightSamples,
+        leftSamples,
+        interceptedLogs
+      });
+    }
+
+    async function reportResult(data) {
+      try {
+        await fetch('/api/report', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+      } catch (err) {
+        origLog('回傳測試結果失敗:', err);
+      }
+    }
+
+    window.addEventListener('load', () => {
+      setTimeout(runAutoMotionTest, 600);
+    });
+  </script>
+</body>
+</html>
