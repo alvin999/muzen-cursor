@@ -219,7 +219,7 @@ muzen-cursor/
 │   └── pdf-viewer/            # 組み込み Mozilla PDF.js ビューア連携
 ```
 
-- **0-Runtime Overhead**：純粋な **Vanilla TypeScript + Web Components** のみを採用し、重量級フレームワーク依存を徹底排除。拡張機能の容量は数十 KB と極めて軽量。
+- **0-Runtime Overhead**：純粋な **Vanilla TypeScript + Web Components** のみを採用し、重量級フレームワーク依存を徹底排除。内蔵 PDF エンジンを含む配布パッケージ全体でもわずか約 600 KB。
 - **完全自己完結型 IIFE バンドル**：Chrome MV3 content script の隔離環境向けに独立コンパイルを行い、モジュール構文の互換性問題を根絶。
 - **高精度幾何測定**：ブラウザ標準の `DOM Range` と `createTreeWalker` によるサブピクセル座標解析と CSS `translate3d` を組み合わせ、120fps の極上滑らかな描画を実現。
 

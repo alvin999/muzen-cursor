@@ -223,7 +223,7 @@ muzen-cursor/
 │   └── pdf-viewer/            # Integrated Mozilla PDF.js viewer
 ```
 
-- **0-Runtime Overhead**: Built entirely with pure **Vanilla TypeScript + Web Components**; zero heavyweight framework dependencies, keeping the extension bundle compact (tens of KB).
+- **0-Runtime Overhead**: Built entirely with pure **Vanilla TypeScript + Web Components**; zero heavyweight framework dependencies, keeping the entire release package compact (~600 KB including the built-in PDF engine).
 - **Self-Contained IIFE Packaging**: Compiles the content script into an isolated IIFE bundle for Chrome MV3, completely eliminating module syntax compatibility issues.
 - **Sub-Pixel Precision**: Leverages native `DOM Range` and `createTreeWalker` for sub-pixel character coordinate calculations, paired with CSS `translate3d` for silky 120fps rendering.
 

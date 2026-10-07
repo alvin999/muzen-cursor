@@ -221,7 +221,7 @@ muzen-cursor/
 │   └── pdf-viewer/            # 內建 Mozilla PDF.js 檢視器整合
 ```
 
-- **0-Runtime Overhead**：全專案採用純原生 **Vanilla TypeScript + Web Components**，零前端重量框架依賴，總套件體積僅數十 KB。
+- **0-Runtime Overhead**：全專案採用純原生 **Vanilla TypeScript + Web Components**，零前端重量框架依賴，完整套件壓縮包僅約 600 KB（含內建 PDF 閱讀引擎）。
 - **自包含 IIFE 打包**：針對 Chrome MV3 content script 隔離環境，獨立編譯為純淨自包含腳本，徹底杜絕 `import statement outside a module` 語法相容性問題。
 - **精確幾何度量**：利用瀏覽器 `DOM Range`、`createTreeWalker` 進行即時子像素字元座標解析，搭配 CSS `translate3d` 達成 120fps 流暢渲染。
 
