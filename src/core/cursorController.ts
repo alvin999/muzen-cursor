@@ -1,76 +1,18 @@
 import { cursorStore, MotionDirection, CursorRect, matchesKeybinding, DEFAULT_KEYBINDINGS } from './cursorStore';
 import { isTypingContext } from '../utils/domUtils';
 import { WordNavigator, TextTarget } from './wordNavigator';
-
-let activeScrollRafId: number | null = null;
-
-/**
- * 具有物理阻尼感之 Ease-Out Cubic 平滑捲動引擎
- */
-function animateScrollTo(
-  target: HTMLElement | Window,
-  targetTop: number,
-  duration?: number
-): void {
-  const actualDuration = typeof duration === 'number'
-    ? duration
-    : (cursorStore.getState().advanced?.scrollDurationMs ?? 380);
-  if (activeScrollRafId !== null) {
-    cancelAnimationFrame(activeScrollRafId);
-    activeScrollRafId = null;
-  }
-
-  const isWin = target === window || !(target instanceof HTMLElement);
-  const startTop = isWin
-    ? (window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0)
-    : (target as HTMLElement).scrollTop;
-
-  const maxScroll = isWin
-    ? Math.max(0, Math.max(document.body.scrollHeight, document.documentElement.scrollHeight) - window.innerHeight)
-    : Math.max(0, (target as HTMLElement).scrollHeight - (target as HTMLElement).clientHeight);
-
-  const clampedTarget = Math.max(0, Math.min(maxScroll, targetTop));
-  const distance = clampedTarget - startTop;
-
-  const isSmooth = cursorStore.getState().effects?.smoothScroll ?? true;
-  if (!isSmooth || Math.abs(distance) < 2) {
-    if (isWin) {
-      window.scrollTo(0, clampedTarget);
-    } else {
-      (target as HTMLElement).scrollTop = clampedTarget;
-    }
-    return;
-  }
-
-  const startTime = performance.now();
-
-  function step(currentTime: number) {
-    const elapsed = currentTime - startTime;
-    const progress = Math.min(1, elapsed / actualDuration);
-    // Ease-Out Cubic: 物理阻尼曲線
-    const ease = 1 - Math.pow(1 - progress, 3);
-    const currentPos = startTop + distance * ease;
-
-    if (isWin) {
-      window.scrollTo(0, currentPos);
-    } else {
-      (target as HTMLElement).scrollTop = currentPos;
-    }
-
-    if (progress < 1) {
-      activeScrollRafId = requestAnimationFrame(step);
-    } else {
-      if (isWin) {
-        window.scrollTo(0, clampedTarget);
-      } else {
-        (target as HTMLElement).scrollTop = clampedTarget;
-      }
-      activeScrollRafId = null;
-    }
-  }
-
-  activeScrollRafId = requestAnimationFrame(step);
-}
+import { resolveTextTargetFromPoint, isClickWithinDistanceThreshold, getRawCaretFromPoint } from '../utils/caretUtils';
+import { animateScrollTo, getScrollParent } from '../utils/smoothScroller';
+import {
+  findFirstTextNodeIn,
+  findNextTextNode,
+  findPrevTextNode,
+  getCharRectOfTarget,
+  searchDownwardNextLine,
+  searchUpwardPrevLine,
+  computeWaypointsBetween
+} from './navigation/spatialNavigator';
+import { VisualSelectionManager } from './navigation/selectionManager';
 
 export interface CursorControllerOptions {
   containerRoot?: HTMLElement;
@@ -84,11 +26,12 @@ export class CursorController {
   private options?: CursorControllerOptions;
   private currentTarget: TextTarget | null = null;
   private previousTarget: TextTarget | null = null;
-  private visualAnchor: TextTarget | null = null;
   private preferredX: number | null = null;
   private lastKeyTime = 0;
   private lastKey = '';
   private moveTimer: any = null;
+
+  private selectionManager = new VisualSelectionManager();
 
   private keydownHandler: ((e: KeyboardEvent) => void) | null = null;
   private clickHandler: ((e: MouseEvent) => void) | null = null;
@@ -185,119 +128,29 @@ export class CursorController {
       return;
     }
 
-    // 1. 排除點擊全域大背景（例如 body、html、全螢幕 wrapper）
-    const isGlobalContainer =
-      targetEl === document.body ||
-      targetEl === document.documentElement ||
-      targetEl.tagName === 'BODY' ||
-      targetEl.tagName === 'HTML';
-
-    let targetNode: Text | null = null;
-    let targetOffset = 0;
-
-    let range: Range | null = null;
-    if (document.caretRangeFromPoint) {
-      range = document.caretRangeFromPoint(clickX, clickY);
-    } else if ((document as unknown as { caretPositionFromPoint?: (x: number, y: number) => { offsetNode: Node; offset: number } }).caretPositionFromPoint) {
-      const pos = (document as unknown as { caretPositionFromPoint: (x: number, y: number) => { offsetNode: Node; offset: number } }).caretPositionFromPoint(clickX, clickY);
-      if (pos) {
-        if (pos.offsetNode.nodeType === Node.TEXT_NODE) {
-          targetNode = pos.offsetNode as Text;
-          targetOffset = pos.offset;
-        } else if (pos.offsetNode.nodeType === Node.ELEMENT_NODE && pos.offsetNode !== document.body && pos.offsetNode !== document.documentElement) {
-          targetNode = this.findFirstTextNodeIn(pos.offsetNode);
-          targetOffset = 0;
-        }
-      }
+    // 3. 標準 Caret 解析器 (解決 L199 Deprecated 問題，標準優先並兼顧相容性)
+    const resolved = resolveTextTargetFromPoint(clickX, clickY, targetEl, (root) => findFirstTextNodeIn(root));
+    if (!resolved) {
+      return;
     }
 
-    if (range) {
-      if (range.startContainer.nodeType === Node.TEXT_NODE) {
-        targetNode = range.startContainer as Text;
-        targetOffset = range.startOffset;
-      } else if (range.startContainer.nodeType === Node.ELEMENT_NODE) {
-        const elem = range.startContainer as Element;
-        // 只有非 body/html 的具體元素才採納
-        if (elem !== document.body && elem !== document.documentElement) {
-          if (elem.childNodes.length > 0) {
-            const childIndex = Math.min(range.startOffset, elem.childNodes.length - 1);
-            const child = elem.childNodes[childIndex];
-            targetNode = child.nodeType === Node.TEXT_NODE ? (child as Text) : this.findFirstTextNodeIn(child);
-          } else {
-            targetNode = this.findFirstTextNodeIn(elem);
-          }
-          targetOffset = 0;
-        }
-      }
+    // 4. 關鍵距離防禦：確認找到的文字節點與點擊處的物理距離
+    if (!isClickWithinDistanceThreshold(clickX, clickY, resolved.node)) {
+      return;
     }
 
-    // 2. 後備方案：純依賴 CSSOM 渲染層與視覺排版判斷，不列舉任何 HTML 標籤
-    if (!targetNode && !isGlobalContainer) {
-      const isVisible = typeof targetEl.checkVisibility === 'function'
-        ? targetEl.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })
-        : (targetEl.offsetWidth > 0 || targetEl.offsetHeight > 0 || targetEl.getClientRects().length > 0);
+    this.currentTarget = {
+      node: resolved.node,
+      offset: resolved.offset
+    };
 
-      if (isVisible && (targetEl.innerText?.trim().length || 0) > 0) {
-        try {
-          const computed = window.getComputedStyle(targetEl);
-          if (computed.userSelect !== 'none' && computed.pointerEvents !== 'none') {
-            const firstText = this.findFirstTextNodeIn(targetEl);
-            if (firstText) {
-              targetNode = firstText;
-              targetOffset = 0;
-            }
-          }
-        } catch {
-          // 容錯防禦
-        }
-      }
+    if (cursorStore.getState().mode !== 'VISUAL') {
+      this.selectionManager.clearAnchor();
     }
 
-    // 3. 關鍵距離防禦：確認找到的文字節點與點擊處的物理距離
-    // 若點擊點距離文字過遠（點在兩側大片空白），絕不胡亂跳躍
-    if (targetNode) {
-      try {
-        const testRange = document.createRange();
-        testRange.selectNodeContents(targetNode);
-        const rect = testRange.getBoundingClientRect();
-
-        const verticalDist = clickY < rect.top ? rect.top - clickY : clickY > rect.bottom ? clickY - rect.bottom : 0;
-        const horizontalDist = clickX < rect.left ? rect.left - clickX : clickX > rect.right ? clickX - rect.right : 0;
-
-        if (verticalDist > 40 || horizontalDist > 120) {
-          // 點擊距離文字過遠，屬於純空白點擊，不改變游標位置
-          return;
-        }
-      } catch {
-        return;
-      }
-
-      this.currentTarget = {
-        node: targetNode,
-        offset: targetOffset
-      };
-      if (cursorStore.getState().mode !== 'VISUAL') {
-        this.visualAnchor = null;
-      }
-      // 直接喚醒游標並設定為可見，狀態列同步切換為 NORMAL 模式
-      cursorStore.setState({ enabled: true, visible: true });
-      this.updateCursorPosition(false);
-    }
-  }
-
-  private findFirstTextNodeIn(root: Node): Text | null {
-    if (root.nodeType === Node.TEXT_NODE && (root.textContent?.trim().length || 0) > 0) {
-      return root as Text;
-    }
-    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-    let node = walker.nextNode();
-    while (node) {
-      if (node.textContent && node.textContent.trim().length > 0) {
-        return node as Text;
-      }
-      node = walker.nextNode();
-    }
-    return null;
+    // 直接喚醒游標並設定為可見，狀態列同步切換為 NORMAL 模式
+    cursorStore.setState({ enabled: true, visible: true });
+    this.updateCursorPosition(false);
   }
 
   private handleKeyDown(e: KeyboardEvent): void {
@@ -360,7 +213,6 @@ export class CursorController {
     }
 
     // 4. 游標處於喚醒接管狀態 (visible: true)：所有 Vim 按鍵全面霸道接管
-    // 呼叫 stopImmediatePropagation 徹底壓制任何網頁原生物件監聽器
     const intercept = () => {
       e.preventDefault();
       e.stopPropagation();
@@ -501,8 +353,8 @@ export class CursorController {
         this.currentTarget.offset = nextOffset;
         this.updateCursorPosition(true);
       } else {
-        // 到達當前文字節點末尾，平滑無縫跨入下一個文字標籤（如 <code>）之首字元
-        const nextNode = this.findNextTextNode(node);
+        // 到達當前文字節點末尾，平滑無縫跨入下一個文字標籤之首字元
+        const nextNode = findNextTextNode(node, this.rootElement);
         if (nextNode) {
           this.currentTarget = { node: nextNode, offset: 0 };
           this.updateCursorPosition(true);
@@ -516,7 +368,7 @@ export class CursorController {
         this.updateCursorPosition(true);
       } else {
         // 到達當前文字節點開頭，平滑跨入前一個文字節點之末尾字元
-        const prevNode = this.findPrevTextNode(node);
+        const prevNode = findPrevTextNode(node, this.rootElement);
         if (prevNode) {
           const prevLen = prevNode.textContent?.length || 0;
           this.currentTarget = {
@@ -550,7 +402,7 @@ export class CursorController {
       if (len === 0) break;
 
       // 1. 取得當前真實字元的螢幕基準線
-      const charRect = this.getCharRectOfTarget(target);
+      const charRect = getCharRectOfTarget(target);
       const baseRange = document.createRange();
       const safeFrom = Math.min(offset, Math.max(0, len - 1));
       baseRange.setStart(node, safeFrom);
@@ -568,15 +420,15 @@ export class CursorController {
       const targetX = this.preferredX;
 
       const foundTarget: TextTarget | null = isDownward
-        ? this.searchDownwardNextLine(node, offset, currentCharTop, lineThreshold, charHeight, targetX)
-        : this.searchUpwardPrevLine(node, offset, currentCharTop, lineThreshold, charHeight, targetX);
+        ? searchDownwardNextLine(node, offset, currentCharTop, lineThreshold, charHeight, targetX, this.rootElement)
+        : searchUpwardPrevLine(node, offset, currentCharTop, lineThreshold, charHeight, targetX, this.rootElement);
 
       if (foundTarget) {
         this.currentTarget = foundTarget;
 
-        // 若不是最後一步（代表是中間經過的視覺行），由原本 j / k 演算法決定真實字元邊界（空白自動吸附至行末）
+        // 若不是最後一步，收集中間經過的視覺行真實路徑點
         if (step < steps - 1) {
-          const rect = this.getCharRectOfTarget(foundTarget);
+          const rect = getCharRectOfTarget(foundTarget);
           if (rect) {
             waypoints.push(rect);
           }
@@ -587,267 +439,6 @@ export class CursorController {
     }
 
     this.updateCursorPosition(true, waypoints);
-  }
-
-  /**
-   * 向下尋找下一視覺行（跨節點完整收集整條視覺行，穿透 <a>、<span>、<code> 標籤）
-   */
-  private searchDownwardNextLine(
-    startNode: Text,
-    startOffset: number,
-    currentCharTop: number,
-    lineThreshold: number,
-    charHeight: number,
-    targetX: number
-  ): { node: Text; offset: number } | null {
-    const range = document.createRange();
-    let targetLineTop: number | null = null;
-    let targetCharHeight = charHeight;
-    const lineCandidates: { node: Text; offset: number; rect: DOMRect }[] = [];
-
-    let currentNode: Text | null = startNode;
-    let nodeOffsetStart = startOffset + 1;
-    let nodesScanned = 0;
-    const MAX_NODES_TO_SCAN = 300;
-
-    while (currentNode && nodesScanned < MAX_NODES_TO_SCAN) {
-      nodesScanned++;
-      const text = currentNode.textContent || '';
-      const len = text.length;
-
-      for (let i = nodeOffsetStart; i < len; i++) {
-        const char = text[i];
-        if (char === '\r' || char === '\n') continue;
-
-        range.setStart(currentNode, i);
-        range.setEnd(currentNode, i + 1);
-        const rect = range.getBoundingClientRect();
-        if (rect.width === 0 || rect.height === 0) continue;
-
-        if (targetLineTop === null) {
-          // 階段 1：尋找下一視覺行的第一個實體字元（解除原本 5 倍行高的過度防禦限制）
-          const diffY = rect.top - currentCharTop;
-          if (diffY > lineThreshold) {
-            targetLineTop = rect.top;
-            targetCharHeight = rect.height > 0 ? rect.height : charHeight;
-            lineCandidates.push({ node: currentNode, offset: i, rect });
-          }
-        } else {
-          // 階段 2：收集屬於該視覺行的所有字元（允許跨越 <a>, <code>, <span> 等 inline 標籤）
-          const diffFromTarget = rect.top - targetLineTop;
-          // 若明顯進入再下一行（下下行），表示目標行已完整收集結束
-          if (diffFromTarget > targetCharHeight * 0.7) {
-            return this.pickBestCandidate(lineCandidates, targetX);
-          }
-          if (Math.abs(diffFromTarget) <= targetCharHeight * 0.7) {
-            lineCandidates.push({ node: currentNode, offset: i, rect });
-          }
-        }
-      }
-
-      currentNode = this.findNextTextNode(currentNode);
-      nodeOffsetStart = 0;
-    }
-
-    if (lineCandidates.length > 0) {
-      return this.pickBestCandidate(lineCandidates, targetX);
-    }
-
-    return null;
-  }
-
-  /**
-   * 向上尋找上一視覺行（跨節點完整收集整條視覺行，穿透 <a>、<span>、<code> 標籤）
-   */
-  private searchUpwardPrevLine(
-    startNode: Text,
-    startOffset: number,
-    currentCharTop: number,
-    lineThreshold: number,
-    charHeight: number,
-    targetX: number
-  ): { node: Text; offset: number } | null {
-    const range = document.createRange();
-    let targetLineTop: number | null = null;
-    let targetCharHeight = charHeight;
-    const lineCandidates: { node: Text; offset: number; rect: DOMRect }[] = [];
-
-    let currentNode: Text | null = startNode;
-    let nodeOffsetStart = startOffset - 1;
-    let nodesScanned = 0;
-    const MAX_NODES_TO_SCAN = 300;
-
-    while (currentNode && nodesScanned < MAX_NODES_TO_SCAN) {
-      nodesScanned++;
-      const text = currentNode.textContent || '';
-      const startFrom = nodeOffsetStart >= 0 ? Math.min(nodeOffsetStart, text.length - 1) : -1;
-
-      for (let i = startFrom; i >= 0; i--) {
-        const char = text[i];
-        if (char === '\r' || char === '\n') continue;
-
-        range.setStart(currentNode, i);
-        range.setEnd(currentNode, i + 1);
-        const rect = range.getBoundingClientRect();
-        if (rect.width === 0 || rect.height === 0) continue;
-
-        if (targetLineTop === null) {
-          // 階段 1：逆向尋找上一視覺行的第一個實體字元（解除原本 5 倍行高的過度防禦限制）
-          const diffY = currentCharTop - rect.top;
-          if (diffY > lineThreshold) {
-            targetLineTop = rect.top;
-            targetCharHeight = rect.height > 0 ? rect.height : charHeight;
-            lineCandidates.push({ node: currentNode, offset: i, rect });
-          }
-        } else {
-          // 階段 2：逆向收集屬於該視覺行的所有字元
-          const diffFromTarget = targetLineTop - rect.top;
-          // 若明顯進入更上一行（上上一行），表示目標行已逆向收集完畢
-          if (diffFromTarget > targetCharHeight * 0.7) {
-            return this.pickBestCandidate(lineCandidates, targetX);
-          }
-          if (Math.abs(diffFromTarget) <= targetCharHeight * 0.7) {
-            lineCandidates.push({ node: currentNode, offset: i, rect });
-          }
-        }
-      }
-
-      currentNode = this.findPrevTextNode(currentNode);
-      if (currentNode) {
-        nodeOffsetStart = (currentNode.textContent?.length || 1) - 1;
-      }
-    }
-
-    if (lineCandidates.length > 0) {
-      return this.pickBestCandidate(lineCandidates, targetX);
-    }
-
-    return null;
-  }
-
-  /**
-   * 在跨節點視覺行候選字元清單中，挑選與 targetX 水平最匹配的字元
-   * 確保水平對齊具備嚴格一致性與對稱性，避免連續 j / k 游標漂移
-   */
-  private pickBestCandidate(
-    candidates: { node: Text; offset: number; rect: DOMRect }[],
-    targetX: number
-  ): { node: Text; offset: number } | null {
-    if (candidates.length === 0) return null;
-
-    // 嚴格依水平左座標排序，消除正向/逆向掃描帶來的順序偏差
-    candidates.sort((a, b) => a.rect.left - b.rect.left);
-
-    // 1. 若整行都在 targetX 右邊（目標在整行左側之外）：取第 1 個字元
-    const firstItem = candidates[0];
-    if (targetX <= firstItem.rect.left) {
-      return { node: firstItem.node, offset: firstItem.offset };
-    }
-
-    // 2. 若整行都在 targetX 左邊（行較短，正下方為空白）：取最後 1 個字元
-    const lastItem = candidates[candidates.length - 1];
-    if (targetX >= lastItem.rect.right) {
-      return { node: lastItem.node, offset: lastItem.offset };
-    }
-
-    // 3. 若有字元水平涵蓋 targetX（包含 subpixel 浮點數微小容差）
-    for (const item of candidates) {
-      if (targetX >= item.rect.left - 0.5 && targetX <= item.rect.right + 0.5) {
-        return { node: item.node, offset: item.offset };
-      }
-    }
-
-    // 4. 否則取字元水平中心點（center）與 targetX 距離最近者
-    let best = candidates[0];
-    let minDiff = Infinity;
-    for (const item of candidates) {
-      const centerX = (item.rect.left + item.rect.right) / 2;
-      const diff = Math.abs(centerX - targetX);
-      if (diff < minDiff) {
-        minDiff = diff;
-        best = item;
-      }
-    }
-
-    return { node: best.node, offset: best.offset };
-  }
-
-  /**
-   * 取得指定 TextTarget 所對應字元的螢幕幾何矩形
-   */
-  private getCharRectOfTarget(target: TextTarget): CursorRect | null {
-    try {
-      const text = target.node.textContent || '';
-      const len = text.length;
-      if (len === 0) return null;
-      const safe = Math.min(target.offset, Math.max(0, len - 1));
-      const range = document.createRange();
-      range.setStart(target.node, safe);
-      range.setEnd(target.node, Math.min(safe + 1, len));
-      const rect = range.getBoundingClientRect();
-      if (rect.width > 0 && rect.height > 0) {
-        return {
-          x: rect.left,
-          y: rect.top,
-          width: Math.max(rect.width, 8),
-          height: Math.max(rect.height, 16)
-        };
-      }
-    } catch { }
-    return null;
-  }
-
-  /**
-   * 使用原本判斷 j / k 位置的核心函式，計算兩目標點之間穿過每一視覺行的真實路徑點
-   * （遇到空白行或短行時，自動吸附至該行行末）
-   */
-  private computeWaypointsBetween(
-    startTarget: TextTarget,
-    endTarget: TextTarget,
-    targetX: number
-  ): CursorRect[] {
-    const waypoints: CursorRect[] = [];
-    try {
-      const startRect = this.getCharRectOfTarget(startTarget);
-      const endRect = this.getCharRectOfTarget(endTarget);
-      if (!startRect || !endRect) return waypoints;
-
-      const dy = endRect.y - startRect.y;
-      const charHeight = startRect.height > 0 ? startRect.height : 22;
-      const lineThreshold = charHeight * 0.65;
-      if (Math.abs(dy) < lineThreshold * 1.5) {
-        return waypoints;
-      }
-
-      const isDownward = dy > 0;
-      let current = startTarget;
-      let lastTop = startRect.y;
-      const maxSteps = 16;
-      let step = 0;
-
-      while (step < maxSteps) {
-        step++;
-        const nextTarget = isDownward
-          ? this.searchDownwardNextLine(current.node, current.offset, lastTop, lineThreshold, charHeight, targetX)
-          : this.searchUpwardPrevLine(current.node, current.offset, lastTop, lineThreshold, charHeight, targetX);
-
-        if (!nextTarget) break;
-
-        const nextRect = this.getCharRectOfTarget(nextTarget);
-        if (!nextRect) break;
-
-        // 若已經越過或抵達 endTarget 所在的視覺行高度，停止收集
-        if (isDownward && nextRect.y >= endRect.y - lineThreshold * 0.5) break;
-        if (!isDownward && nextRect.y <= endRect.y + lineThreshold * 0.5) break;
-
-        waypoints.push(nextRect);
-        current = nextTarget;
-        lastTop = nextRect.y;
-      }
-    } catch (err) {
-      console.warn('[Muzen Cursor] computeWaypointsBetween error:', err);
-    }
-    return waypoints;
   }
 
   /**
@@ -869,7 +460,7 @@ export class CursorController {
       this.updateCursorPosition(true);
     } else {
       // 跨節點尋找下一個詞首
-      const nextNode = this.findNextTextNode(node);
+      const nextNode = findNextTextNode(node, this.rootElement);
       if (nextNode) {
         const nextText = nextNode.textContent || '';
         const initialOffset = WordNavigator.getNextWordOffset(nextText, -1);
@@ -885,7 +476,7 @@ export class CursorController {
   /**
    * 前退至上一個詞彙 (b)
    */
-  private moveWordBackward(): void {
+  public moveWordBackward(): void {
     this.preferredX = null;
     if (!this.currentTarget) {
       this.findInitialTarget();
@@ -901,7 +492,7 @@ export class CursorController {
       this.updateCursorPosition(true);
     } else {
       // 跨至前一個文字節點
-      const prevNode = this.findPrevTextNode(node);
+      const prevNode = findPrevTextNode(node, this.rootElement);
       if (prevNode) {
         const prevText = prevNode.textContent || '';
         const lastWord = WordNavigator.getPrevWordOffset(prevText, prevText.length);
@@ -917,7 +508,7 @@ export class CursorController {
   /**
    * 跳至目前詞彙尾端 (e)
    */
-  private moveWordEnd(): void {
+  public moveWordEnd(): void {
     this.preferredX = null;
     if (!this.currentTarget) {
       this.findInitialTarget();
@@ -932,7 +523,7 @@ export class CursorController {
       this.currentTarget.offset = endOffset;
       this.updateCursorPosition(true);
     } else {
-      const nextNode = this.findNextTextNode(node);
+      const nextNode = findNextTextNode(node, this.rootElement);
       if (nextNode) {
         const nextText = nextNode.textContent || '';
         const nextEnd = WordNavigator.getWordEndOffset(nextText, 0);
@@ -948,7 +539,7 @@ export class CursorController {
   /**
    * 跳至行首 (0) 或行尾 ($)
    */
-  private jumpToLineBoundary(isStart: boolean): void {
+  public jumpToLineBoundary(isStart: boolean): void {
     this.preferredX = null;
     if (!this.currentTarget) {
       this.findInitialTarget();
@@ -969,24 +560,19 @@ export class CursorController {
    * 跳至文章頂部 (gg)
    */
   public jumpToDocumentStart(): void {
-    const walker = document.createTreeWalker(this.rootElement, NodeFilter.SHOW_TEXT);
-    let n = walker.nextNode();
-    while (n) {
-      if (n.textContent && n.textContent.trim().length > 0) {
-        this.currentTarget = { node: n as Text, offset: 0 };
-        this.updateCursorPosition();
-        if (this.options?.enableScroll !== false) {
-          const scrollParent = this.getScrollParent(this.currentTarget.node);
-          const duration = cursorStore.getState().advanced?.scrollDurationMs ?? 380;
-          if (scrollParent) {
-            animateScrollTo(scrollParent, 0, duration);
-          } else if (!this.options?.containerRoot) {
-            animateScrollTo(window, 0, duration);
-          }
+    const firstText = findFirstTextNodeIn(this.rootElement);
+    if (firstText) {
+      this.currentTarget = { node: firstText, offset: 0 };
+      this.updateCursorPosition();
+      if (this.options?.enableScroll !== false) {
+        const scrollParent = getScrollParent(this.currentTarget.node, this.options?.containerRoot);
+        const duration = cursorStore.getState().advanced?.scrollDurationMs ?? 380;
+        if (scrollParent) {
+          animateScrollTo(scrollParent, 0, duration);
+        } else if (!this.options?.containerRoot) {
+          animateScrollTo(window, 0, duration);
         }
-        return;
       }
-      n = walker.nextNode();
     }
   }
 
@@ -1011,7 +597,7 @@ export class CursorController {
       };
       this.updateCursorPosition();
       if (this.options?.enableScroll !== false) {
-        const scrollParent = this.getScrollParent(this.currentTarget.node);
+        const scrollParent = getScrollParent(this.currentTarget.node, this.options?.containerRoot);
         const duration = cursorStore.getState().advanced?.scrollDurationMs ?? 380;
         if (scrollParent) {
           const maxScroll = Math.max(0, scrollParent.scrollHeight - scrollParent.clientHeight);
@@ -1034,9 +620,9 @@ export class CursorController {
         this.findInitialTarget();
       }
       if (this.currentTarget) {
-        this.visualAnchor = { ...this.currentTarget };
+        this.selectionManager.setAnchor({ ...this.currentTarget });
         cursorStore.setState({ mode: 'VISUAL' });
-        this.syncNativeSelection();
+        this.selectionManager.syncNativeSelection(this.currentTarget);
       }
     } else {
       this.exitVisualMode();
@@ -1044,74 +630,22 @@ export class CursorController {
   }
 
   public exitVisualMode(): void {
-    this.visualAnchor = null;
-    cursorStore.setState({ mode: 'NORMAL' });
-    const sel = window.getSelection();
-    if (sel) {
-      sel.removeAllRanges();
-    }
-  }
-
-  /**
-   * 同步原生選取區 (Visual Selection)
-   */
-  private syncNativeSelection(): void {
-    if (!this.visualAnchor || !this.currentTarget) return;
-
-    const sel = window.getSelection();
-    if (!sel) return;
-
-    try {
-      if (typeof sel.setBaseAndExtent === 'function') {
-        sel.setBaseAndExtent(
-          this.visualAnchor.node,
-          this.visualAnchor.offset,
-          this.currentTarget.node,
-          this.currentTarget.offset
-        );
-      } else {
-        const range = document.createRange();
-        range.setStart(this.visualAnchor.node, this.visualAnchor.offset);
-        range.setEnd(this.currentTarget.node, this.currentTarget.offset);
-        sel.removeAllRanges();
-        sel.addRange(range);
-      }
-    } catch {
-      // 跨節點順序若相反時反向設置
-      try {
-        const range = document.createRange();
-        range.setStart(this.currentTarget.node, this.currentTarget.offset);
-        range.setEnd(this.visualAnchor.node, this.visualAnchor.offset);
-        sel.removeAllRanges();
-        sel.addRange(range);
-      } catch (err) {
-        console.warn('[Muzen Cursor] Selection sync error:', err);
-      }
-    }
+    this.selectionManager.exitVisualMode();
   }
 
   /**
    * Yank (複製) 當前選取內容
    */
   public async yankSelection(): Promise<void> {
-    const sel = window.getSelection();
-    const text = sel ? sel.toString() : '';
-
-    if (text.length > 0) {
-      try {
-        await navigator.clipboard.writeText(text);
-        console.log(`[Muzen Cursor] 已複製 ${text.length} 個字元至剪貼簿`);
-      } catch (err) {
-        console.warn('[Muzen Cursor] 剪貼簿寫入失敗:', err);
-      }
-    }
-
-    this.exitVisualMode();
+    await this.selectionManager.yankSelection();
   }
 
+  /**
+   * 探測並定位初始游標位置
+   */
   public findInitialTarget(): void {
     if (this.options?.containerRoot) {
-      const firstText = this.findFirstTextNodeIn(this.options.containerRoot);
+      const firstText = findFirstTextNodeIn(this.options.containerRoot);
       if (firstText) {
         this.currentTarget = { node: firstText, offset: 0 };
         this.updateCursorPosition();
@@ -1122,21 +656,18 @@ export class CursorController {
     const cx = window.innerWidth / 2;
     const cy = window.innerHeight / 3;
 
-    let range: Range | null = null;
-    if (document.caretRangeFromPoint) {
-      range = document.caretRangeFromPoint(cx, cy);
-    }
-
-    if (range) {
-      if (range.startContainer.nodeType === Node.TEXT_NODE) {
+    // 優先使用跨瀏覽器標準 Caret 解析器 (消除 caretRangeFromPoint 廢棄警告)
+    const rawCaret = getRawCaretFromPoint(cx, cy);
+    if (rawCaret) {
+      if (rawCaret.node.nodeType === Node.TEXT_NODE) {
         this.currentTarget = {
-          node: range.startContainer as Text,
-          offset: range.startOffset
+          node: rawCaret.node as Text,
+          offset: rawCaret.offset
         };
         this.updateCursorPosition();
         return;
-      } else if (range.startContainer.nodeType === Node.ELEMENT_NODE) {
-        const textNode = this.findFirstTextNodeIn(range.startContainer);
+      } else if (rawCaret.node.nodeType === Node.ELEMENT_NODE) {
+        const textNode = findFirstTextNodeIn(rawCaret.node);
         if (textNode) {
           this.currentTarget = { node: textNode, offset: 0 };
           this.updateCursorPosition();
@@ -1166,7 +697,7 @@ export class CursorController {
             this.updateCursorPosition();
             return;
           }
-        } catch { }
+        } catch {}
       }
       n = walker.nextNode();
     }
@@ -1315,13 +846,14 @@ export class CursorController {
         }
       }
 
-      // 若未直接傳入 waypoints，但與前次目標跨越視覺行，自動呼叫正版 j / k 演算法補齊中間經過行
+      // 若未直接傳入 waypoints，但與前次目標跨越視覺行，自動補齊中間經過行
       let finalWaypoints = waypoints;
       if (!finalWaypoints && this.previousTarget && this.currentTarget) {
-        finalWaypoints = this.computeWaypointsBetween(
+        finalWaypoints = computeWaypointsBetween(
           this.previousTarget,
           this.currentTarget,
-          this.preferredX ?? rect.left
+          this.preferredX ?? rect.left,
+          this.rootElement
         );
       }
 
@@ -1353,12 +885,12 @@ export class CursorController {
 
       // Visual 模式下即時更新原生選取
       if (cursorStore.getState().mode === 'VISUAL') {
-        this.syncNativeSelection();
+        this.selectionManager.syncNativeSelection(this.currentTarget);
       }
 
-      // 只有在鍵盤主動導航且明確要求跟隨時才執行自動捲動 (移植自 mugen-yomu 舒適黃金視野區間演算法)
+      // 只有在鍵盤主動導航且明確要求跟隨時才執行自動捲動
       if (scrollIntoView) {
-        const scrollParent = this.getScrollParent(node);
+        const scrollParent = getScrollParent(node, this.options?.containerRoot);
         const viewHeight = scrollParent ? scrollParent.clientHeight : window.innerHeight;
         const parentTop = scrollParent ? scrollParent.getBoundingClientRect().top : 0;
         const curTop = rect.top - parentTop;
@@ -1368,7 +900,6 @@ export class CursorController {
           : (window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0);
 
         const adv = cursorStore.getState().advanced;
-        // 若為獨立子容器，安全邊距適應容器尺度
         const maxPad = scrollParent ? Math.floor(viewHeight * 0.35) : Infinity;
         const padBottom = Math.min(maxPad, adv?.viewportPaddingBottom ?? 160);
         const padTop = Math.min(maxPad, adv?.viewportPaddingTop ?? 120);
@@ -1392,11 +923,10 @@ export class CursorController {
     }
   }
 
-
   /**
    * 半頁跳轉 (d 向下 / u 向上) - 保證實體翻動 50% 視窗高度並精準重錨定目標行
    */
-  private moveHalfPage(isDownward: boolean): void {
+  public moveHalfPage(isDownward: boolean): void {
     if (!this.currentTarget) {
       this.findInitialTarget();
       return;
@@ -1421,7 +951,7 @@ export class CursorController {
     const targetX = this.preferredX;
 
     // 2. 計算目標跳轉高度 (保證為視窗或滾動容器的 50%)
-    const scrollParent = this.getScrollParent(node);
+    const scrollParent = getScrollParent(node, this.options?.containerRoot);
     const viewportHeight = scrollParent ? scrollParent.clientHeight : window.innerHeight;
     const jumpDistance = Math.max(viewportHeight * 0.5, charHeight * 3);
     const scrollAmount = Math.round(jumpDistance) * (isDownward ? 1 : -1);
@@ -1445,8 +975,8 @@ export class CursorController {
       const curRect = r.getBoundingClientRect();
 
       const nextTarget = isDownward
-        ? this.searchDownwardNextLine(lastFound.node, lastFound.offset, curRect.top, lineThreshold, charHeight, targetX)
-        : this.searchUpwardPrevLine(lastFound.node, lastFound.offset, curRect.top, lineThreshold, charHeight, targetX);
+        ? searchDownwardNextLine(lastFound.node, lastFound.offset, curRect.top, lineThreshold, charHeight, targetX, this.rootElement)
+        : searchUpwardPrevLine(lastFound.node, lastFound.offset, curRect.top, lineThreshold, charHeight, targetX, this.rootElement);
 
       if (!nextTarget) break;
 
@@ -1508,97 +1038,5 @@ export class CursorController {
     // 5. 強制保持游標可見並同步更新位置
     cursorStore.setState({ visible: true });
     this.updateCursorPosition(false, waypoints);
-  }
-
-  /**
-   * 偵測當前文字節點最近的可滾動容器（相容獨立閱讀窗格與 PDF 檢視器）
-   */
-  private getScrollParent(node: Node | null): HTMLElement | null {
-    let el = node instanceof HTMLElement ? node : node?.parentElement;
-    while (el && el !== document.body && el !== document.documentElement) {
-      try {
-        const style = window.getComputedStyle(el);
-        const overflowY = style.overflowY;
-        if ((overflowY === 'auto' || overflowY === 'scroll') && el.scrollHeight > el.clientHeight + 10) {
-          return el;
-        }
-      } catch {
-        // 忽略跨域樣式讀取異常
-      }
-      el = el.parentElement;
-    }
-
-    // 若指定了 containerRoot，向上查找滾動容器
-    if (this.options?.containerRoot) {
-      let p: HTMLElement | null = this.options.containerRoot;
-      while (p && p !== document.body && p !== document.documentElement) {
-        try {
-          const style = window.getComputedStyle(p);
-          const overflowY = style.overflowY;
-          if (overflowY === 'auto' || overflowY === 'scroll') {
-            return p;
-          }
-        } catch { }
-        p = p.parentElement;
-      }
-    }
-
-    return null;
-  }
-
-  private findNextTextNode(current: Text): Text | null {
-    const walker = document.createTreeWalker(this.rootElement, NodeFilter.SHOW_TEXT);
-    walker.currentNode = current;
-    let next = walker.nextNode();
-    while (next) {
-      if (this.isValidReadableTextNode(next as Text)) {
-        return next as Text;
-      }
-      next = walker.nextNode();
-    }
-    return null;
-  }
-
-  private findPrevTextNode(current: Text): Text | null {
-    const walker = document.createTreeWalker(this.rootElement, NodeFilter.SHOW_TEXT);
-    walker.currentNode = current;
-    let prev = walker.previousNode();
-    while (prev) {
-      if (this.isValidReadableTextNode(prev as Text)) {
-        return prev as Text;
-      }
-      prev = walker.previousNode();
-    }
-    return null;
-  }
-
-  /**
-   * 判定文字節點是否為實質可見/可閱讀文字（相容 pre/code 保留空白與換行）
-   */
-  private isValidReadableTextNode(node: Text): boolean {
-    const content = node.textContent;
-    if (!content || content.length === 0) return false;
-    const parent = node.parentElement;
-    if (!parent) return false;
-
-    const tag = parent.tagName ? parent.tagName.toUpperCase() : '';
-    if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'NOSCRIPT' || parent.closest('#muzen-cursor-host-root')) {
-      return false;
-    }
-
-    // 若包含非空白字元，一定有效
-    if (content.trim().length > 0) return true;
-
-    // 若純空白（如 \n、空格、Tab），檢查父容器是否宣告保留空白 (pre, pre-wrap, pre-line)
-    try {
-      const style = window.getComputedStyle(parent);
-      if (style.whiteSpace.startsWith('pre')) {
-        return true;
-      }
-    } catch {
-      // 容錯返回
-    }
-
-    return false;
   }
 }
