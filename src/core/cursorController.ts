@@ -2,7 +2,7 @@ import { cursorStore, MotionDirection, CursorRect, matchesKeybinding, DEFAULT_KE
 import { isTypingContext } from '../utils/domUtils';
 import { WordNavigator, TextTarget } from './wordNavigator';
 import { resolveTextTargetFromPoint, isClickWithinDistanceThreshold, getRawCaretFromPoint } from '../utils/caretUtils';
-import { animateScrollTo, getScrollParent } from '../utils/smoothScroller';
+import { animateScrollTo, getScrollParent, getViewportMetrics } from '../utils/smoothScroller';
 import {
   findFirstTextNodeIn,
   findNextTextNode,
@@ -53,6 +53,8 @@ export class CursorController {
     // 視窗縮放與滾動時保持游標位置緊密貼合
     let ticking = false;
     const requestUpdate = () => {
+      // 視窗縮放或折行改變時，重設水平記憶欄位，避免以縮放前的舊座標定位
+      this.preferredX = null;
       if (!ticking) {
         window.requestAnimationFrame(() => {
           if (this.currentTarget && cursorStore.getState().enabled && !cursorStore.getState().isExcluded) {
@@ -71,6 +73,10 @@ export class CursorController {
     window.addEventListener('click', this.clickHandler, true);
     window.addEventListener('resize', this.resizeHandler, { passive: true });
     window.addEventListener('scroll', this.scrollHandler, { passive: true, capture: true });
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', this.resizeHandler, { passive: true });
+      window.visualViewport.addEventListener('scroll', this.scrollHandler, { passive: true });
+    }
   }
 
   public destroy(): void {
@@ -81,6 +87,14 @@ export class CursorController {
     if (this.clickHandler) {
       window.removeEventListener('click', this.clickHandler, true);
       this.clickHandler = null;
+    }
+    if (window.visualViewport) {
+      if (this.resizeHandler) {
+        window.visualViewport.removeEventListener('resize', this.resizeHandler);
+      }
+      if (this.scrollHandler) {
+        window.visualViewport.removeEventListener('scroll', this.scrollHandler);
+      }
     }
     if (this.resizeHandler) {
       window.removeEventListener('resize', this.resizeHandler);
@@ -603,7 +617,8 @@ export class CursorController {
           const maxScroll = Math.max(0, scrollParent.scrollHeight - scrollParent.clientHeight);
           animateScrollTo(scrollParent, maxScroll, duration);
         } else if (!this.options?.containerRoot) {
-          const maxScroll = Math.max(0, Math.max(document.body.scrollHeight, document.documentElement.scrollHeight) - window.innerHeight);
+          const viewportH = window.visualViewport?.height ?? window.innerHeight;
+          const maxScroll = Math.max(0, Math.max(document.body.scrollHeight, document.documentElement.scrollHeight) - viewportH);
           animateScrollTo(window, maxScroll, duration);
         }
       }
@@ -790,18 +805,19 @@ export class CursorController {
         }
       }
 
-      // 計算全頁面閱讀進度
+      // 計算全頁面閱讀進度（自適應 visualViewport 縮放高度）
       const scrollY = window.scrollY || window.pageYOffset;
+      const viewportH = window.visualViewport?.height ?? window.innerHeight;
       const totalHeight = Math.max(
         document.body.scrollHeight,
         document.documentElement.scrollHeight
-      ) - window.innerHeight;
+      ) - viewportH;
       const progress = totalHeight > 0 ? Math.min(100, Math.max(0, (scrollY / totalHeight) * 100)) : 100;
 
       // 容許適度邊界緩衝，避免邊界滾動時游標閃現閃退；若座標暫未就緒，安全維持當前可見狀態
       const hasValidCoords = typeof rect.top === 'number' && typeof rect.bottom === 'number' && !isNaN(rect.top) && !isNaN(rect.bottom);
       const isVisibleInViewport = hasValidCoords
-        ? (rect.bottom >= -80 && rect.top <= window.innerHeight + 80)
+        ? (rect.bottom >= -80 && rect.top <= viewportH + 80)
         : (cursorStore.getState().visible ?? true);
 
       // 視窗純捲動/縮放更新：僅靜默貼齊游標位置，嚴格抑制殘影與運動序列遞增
@@ -888,32 +904,30 @@ export class CursorController {
         this.selectionManager.syncNativeSelection(this.currentTarget);
       }
 
-      // 只有在鍵盤主動導航且明確要求跟隨時才執行自動捲動
+      // 只有在鍵盤主動導航且明確要求跟隨時才執行自動捲動 (自適應黃金視野區間演算法)
       if (scrollIntoView) {
-        const scrollParent = getScrollParent(node, this.options?.containerRoot);
-        const viewHeight = scrollParent ? scrollParent.clientHeight : window.innerHeight;
-        const parentTop = scrollParent ? scrollParent.getBoundingClientRect().top : 0;
+        const { scrollTarget, viewHeight, parentTop, currentScroll } = getViewportMetrics(node, this.options?.containerRoot);
         const curTop = rect.top - parentTop;
         const curBottom = rect.bottom - parentTop;
-        const currentScroll = scrollParent
-          ? scrollParent.scrollTop
-          : (window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0);
 
         const adv = cursorStore.getState().advanced;
-        const maxPad = scrollParent ? Math.floor(viewHeight * 0.35) : Infinity;
+        // 動態安全比例閥：單邊安全邊距不超過可視高度 28%（中間保留至少 44% 黃金舒適閱讀區間，防止放大縮小時邊距擠壓導致抖動）
+        const maxPad = Math.floor(viewHeight * 0.28);
         const padBottom = Math.min(maxPad, adv?.viewportPaddingBottom ?? 160);
         const padTop = Math.min(maxPad, adv?.viewportPaddingTop ?? 120);
         const scrollDuration = adv?.scrollDurationMs ?? 320;
 
-        const scrollTarget = scrollParent || (this.options?.containerRoot ? null : window);
+        // 自適應字元行高緩衝：在任何縮放比例下，維持約半行字高的舒適安全視距
+        const lineBuffer = Math.max(12, Math.min(36, Math.round((rect.height || 20) * 0.5)));
+
         if (scrollTarget) {
           // 向下閱讀超過底部邊界視野時
           if (curBottom > viewHeight - padBottom) {
-            const targetScroll = currentScroll + (curBottom - (viewHeight - padBottom)) + 12;
+            const targetScroll = currentScroll + (curBottom - (viewHeight - padBottom)) + lineBuffer;
             animateScrollTo(scrollTarget, targetScroll, scrollDuration);
           } else if (curTop < padTop) {
             // 向上閱讀低於頂部邊界視野時
-            const targetScroll = Math.max(0, currentScroll - (padTop - curTop) - 12);
+            const targetScroll = Math.max(0, currentScroll - (padTop - curTop) - lineBuffer);
             animateScrollTo(scrollTarget, targetScroll, scrollDuration);
           }
         }
@@ -950,10 +964,9 @@ export class CursorController {
     }
     const targetX = this.preferredX;
 
-    // 2. 計算目標跳轉高度 (保證為視窗或滾動容器的 50%)
-    const scrollParent = getScrollParent(node, this.options?.containerRoot);
-    const viewportHeight = scrollParent ? scrollParent.clientHeight : window.innerHeight;
-    const jumpDistance = Math.max(viewportHeight * 0.5, charHeight * 3);
+    // 2. 計算目標跳轉高度 (保證為視窗或滾動容器的 50%，自適應 visualViewport 縮放)
+    const { scrollTarget, viewHeight, currentScroll } = getViewportMetrics(node, this.options?.containerRoot);
+    const jumpDistance = Math.max(viewHeight * 0.5, charHeight * 3);
     const scrollAmount = Math.round(jumpDistance) * (isDownward ? 1 : -1);
 
     let foundTarget: { node: Text; offset: number } | null = null;
@@ -1014,12 +1027,7 @@ export class CursorController {
     this.currentTarget = foundTarget;
 
     // 4. 執行保證幅度的 Ease-Out Cubic 物理阻尼平滑滾動
-    const currentScrollTop = scrollParent
-      ? scrollParent.scrollTop
-      : (window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0);
-    const targetScrollTop = currentScrollTop + scrollAmount;
-
-    const scrollTarget = scrollParent || (this.options?.containerRoot ? null : window);
+    const targetScrollTop = currentScroll + scrollAmount;
     if (scrollTarget) {
       animateScrollTo(scrollTarget, targetScrollTop, 380);
     }

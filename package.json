@@ -1,7 +1,7 @@
 {
   "name": "muzen-cursor",
   "displayName": "Muzen Cursor",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Vim-style distraction-free reading cursor for web pages and PDFs",
   "type": "module",
   "scripts": {

@@ -4,7 +4,7 @@
 > *A distraction-free, zen-like reading companion for the modern web and PDF.*
 
 <p align="center">
-  <a href="https://github.com/alvin999/muzen-cursor/releases"><img src="https://img.shields.io/badge/version-v0.1.0-d79921?style=flat-square" alt="Version" /></a>
+  <a href="https://github.com/alvin999/muzen-cursor/releases"><img src="https://img.shields.io/badge/version-v0.1.1-d79921?style=flat-square" alt="Version" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-98971a?style=flat-square" alt="License" /></a>
   <a href="manifest.json"><img src="https://img.shields.io/badge/Chrome_Extension-MV3-458588?style=flat-square&logo=googlechrome&logoColor=white" alt="Chrome MV3" /></a>
   <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.7+-b16286?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" /></a>

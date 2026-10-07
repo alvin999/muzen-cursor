@@ -32,15 +32,16 @@ export function animateScrollTo(
     ? window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0
     : (target as HTMLElement).scrollTop;
 
+  const viewportH = window.visualViewport?.height ?? window.innerHeight;
   const maxScroll = isWin
-    ? Math.max(0, Math.max(document.body.scrollHeight, document.documentElement.scrollHeight) - window.innerHeight)
+    ? Math.max(0, Math.max(document.body.scrollHeight, document.documentElement.scrollHeight) - viewportH)
     : Math.max(0, (target as HTMLElement).scrollHeight - (target as HTMLElement).clientHeight);
 
   const clampedTarget = Math.max(0, Math.min(maxScroll, targetTop));
   const distance = clampedTarget - startTop;
 
   const isSmooth = cursorStore.getState().effects?.smoothScroll ?? true;
-  if (!isSmooth || Math.abs(distance) < 2) {
+  if (!isSmooth || Math.abs(distance) < 1) {
     if (isWin) {
       window.scrollTo(0, clampedTarget);
     } else {
@@ -113,4 +114,37 @@ export function getScrollParent(node: Node | null, containerRoot?: HTMLElement):
   }
 
   return null;
+}
+
+export interface ViewportMetrics {
+  scrollParent: HTMLElement | null;
+  scrollTarget: HTMLElement | Window | null;
+  viewHeight: number;
+  parentTop: number;
+  currentScroll: number;
+}
+
+/**
+ * 取得當前節點所在之視口環境度量（自適應瀏覽器縮放與 visualViewport）
+ */
+export function getViewportMetrics(node: Node | null, containerRoot?: HTMLElement): ViewportMetrics {
+  const scrollParent = getScrollParent(node, containerRoot);
+  const viewHeight = scrollParent
+    ? scrollParent.clientHeight
+    : (window.visualViewport?.height ?? window.innerHeight);
+  const parentTop = scrollParent
+    ? scrollParent.getBoundingClientRect().top
+    : (window.visualViewport?.offsetTop ?? 0);
+  const currentScroll = scrollParent
+    ? scrollParent.scrollTop
+    : (window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0);
+  const scrollTarget = scrollParent || (containerRoot ? null : window);
+
+  return {
+    scrollParent,
+    scrollTarget,
+    viewHeight,
+    parentTop,
+    currentScroll
+  };
 }
