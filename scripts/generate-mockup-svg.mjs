@@ -38,17 +38,17 @@ const I18N = {
     yankDesc: '自動寫入系統剪貼簿，告別滑鼠拖曳手抖',
 
     // 圖 3: Reading Anchor
-    anchorDesc1: '傳統滑鼠標記或原生游標極易在長文中迷失字元焦點。',
-    anchorDesc2: 'Muzen Cursor 將高對比幾何游標「直接覆蓋在目標字元正上方」：',
+    anchorDesc1: '傳統滑鼠標記或原生游標極易在長文中迷失行級與單字焦點。',
+    anchorDesc2: 'Muzen Cursor 將高對比幾何游標「直接覆蓋在目標單字詞首」：',
     anchorActiveLine: '當前閱讀聚焦行 (ACTIVE LINE)',
-    anchorDampingTip: '✨ 游標完全貼齊字元邊界，具備 GPU 物理阻尼（80ms）平滑跟隨位移',
-    anchorTip1: '• 按 l 向右前進一個字元；按 h 向左後退一個字元。',
-    anchorTip2: '• 搭配 w / b 詞彙跳躍，視線永遠精準鎖定文字基線，手指無需碰觸滑鼠。',
+    anchorDampingTip: '✨ 游標完全貼齊單字邊界，具備 GPU 物理阻尼（80ms）平滑跟隨位移',
+    anchorTip1: '• 按 w 智慧跨越單字躍進詞首；按 b 迅速倒退回前一單字。',
+    anchorTip2: '• 搭配 h / l 微調字元，視線永遠精準鎖定文字基線，手指無需碰觸滑鼠。',
     hudTitle: 'LIVE KEYBOARD DYNAMICS',
-    hudLeft: '向左 ⟵',
-    hudRight: '向右 ⟶',
-    hudDirRight: '▶ 右移 (l)',
-    hudDirLeft: '◀ 左移 (h)',
+    hudWordForward: '跳詞 ➔',
+    hudWordBack: '回跳 ⟵',
+    hudDirForward: '▶ 跨詞跳躍 (w)',
+    hudDirBack: '◀ 反向回跳 (b)',
     hudDamping: '阻尼跟隨: 80ms 物理過渡',
     shapesTitle: '3 幾何錨點形態 (自訂外觀)',
     shapeBlockName: 'Block 實心方塊',
@@ -57,10 +57,10 @@ const I18N = {
     shapeHollowNote: '文字無遮擋',
     shapeUnderlineName: 'Underline 閱讀底線',
     shapeUnderlineNote: '速讀導航規',
-    anchorBannerLeft: '向左字元',
-    anchorBannerRight: '向右字元',
-    anchorBannerWord: '智慧單字跳躍',
-    anchorBannerTarget: '🎯 游標覆蓋字元',
+    anchorBannerWordForward: '智慧跨詞前進',
+    anchorBannerWordBack: '詞首反向回跳',
+    anchorBannerChar: '字元精準微調',
+    anchorBannerTarget: '🎯 詞首視覺吸附',
     anchorBannerSub: '雙手不離鍵盤，目光不離行距',
   },
   'en': {
@@ -84,17 +84,17 @@ const I18N = {
     yankDesc: 'Copied directly to clipboard—farewell to mouse slips',
 
     // Image 3: Reading Anchor
-    anchorDesc1: 'Traditional mouse highlighting or native carets easily lose line focus.',
-    anchorDesc2: 'Muzen Cursor overlays high-contrast geometric anchors directly atop text:',
+    anchorDesc1: 'Traditional mouse highlighting or native carets easily lose reading focus.',
+    anchorDesc2: 'Muzen Cursor overlays high-contrast geometric anchors directly atop words:',
     anchorActiveLine: 'ACTIVE READING FOCUS LINE',
-    anchorDampingTip: '✨ Snaps tightly to character bounds with 80ms GPU physics damping',
-    anchorTip1: '• Press l to step right; press h to step left by one character.',
-    anchorTip2: '• Combine with w / b word jumping to lock eyes on the reading baseline.',
+    anchorDampingTip: '✨ Snaps tightly to word boundaries with 80ms GPU physics damping',
+    anchorTip1: '• Press w to leap forward to next word; press b to leap backward.',
+    anchorTip2: '• Combine with h / l for fine-tuning to lock eyes on the reading baseline.',
     hudTitle: 'LIVE KEYBOARD DYNAMICS',
-    hudLeft: 'Left ⟵',
-    hudRight: 'Right ⟶',
-    hudDirRight: '▶ Right (l)',
-    hudDirLeft: '◀ Left (h)',
+    hudWordForward: 'Forward ➔',
+    hudWordBack: 'Backward ⟵',
+    hudDirForward: '▶ Word Leap (w)',
+    hudDirBack: '◀ Leap Back (b)',
     hudDamping: 'Damped Follow: 80ms transition',
     shapesTitle: '3 Geometric Anchor Shapes',
     shapeBlockName: 'Solid Block',
@@ -103,10 +103,10 @@ const I18N = {
     shapeHollowNote: 'Zero Occlusion',
     shapeUnderlineName: 'Reading Underline',
     shapeUnderlineNote: 'Speed Guide',
-    anchorBannerLeft: 'Step Left',
-    anchorBannerRight: 'Step Right',
-    anchorBannerWord: 'Smart Word Navigation',
-    anchorBannerTarget: '🎯 Character Overlay',
+    anchorBannerWordForward: 'Word Forward',
+    anchorBannerWordBack: 'Word Back',
+    anchorBannerChar: 'Fine Char Tune',
+    anchorBannerTarget: '🎯 Word-Head Snapping',
     anchorBannerSub: 'Hands on keyboard, eyes on baseline',
   },
   'ja': {
@@ -130,17 +130,17 @@ const I18N = {
     yankDesc: 'クリップボードへ直接保存。マウスドラッグのズレから解放',
 
     // Image 3: Reading Anchor
-    anchorDesc1: '従来のマウスや標準カーソルは長文で行・文字を見失いがちです。',
-    anchorDesc2: 'Muzen Cursor は高コントラストな幾何学カーソルを文字の真上に直接吸着：',
+    anchorDesc1: '従来のマウスや標準カーソルは長文で行・単語を見失いがちです。',
+    anchorDesc2: 'Muzen Cursor は高コントラストな幾何学カーソルを単語の先頭に直接吸着：',
     anchorActiveLine: '現在の読書フォーカス行 (ACTIVE LINE)',
-    anchorDampingTip: '✨ 文字境界に精密吸着し、GPU物理ダンピング (80ms) で滑らかに追従',
-    anchorTip1: '• l で右へ1文字進み、h で左へ1文字戻ります。',
-    anchorTip2: '• w / b の単語ジャンプと合わせ、視線を行間に固定したまま読書可能。',
+    anchorDampingTip: '✨ 単語境界に精密吸着し、GPU物理ダンピング (80ms) で滑らかに追従',
+    anchorTip1: '• w で次の単語の先頭へジャンプし、b で前方の単語へ戻ります。',
+    anchorTip2: '• h / l の微調整と合わせ、視線を行間に固定したまま快適に読書可能。',
     hudTitle: 'LIVE KEYBOARD DYNAMICS',
-    hudLeft: '左へ ⟵',
-    hudRight: '右へ ⟶',
-    hudDirRight: '▶ 右移動 (l)',
-    hudDirLeft: '◀ 左移動 (h)',
+    hudWordForward: '単語進む ➔',
+    hudWordBack: '単語戻る ⟵',
+    hudDirForward: '▶ 単語ジャンプ (w)',
+    hudDirBack: '◀ 単語戻り (b)',
     hudDamping: 'ダンピング追従: 80ms 物理遷移',
     shapesTitle: '3つの幾何学アンカー (外観)',
     shapeBlockName: 'ソリッドブロック',
@@ -149,10 +149,10 @@ const I18N = {
     shapeHollowNote: '文字を隠さない',
     shapeUnderlineName: 'アンダーライン',
     shapeUnderlineNote: '速読ガイド',
-    anchorBannerLeft: '左へ1文字',
-    anchorBannerRight: '右へ1文字',
-    anchorBannerWord: '単語ジャンプ',
-    anchorBannerTarget: '🎯 文字吸着カーソル',
+    anchorBannerWordForward: '単語ジャンプ',
+    anchorBannerWordBack: '単語戻り',
+    anchorBannerChar: '文字微調整',
+    anchorBannerTarget: '🎯 単語頭部吸着',
     anchorBannerSub: 'キーボードから手を離さず、視線を行間へ',
   }
 };
@@ -640,12 +640,19 @@ function generateVisualYankSvg(lang = 'zh-TW') {
 }
 
 // -------------------------------------------------------------
-// 圖 3: h / l 字元級平滑移動與游標精準覆蓋
+// 圖 3: w / b 單字級平滑跨字跳躍與詞首錨點鎖定
 // -------------------------------------------------------------
 function generateReadingAnchorSvg(lang = 'zh-TW') {
   const t = I18N[lang] || I18N['zh-TW'];
   const width = 880;
   const height = 480;
+
+  const sampleText = "Accelerate deep reading flow across words.";
+  const charWidth = 10.5;
+  const renderedChars = sampleText.split('').map((ch, i) => {
+    const displayChar = ch === ' ' ? '&#160;' : ch;
+    return `<text x="${(i * charWidth).toFixed(1)}" y="0">${displayChar}</text>`;
+  }).join('');
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -653,132 +660,203 @@ function generateReadingAnchorSvg(lang = 'zh-TW') {
     <filter id="window-shadow-3" x="0" y="0" width="${width}" height="${height}" filterUnits="userSpaceOnUse">
       <feDropShadow dx="0" dy="16" stdDeviation="20" flood-color="#000000" flood-opacity="0.6"/>
     </filter>
-    <filter id="anchor-glow" x="-30%" y="-30%" width="160%" height="160%">
+    <filter id="anchor-glow-orange" x="-30%" y="-30%" width="160%" height="160%">
       <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#fe8019" flood-opacity="0.8"/>
+    </filter>
+    <filter id="anchor-glow-blue" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#7aa2f7" flood-opacity="0.8"/>
+    </filter>
+    <filter id="anchor-glow-green" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#b8bb26" flood-opacity="0.8"/>
     </filter>
 
     <style>
-      @keyframes cursorHLMove {
-        0%, 4%   { transform: translateX(0px); }
-        7%, 10%  { transform: translateX(22px); }
-        13%, 16% { transform: translateX(44px); }
-        19%, 22% { transform: translateX(66px); }
-        25%, 28% { transform: translateX(88px); }
-        31%, 34% { transform: translateX(110px); }
-        37%, 40% { transform: translateX(132px); }
-        43%, 50% { transform: translateX(154px); }
-
-        53%, 56% { transform: translateX(132px); }
-        59%, 62% { transform: translateX(110px); }
-        65%, 68% { transform: translateX(88px); }
-        71%, 74% { transform: translateX(66px); }
-        77%, 80% { transform: translateX(44px); }
-        83%, 86% { transform: translateX(22px); }
-        89%, 96% { transform: translateX(0px); }
-        98%, 100%{ transform: translateX(0px); }
+      @keyframes cursorWordMove {
+        0%, 10%  { transform: translateX(0px); }
+        13%, 22% { transform: translateX(115.5px); }
+        25%, 34% { transform: translateX(168.0px); }
+        37%, 46% { transform: translateX(252.0px); }
+        49%, 58% { transform: translateX(304.5px); }
+        61%, 72% { transform: translateX(378.0px); }
+        75%, 84% { transform: translateX(252.0px); }
+        87%, 100%{ transform: translateX(0px); }
       }
 
-      @keyframes keyPressL {
-        0%, 5%   { fill: #3c3836; stroke: #504945; transform: scale(1); }
-        7%, 9%   { fill: #fe8019; stroke: #fe8019; transform: scale(0.94); }
-        11%, 12% { fill: #3c3836; stroke: #504945; transform: scale(1); }
-        13%, 15% { fill: #fe8019; stroke: #fe8019; transform: scale(0.94); }
-        17%, 18% { fill: #3c3836; stroke: #504945; transform: scale(1); }
-        19%, 21% { fill: #fe8019; stroke: #fe8019; transform: scale(0.94); }
-        23%, 24% { fill: #3c3836; stroke: #504945; transform: scale(1); }
-        25%, 27% { fill: #fe8019; stroke: #fe8019; transform: scale(0.94); }
-        29%, 30% { fill: #3c3836; stroke: #504945; transform: scale(1); }
-        31%, 33% { fill: #fe8019; stroke: #fe8019; transform: scale(0.94); }
-        35%, 36% { fill: #3c3836; stroke: #504945; transform: scale(1); }
-        37%, 39% { fill: #fe8019; stroke: #fe8019; transform: scale(0.94); }
-        41%, 42% { fill: #3c3836; stroke: #504945; transform: scale(1); }
-        43%, 45% { fill: #fe8019; stroke: #fe8019; transform: scale(0.94); }
-        47%, 100%{ fill: #3c3836; stroke: #504945; transform: scale(1); }
+      @keyframes shapeBlockToggle {
+        0%, 9.99%   { opacity: 1; visibility: visible; }
+        10%, 33.99% { opacity: 0; visibility: hidden; }
+        34%, 45.99% { opacity: 1; visibility: visible; }
+        46%, 83.99% { opacity: 0; visibility: hidden; }
+        84%, 100%   { opacity: 1; visibility: visible; }
       }
-      @keyframes keyTextL {
-        0%, 5%   { fill: #ebdbb2; }
-        7%, 9%   { fill: #1d2021; }
-        11%, 12% { fill: #ebdbb2; }
-        13%, 15% { fill: #1d2021; }
-        17%, 18% { fill: #ebdbb2; }
-        19%, 21% { fill: #1d2021; }
-        23%, 24% { fill: #ebdbb2; }
-        25%, 27% { fill: #1d2021; }
-        29%, 30% { fill: #ebdbb2; }
-        31%, 33% { fill: #1d2021; }
-        35%, 36% { fill: #ebdbb2; }
-        37%, 39% { fill: #1d2021; }
-        41%, 42% { fill: #ebdbb2; }
-        43%, 45% { fill: #1d2021; }
-        47%, 100%{ fill: #ebdbb2; }
+      @keyframes shapeHollowToggle {
+        0%, 9.99%   { opacity: 0; visibility: hidden; }
+        10%, 21.99% { opacity: 1; visibility: visible; }
+        22%, 45.99% { opacity: 0; visibility: hidden; }
+        46%, 57.99% { opacity: 1; visibility: visible; }
+        58%, 71.99% { opacity: 0; visibility: hidden; }
+        72%, 83.99% { opacity: 1; visibility: visible; }
+        84%, 100%   { opacity: 0; visibility: hidden; }
+      }
+      @keyframes shapeUnderlineToggle {
+        0%, 21.99%  { opacity: 0; visibility: hidden; }
+        22%, 33.99% { opacity: 1; visibility: visible; }
+        34%, 57.99% { opacity: 0; visibility: hidden; }
+        58%, 71.99% { opacity: 1; visibility: visible; }
+        72%, 100%   { opacity: 0; visibility: hidden; }
       }
 
-      @keyframes keyPressH {
-        0%, 51%  { fill: #3c3836; stroke: #504945; transform: scale(1); }
-        53%, 55% { fill: #fabd2f; stroke: #fabd2f; transform: scale(0.94); }
-        57%, 58% { fill: #3c3836; stroke: #504945; transform: scale(1); }
-        59%, 61% { fill: #fabd2f; stroke: #fabd2f; transform: scale(0.94); }
-        63%, 64% { fill: #3c3836; stroke: #504945; transform: scale(1); }
-        65%, 67% { fill: #fabd2f; stroke: #fabd2f; transform: scale(0.94); }
-        69%, 70% { fill: #3c3836; stroke: #504945; transform: scale(1); }
-        71%, 73% { fill: #fabd2f; stroke: #fabd2f; transform: scale(0.94); }
-        75%, 76% { fill: #3c3836; stroke: #504945; transform: scale(1); }
-        77%, 79% { fill: #fabd2f; stroke: #fabd2f; transform: scale(0.94); }
-        81%, 82% { fill: #3c3836; stroke: #504945; transform: scale(1); }
-        83%, 85% { fill: #fabd2f; stroke: #fabd2f; transform: scale(0.94); }
-        87%, 88% { fill: #3c3836; stroke: #504945; transform: scale(1); }
-        89%, 91% { fill: #fabd2f; stroke: #fabd2f; transform: scale(0.94); }
-        93%, 100%{ fill: #3c3836; stroke: #504945; transform: scale(1); }
+      @keyframes cardBlockAnim {
+        0%, 9.99%   { stroke: #fe8019; stroke-width: 1.8; fill: #282828; }
+        10%, 33.99% { stroke: #3c3836; stroke-width: 1;   fill: #1d2021; }
+        34%, 45.99% { stroke: #fe8019; stroke-width: 1.8; fill: #282828; }
+        46%, 83.99% { stroke: #3c3836; stroke-width: 1;   fill: #1d2021; }
+        84%, 100%   { stroke: #fe8019; stroke-width: 1.8; fill: #282828; }
       }
-      @keyframes keyTextH {
-        0%, 51%  { fill: #ebdbb2; }
-        53%, 55% { fill: #1d2021; }
-        57%, 58% { fill: #ebdbb2; }
-        59%, 61% { fill: #1d2021; }
-        63%, 64% { fill: #ebdbb2; }
-        65%, 67% { fill: #1d2021; }
-        69%, 70% { fill: #ebdbb2; }
-        71%, 73% { fill: #1d2021; }
-        75%, 76% { fill: #ebdbb2; }
-        77%, 79% { fill: #1d2021; }
-        81%, 82% { fill: #ebdbb2; }
-        83%, 85% { fill: #1d2021; }
-        87%, 88% { fill: #ebdbb2; }
-        89%, 91% { fill: #1d2021; }
-        93%, 100%{ fill: #ebdbb2; }
+      @keyframes cardHollowAnim {
+        0%, 9.99%   { stroke: #3c3836; stroke-width: 1;   fill: #1d2021; }
+        10%, 21.99% { stroke: #7aa2f7; stroke-width: 1.8; fill: #282828; }
+        22%, 45.99% { stroke: #3c3836; stroke-width: 1;   fill: #1d2021; }
+        46%, 57.99% { stroke: #7aa2f7; stroke-width: 1.8; fill: #282828; }
+        58%, 71.99% { stroke: #3c3836; stroke-width: 1;   fill: #1d2021; }
+        72%, 83.99% { stroke: #7aa2f7; stroke-width: 1.8; fill: #282828; }
+        84%, 100%   { stroke: #3c3836; stroke-width: 1;   fill: #1d2021; }
+      }
+      @keyframes cardUnderlineAnim {
+        0%, 21.99%  { stroke: #3c3836; stroke-width: 1;   fill: #1d2021; }
+        22%, 33.99% { stroke: #b8bb26; stroke-width: 1.8; fill: #282828; }
+        34%, 57.99% { stroke: #3c3836; stroke-width: 1;   fill: #1d2021; }
+        58%, 71.99% { stroke: #b8bb26; stroke-width: 1.8; fill: #282828; }
+        72%, 100%   { stroke: #3c3836; stroke-width: 1;   fill: #1d2021; }
       }
 
-      @keyframes toggleDirL {
-        0%, 49% { opacity: 1; }
-        50%, 100% { opacity: 0; }
+      @keyframes badgeBlockAnim {
+        0%, 9.99%   { opacity: 1; }
+        10%, 33.99% { opacity: 0.15; }
+        34%, 45.99% { opacity: 1; }
+        46%, 83.99% { opacity: 0.15; }
+        84%, 100%   { opacity: 1; }
       }
-      @keyframes toggleDirH {
-        0%, 49% { opacity: 0; }
-        50%, 100% { opacity: 1; }
+      @keyframes badgeHollowAnim {
+        0%, 9.99%   { opacity: 0.15; }
+        10%, 21.99% { opacity: 1; }
+        22%, 45.99% { opacity: 0.15; }
+        46%, 57.99% { opacity: 1; }
+        58%, 71.99% { opacity: 0.15; }
+        72%, 83.99% { opacity: 1; }
+        84%, 100%   { opacity: 0.15; }
+      }
+      @keyframes badgeUnderlineAnim {
+        0%, 21.99%  { opacity: 0.15; }
+        22%, 33.99% { opacity: 1; }
+        34%, 57.99% { opacity: 0.15; }
+        58%, 71.99% { opacity: 1; }
+        72%, 100%   { opacity: 0.15; }
       }
 
-      .animated-hl-cursor {
-        animation: cursorHLMove 8s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+      @keyframes keyPressW {
+        0%, 9%   { fill: #3c3836; stroke: #504945; transform: scale(1); }
+        10%, 12% { fill: #fabd2f; stroke: #fabd2f; transform: scale(0.94); }
+        13%, 21% { fill: #3c3836; stroke: #504945; transform: scale(1); }
+        22%, 24% { fill: #fabd2f; stroke: #fabd2f; transform: scale(0.94); }
+        25%, 33% { fill: #3c3836; stroke: #504945; transform: scale(1); }
+        34%, 36% { fill: #fabd2f; stroke: #fabd2f; transform: scale(0.94); }
+        37%, 45% { fill: #3c3836; stroke: #504945; transform: scale(1); }
+        46%, 48% { fill: #fabd2f; stroke: #fabd2f; transform: scale(0.94); }
+        49%, 57% { fill: #3c3836; stroke: #504945; transform: scale(1); }
+        58%, 60% { fill: #fabd2f; stroke: #fabd2f; transform: scale(0.94); }
+        61%, 100%{ fill: #3c3836; stroke: #504945; transform: scale(1); }
       }
-      .anim-key-rect-l {
-        animation: keyPressL 8s ease-in-out infinite;
+      @keyframes keyTextW {
+        0%, 9%   { fill: #ebdbb2; }
+        10%, 12% { fill: #1d2021; }
+        13%, 21% { fill: #ebdbb2; }
+        22%, 24% { fill: #1d2021; }
+        25%, 33% { fill: #ebdbb2; }
+        34%, 36% { fill: #1d2021; }
+        37%, 45% { fill: #ebdbb2; }
+        46%, 48% { fill: #1d2021; }
+        49%, 57% { fill: #ebdbb2; }
+        58%, 60% { fill: #1d2021; }
+        61%, 100%{ fill: #ebdbb2; }
+      }
+
+      @keyframes keyPressB {
+        0%, 71%  { fill: #3c3836; stroke: #504945; transform: scale(1); }
+        72%, 74% { fill: #fe8019; stroke: #fe8019; transform: scale(0.94); }
+        75%, 83% { fill: #3c3836; stroke: #504945; transform: scale(1); }
+        84%, 86% { fill: #fe8019; stroke: #fe8019; transform: scale(0.94); }
+        87%, 100%{ fill: #3c3836; stroke: #504945; transform: scale(1); }
+      }
+      @keyframes keyTextB {
+        0%, 71%  { fill: #ebdbb2; }
+        72%, 74% { fill: #1d2021; }
+        75%, 83% { fill: #ebdbb2; }
+        84%, 86% { fill: #1d2021; }
+        87%, 100%{ fill: #ebdbb2; }
+      }
+
+      @keyframes toggleDirW {
+        0%, 71%   { opacity: 1; }
+        72%, 100% { opacity: 0; }
+      }
+      @keyframes toggleDirB {
+        0%, 71%   { opacity: 0; }
+        72%, 100% { opacity: 1; }
+      }
+
+      .animated-word-cursor {
+        animation: cursorWordMove 8s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+      }
+      .cursor-shape-block {
+        animation: shapeBlockToggle 8s steps(1) infinite;
+      }
+      .cursor-shape-hollow {
+        animation: shapeHollowToggle 8s steps(1) infinite;
+      }
+      .cursor-shape-underline {
+        animation: shapeUnderlineToggle 8s steps(1) infinite;
+      }
+
+      .hud-card-rect-block {
+        animation: cardBlockAnim 8s steps(1) infinite;
+      }
+      .hud-card-rect-hollow {
+        animation: cardHollowAnim 8s steps(1) infinite;
+      }
+      .hud-card-rect-underline {
+        animation: cardUnderlineAnim 8s steps(1) infinite;
+      }
+
+      .hud-card-badge-block {
+        animation: badgeBlockAnim 8s steps(1) infinite;
+      }
+      .hud-card-badge-hollow {
+        animation: badgeHollowAnim 8s steps(1) infinite;
+      }
+      .hud-card-badge-underline {
+        animation: badgeUnderlineAnim 8s steps(1) infinite;
+      }
+
+      .anim-key-rect-w {
+        animation: keyPressW 8s ease-in-out infinite;
         transform-origin: center;
       }
-      .anim-key-text-l {
-        animation: keyTextL 8s ease-in-out infinite;
+      .anim-key-text-w {
+        animation: keyTextW 8s ease-in-out infinite;
       }
-      .anim-key-rect-h {
-        animation: keyPressH 8s ease-in-out infinite;
+      .anim-key-rect-b {
+        animation: keyPressB 8s ease-in-out infinite;
         transform-origin: center;
       }
-      .anim-key-text-h {
-        animation: keyTextH 8s ease-in-out infinite;
+      .anim-key-text-b {
+        animation: keyTextB 8s ease-in-out infinite;
       }
-      .anim-dir-l {
-        animation: toggleDirL 8s steps(1) infinite;
+      .anim-dir-w {
+        animation: toggleDirW 8s steps(1) infinite;
       }
-      .anim-dir-h {
-        animation: toggleDirH 8s steps(1) infinite;
+      .anim-dir-b {
+        animation: toggleDirB 8s steps(1) infinite;
       }
     </style>
   </defs>
@@ -786,16 +864,16 @@ function generateReadingAnchorSvg(lang = 'zh-TW') {
   ${renderWindowFrame({
     width,
     height,
-    title: 'Muzen Dynamics: Character Navigation (h & l)',
-    url: 'https://muzen.dev/guide/character-navigation',
+    title: 'Muzen Dynamics: Word Navigation (w & b)',
+    url: 'https://muzen.dev/guide/word-navigation',
     lang
   })}
 
   <!-- 內容區 -->
   <g transform="translate(48, 80)">
     <!-- 文章標題與作者 -->
-    <text x="0" y="24" fill="#ebdbb2" font-family="${COMMON_FONT}" font-size="22" font-weight="700">Precision Character Navigation with Vim Dynamics</text>
-    <text x="0" y="46" fill="#83a598" font-family="${COMMON_FONT}" font-size="13">Dual-Directional Motion: [l] Step Right • [h] Step Left • Zero Mouse Dependency</text>
+    <text x="0" y="24" fill="#ebdbb2" font-family="${COMMON_FONT}" font-size="22" font-weight="700">Rapid Word Navigation with Vim Dynamics</text>
+    <text x="0" y="46" fill="#83a598" font-family="${COMMON_FONT}" font-size="13">Word-Wise Motion: [w] Leap Forward • [b] Leap Backward • Instant Anchor Snapping</text>
     <line x1="0" y1="58" x2="784" y2="58" stroke="#3c3836" stroke-width="1" />
 
     <!-- 左側：情境介紹與互動卡片 -->
@@ -823,27 +901,19 @@ function generateReadingAnchorSvg(lang = 'zh-TW') {
         <text x="453" y="19" fill="#fabd2f" font-family="${MONO_FONT}" font-size="10" font-weight="700" text-anchor="middle">VIM NORMAL</text>
 
         <!-- 文字與覆蓋式游標區域 -->
-        <g transform="translate(26, 72)">
-          <g font-family="${MONO_FONT}" font-size="22" font-weight="600" fill="#fbf1c7">
-            <text x="0" y="0">M</text>
-            <text x="22" y="0">u</text>
-            <text x="44" y="0">z</text>
-            <text x="66" y="0">e</text>
-            <text x="88" y="0">n</text>
-            <text x="110" y="0"> </text>
-            <text x="132" y="0">C</text>
-            <text x="154" y="0">u</text>
-            <text x="176" y="0">r</text>
-            <text x="198" y="0">s</text>
-            <text x="220" y="0">o</text>
-            <text x="242" y="0">r</text>
+        <g transform="translate(24, 70)">
+          <g font-family="${MONO_FONT}" font-size="16" font-weight="600" fill="#fbf1c7">
+            ${renderedChars}
           </g>
 
-          <g class="animated-hl-cursor">
-            <rect x="-3" y="-21" width="22" height="27" rx="3" fill="#fe8019" fill-opacity="0.32" stroke="#fe8019" stroke-width="2" filter="url(#anchor-glow)" />
+          <g class="animated-word-cursor">
+            <!-- 形態 1: Block (橘色實心) -->
+            <rect class="cursor-shape-block" x="-2" y="-18" width="13" height="23" rx="3" fill="#fe8019" fill-opacity="0.32" stroke="#fe8019" stroke-width="2" filter="url(#anchor-glow-orange)" />
+            <!-- 形態 2: Hollow (科技藍空心外框) -->
+            <rect class="cursor-shape-hollow" x="-2" y="-18" width="13" height="23" rx="3" fill="none" stroke="#7aa2f7" stroke-width="2" filter="url(#anchor-glow-blue)" />
+            <!-- 形態 3: Underline (青綠底線) -->
+            <rect class="cursor-shape-underline" x="-2" y="3" width="13" height="4" rx="1.5" fill="#b8bb26" filter="url(#anchor-glow-green)" />
           </g>
-
-          <text x="274" y="0" fill="#928374" font-family="${MONO_FONT}" font-size="18">.zen_mode();</text>
         </g>
 
         <!-- 卡片底部狀態提示條 -->
@@ -868,27 +938,27 @@ function generateReadingAnchorSvg(lang = 'zh-TW') {
       <rect x="0" y="0" width="225" height="106" rx="8" fill="#282828" stroke="#504945" stroke-width="1" />
       <text x="14" y="22" fill="#928374" font-family="${COMMON_FONT}" font-size="11" font-weight="600">${t.hudTitle}</text>
 
-      <!-- [ h ] 按鍵 -->
+      <!-- [ w ] 按鍵 -->
       <g transform="translate(18, 32)">
-        <rect class="anim-key-rect-h" x="0" y="0" width="40" height="34" rx="5" fill="#3c3836" stroke="#504945" stroke-width="1.2" />
-        <text class="anim-key-text-h" x="20" y="22" fill="#ebdbb2" font-family="${MONO_FONT}" font-size="16" font-weight="700" text-anchor="middle">h</text>
-        <text x="20" y="44" fill="#a89984" font-family="${COMMON_FONT}" font-size="10" text-anchor="middle">${t.hudLeft}</text>
+        <rect class="anim-key-rect-w" x="0" y="0" width="40" height="34" rx="5" fill="#3c3836" stroke="#504945" stroke-width="1.2" />
+        <text class="anim-key-text-w" x="20" y="22" fill="#ebdbb2" font-family="${MONO_FONT}" font-size="16" font-weight="700" text-anchor="middle">w</text>
+        <text x="20" y="44" fill="#a89984" font-family="${COMMON_FONT}" font-size="10" text-anchor="middle">${t.hudWordForward}</text>
       </g>
 
-      <!-- [ l ] 按鍵 -->
+      <!-- [ b ] 按鍵 -->
       <g transform="translate(74, 32)">
-        <rect class="anim-key-rect-l" x="0" y="0" width="40" height="34" rx="5" fill="#3c3836" stroke="#504945" stroke-width="1.2" />
-        <text class="anim-key-text-l" x="20" y="22" fill="#ebdbb2" font-family="${MONO_FONT}" font-size="16" font-weight="700" text-anchor="middle">l</text>
-        <text x="20" y="44" fill="#a89984" font-family="${COMMON_FONT}" font-size="10" text-anchor="middle">${t.hudRight}</text>
+        <rect class="anim-key-rect-b" x="0" y="0" width="40" height="34" rx="5" fill="#3c3836" stroke="#504945" stroke-width="1.2" />
+        <text class="anim-key-text-b" x="20" y="22" fill="#ebdbb2" font-family="${MONO_FONT}" font-size="16" font-weight="700" text-anchor="middle">b</text>
+        <text x="20" y="44" fill="#a89984" font-family="${COMMON_FONT}" font-size="10" text-anchor="middle">${t.hudWordBack}</text>
       </g>
 
       <!-- 動態指示狀態膠囊 -->
-      <rect x="125" y="38" width="90" height="24" rx="4" fill="#1d2021" stroke="#3c3836" stroke-width="1" />
-      <g class="anim-dir-l">
-        <text x="170" y="54" fill="#fe8019" font-family="${COMMON_FONT}" font-size="10.5" font-weight="700" text-anchor="middle">${t.hudDirRight}</text>
+      <rect x="122" y="38" width="94" height="24" rx="4" fill="#1d2021" stroke="#3c3836" stroke-width="1" />
+      <g class="anim-dir-w">
+        <text x="169" y="54" fill="#fabd2f" font-family="${COMMON_FONT}" font-size="10.5" font-weight="700" text-anchor="middle">${t.hudDirForward}</text>
       </g>
-      <g class="anim-dir-h">
-        <text x="170" y="54" fill="#fabd2f" font-family="${COMMON_FONT}" font-size="10.5" font-weight="700" text-anchor="middle">${t.hudDirLeft}</text>
+      <g class="anim-dir-b">
+        <text x="169" y="54" fill="#fe8019" font-family="${COMMON_FONT}" font-size="10.5" font-weight="700" text-anchor="middle">${t.hudDirBack}</text>
       </g>
 
       <text x="14" y="96" fill="#83a598" font-family="${MONO_FONT}" font-size="10.5">${t.hudDamping}</text>
@@ -898,26 +968,35 @@ function generateReadingAnchorSvg(lang = 'zh-TW') {
 
       <!-- 形態 1: Block -->
       <g transform="translate(0, 142)">
-        <rect x="0" y="0" width="225" height="30" rx="5" fill="#1d2021" stroke="#fe8019" stroke-width="1" />
+        <rect class="hud-card-rect-block" x="0" y="0" width="225" height="30" rx="5" fill="#1d2021" stroke="#fe8019" stroke-width="1" />
         <rect x="10" y="6" width="10" height="18" rx="2" fill="#fe8019" />
         <text x="28" y="20" fill="#ebdbb2" font-family="${COMMON_FONT}" font-size="11.5" font-weight="600">${t.shapeBlockName}</text>
-        <text x="160" y="20" fill="#fe8019" font-family="${COMMON_FONT}" font-size="9.5" font-weight="700">${t.shapeBlockNote}</text>
+        <g class="hud-card-badge-block">
+          <rect x="156" y="6" width="58" height="18" rx="3" fill="#3c3836" />
+          <text x="185" y="19" fill="#fe8019" font-family="${MONO_FONT}" font-size="9" font-weight="700" text-anchor="middle">ACTIVE</text>
+        </g>
       </g>
 
       <!-- 形態 2: Hollow -->
       <g transform="translate(0, 178)">
-        <rect x="0" y="0" width="225" height="30" rx="5" fill="#1d2021" stroke="#3c3836" stroke-width="1" />
+        <rect class="hud-card-rect-hollow" x="0" y="0" width="225" height="30" rx="5" fill="#1d2021" stroke="#3c3836" stroke-width="1" />
         <rect x="10" y="6" width="10" height="18" rx="2" fill="none" stroke="#7aa2f7" stroke-width="1.8" />
-        <text x="28" y="20" fill="#a89984" font-family="${COMMON_FONT}" font-size="11.5">${t.shapeHollowName}</text>
-        <text x="155" y="20" fill="#665c54" font-family="${COMMON_FONT}" font-size="9.5">${t.shapeHollowNote}</text>
+        <text x="28" y="20" fill="#ebdbb2" font-family="${COMMON_FONT}" font-size="11.5" font-weight="600">${t.shapeHollowName}</text>
+        <g class="hud-card-badge-hollow">
+          <rect x="156" y="6" width="58" height="18" rx="3" fill="#3c3836" />
+          <text x="185" y="19" fill="#7aa2f7" font-family="${MONO_FONT}" font-size="9" font-weight="700" text-anchor="middle">ACTIVE</text>
+        </g>
       </g>
 
       <!-- 形態 3: Underline -->
       <g transform="translate(0, 214)">
-        <rect x="0" y="0" width="225" height="30" rx="5" fill="#1d2021" stroke="#3c3836" stroke-width="1" />
+        <rect class="hud-card-rect-underline" x="0" y="0" width="225" height="30" rx="5" fill="#1d2021" stroke="#3c3836" stroke-width="1" />
         <rect x="8" y="20" width="14" height="4" rx="1" fill="#b8bb26" />
-        <text x="28" y="20" fill="#a89984" font-family="${COMMON_FONT}" font-size="11.5">${t.shapeUnderlineName}</text>
-        <text x="160" y="20" fill="#665c54" font-family="${COMMON_FONT}" font-size="9.5">${t.shapeUnderlineNote}</text>
+        <text x="28" y="20" fill="#ebdbb2" font-family="${COMMON_FONT}" font-size="11.5" font-weight="600">${t.shapeUnderlineName}</text>
+        <g class="hud-card-badge-underline">
+          <rect x="156" y="6" width="58" height="18" rx="3" fill="#3c3836" />
+          <text x="185" y="19" fill="#b8bb26" font-family="${MONO_FONT}" font-size="9" font-weight="700" text-anchor="middle">ACTIVE</text>
+        </g>
       </g>
     </g>
   </g>
@@ -927,26 +1006,26 @@ function generateReadingAnchorSvg(lang = 'zh-TW') {
     <rect x="0" y="0" width="784" height="40" rx="8" fill="#282828" stroke="#3c3836" stroke-width="1" />
 
     <!-- 按鍵指引 -->
-    <rect class="anim-key-rect-h" x="14" y="8" width="28" height="24" rx="4" fill="#3c3836" stroke="#504945" stroke-width="1" />
-    <text class="anim-key-text-h" x="28" y="24" fill="#ebdbb2" font-family="${MONO_FONT}" font-size="13" font-weight="700" text-anchor="middle">h</text>
-    <text x="48" y="24" fill="#ebdbb2" font-family="${COMMON_FONT}" font-size="12.5" font-weight="600">${t.anchorBannerLeft}</text>
+    <rect class="anim-key-rect-w" x="14" y="8" width="28" height="24" rx="4" fill="#3c3836" stroke="#504945" stroke-width="1" />
+    <text class="anim-key-text-w" x="28" y="24" fill="#fabd2f" font-family="${MONO_FONT}" font-size="13" font-weight="700" text-anchor="middle">w</text>
+    <text x="48" y="24" fill="#ebdbb2" font-family="${COMMON_FONT}" font-size="12.5" font-weight="600">${t.anchorBannerWordForward}</text>
 
-    <text x="116" y="24" fill="#665c54" font-family="${COMMON_FONT}" font-size="14">|</text>
+    <text x="146" y="24" fill="#665c54" font-family="${COMMON_FONT}" font-size="14">|</text>
 
-    <rect class="anim-key-rect-l" x="130" y="8" width="28" height="24" rx="4" fill="#3c3836" stroke="#504945" stroke-width="1" />
-    <text class="anim-key-text-l" x="144" y="24" fill="#fe8019" font-family="${MONO_FONT}" font-size="13" font-weight="700" text-anchor="middle">l</text>
-    <text x="164" y="24" fill="#ebdbb2" font-family="${COMMON_FONT}" font-size="12.5" font-weight="600">${t.anchorBannerRight}</text>
+    <rect class="anim-key-rect-b" x="160" y="8" width="28" height="24" rx="4" fill="#3c3836" stroke="#504945" stroke-width="1" />
+    <text class="anim-key-text-b" x="174" y="24" fill="#fe8019" font-family="${MONO_FONT}" font-size="13" font-weight="700" text-anchor="middle">b</text>
+    <text x="194" y="24" fill="#ebdbb2" font-family="${COMMON_FONT}" font-size="12.5" font-weight="600">${t.anchorBannerWordBack}</text>
 
-    <text x="236" y="24" fill="#665c54" font-family="${COMMON_FONT}" font-size="14">|</text>
+    <text x="292" y="24" fill="#665c54" font-family="${COMMON_FONT}" font-size="14">|</text>
 
-    <rect x="250" y="8" width="50" height="24" rx="4" fill="#3c3836" stroke="#504945" stroke-width="1" />
-    <text x="275" y="24" fill="#fabd2f" font-family="${MONO_FONT}" font-size="13" font-weight="700" text-anchor="middle">w / b</text>
-    <text x="306" y="24" fill="#ebdbb2" font-family="${COMMON_FONT}" font-size="12.5">${t.anchorBannerWord}</text>
+    <rect x="306" y="8" width="50" height="24" rx="4" fill="#3c3836" stroke="#504945" stroke-width="1" />
+    <text x="331" y="24" fill="#ebdbb2" font-family="${MONO_FONT}" font-size="13" font-weight="700" text-anchor="middle">h / l</text>
+    <text x="362" y="24" fill="#ebdbb2" font-family="${COMMON_FONT}" font-size="12.5">${t.anchorBannerChar}</text>
 
-    <text x="408" y="24" fill="#665c54" font-family="${COMMON_FONT}" font-size="14">|</text>
+    <text x="466" y="24" fill="#665c54" font-family="${COMMON_FONT}" font-size="14">|</text>
 
-    <text x="424" y="24" fill="#b8bb26" font-family="${COMMON_FONT}" font-size="12.5" font-weight="600">${t.anchorBannerTarget}</text>
-    <text x="548" y="24" fill="#928374" font-family="${COMMON_FONT}" font-size="11.5">${t.anchorBannerSub}</text>
+    <text x="482" y="24" fill="#b8bb26" font-family="${COMMON_FONT}" font-size="12.5" font-weight="600">${t.anchorBannerTarget}</text>
+    <text x="600" y="24" fill="#928374" font-family="${COMMON_FONT}" font-size="11.5">${t.anchorBannerSub}</text>
   </g>
 </svg>`;
 }
