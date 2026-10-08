@@ -199,6 +199,15 @@ export interface Translations {
   tabKeybindingsTitle: string;
   keybindingsSectionTitle: string;
   keybindingsSectionDesc: string;
+  jumpModeSectionTitle: string;
+  jumpModeSectionDesc: string;
+  fieldJumpMode: string;
+  hintJumpMode: string;
+  jumpModeToggle: string;
+  jumpModeHistory: string;
+  fieldEnableJumpMenu: string;
+  hintEnableJumpMenu: string;
+  enableJumpMenuText: string;
   conflictStrategyTitle: string;
   conflictStrategyDesc: string;
   conflictModeActiveOnly: string;
@@ -251,6 +260,10 @@ export interface Translations {
   descDocStart: string;
   actionDocEnd: string;
   descDocEnd: string;
+  actionJumpBackLine: string;
+  descJumpBackLine: string;
+  actionJumpBackExact: string;
+  descJumpBackExact: string;
   actionVisualMode: string;
   descVisualMode: string;
   actionYank: string;
@@ -452,6 +465,15 @@ export const LOCALES: Record<Locale, Translations> = {
     tabKeybindingsTitle: '⌨️ 按鍵設定與衝突管理',
     keybindingsSectionTitle: '快捷鍵設定與防衝突機制',
     keybindingsSectionDesc: '自訂所有 Vim 導航按鍵，並靈活應對 YouTube、GitHub、Gmail 等網頁專屬快捷鍵',
+    jumpModeSectionTitle: '跳轉與回溯模式 (Jump Mode)',
+    jumpModeSectionDesc: "設定連按 '' 或 `` 鍵時的跳轉行為",
+    fieldJumpMode: '回跳行為 (Back Navigation)',
+    hintJumpMode: '選擇雙點來回對照或依序回溯歷史堆疊',
+    jumpModeToggle: '雙點來回切換 (Vim 經典 Toggle - 推薦)',
+    jumpModeHistory: '歷史堆疊依序回溯 (Stack 歷史導航)',
+    fieldEnableJumpMenu: 'Neovim 浮動跳轉選單 (Floating Jump Menu)',
+    hintEnableJumpMenu: "單按 ' 或 ` 鍵稍候即彈出最近跳轉歷史，按下數字鍵 1-9 即可精確飛躍",
+    enableJumpMenuText: '啟用浮動選單 HUD',
     conflictStrategyTitle: '網頁快捷鍵衝突防護策略',
     conflictStrategyDesc: '當瀏覽本身已有內建快捷鍵的網頁時，選擇 Muzen Cursor 的接管方式',
     conflictModeActiveOnly: '僅游標喚醒時接管 (推薦)',
@@ -504,6 +526,10 @@ export const LOCALES: Record<Locale, Translations> = {
     descDocStart: '連按兩次 g 跳回全文最頂部',
     actionDocEnd: '跳至全文結尾 (Doc End)',
     descDocEnd: '直接躍遷至文章最底部結尾',
+    actionJumpBackLine: "跳回前次行首 (Jump Line: '')",
+    descJumpBackLine: "連按兩次 ' 跳回前一跳轉點所在行行首，再按一次可切換",
+    actionJumpBackExact: '跳回前次精確字元 (Jump Exact: ``)',
+    descJumpBackExact: '連按兩次 ` 跳回前一跳轉點的精確游標字元，再按一次可切換',
     actionVisualMode: 'Visual 選取模式',
     descVisualMode: '進入文字高亮反白選取狀態',
     actionYank: '複製選取文字 (Yank)',
@@ -703,6 +729,15 @@ export const LOCALES: Record<Locale, Translations> = {
     tabKeybindingsTitle: '⌨️ Keybindings & Shortcuts',
     keybindingsSectionTitle: 'Keybindings & Conflict Resolution',
     keybindingsSectionDesc: 'Customize Vim navigation keys and resolve conflicts with YouTube, GitHub, and Gmail shortcuts',
+    jumpModeSectionTitle: 'Jump Navigation Mode',
+    jumpModeSectionDesc: "Configure behavior when double-pressing '' or ``",
+    fieldJumpMode: 'Back Navigation',
+    hintJumpMode: 'Choose between 2-point toggle or sequential stack history',
+    jumpModeToggle: '2-Point Toggle (Vim Classic - Recommended)',
+    jumpModeHistory: 'Sequential History Stack',
+    fieldEnableJumpMenu: 'Neovim Floating Jump Menu',
+    hintEnableJumpMenu: "Single-press ' or ` to reveal recent jump history, press 1-9 to jump directly",
+    enableJumpMenuText: 'Enable Floating Menu HUD',
     conflictStrategyTitle: 'Web Shortcut Conflict Strategy',
     conflictStrategyDesc: 'Choose how Muzen Cursor intercepts keys when a web page has its own shortcuts',
     conflictModeActiveOnly: 'Only When Cursor Active (Recommended)',
@@ -755,6 +790,10 @@ export const LOCALES: Record<Locale, Translations> = {
     descDocStart: 'Jump to very beginning of document (gg)',
     actionDocEnd: 'Document End',
     descDocEnd: 'Jump to very end of document (G)',
+    actionJumpBackLine: "Jump Back to Line ('')",
+    descJumpBackLine: "Double-press ' to jump back to line start before last jump",
+    actionJumpBackExact: 'Jump Back to Exact Character (``)',
+    descJumpBackExact: 'Double-press ` to jump back to exact character position before last jump',
     actionVisualMode: 'Visual Selection Mode',
     descVisualMode: 'Toggle character highlight selection',
     actionYank: 'Copy Selection (Yank)',
@@ -954,6 +993,15 @@ export const LOCALES: Record<Locale, Translations> = {
     tabKeybindingsTitle: '⌨️ キー設定と衝突管理',
     keybindingsSectionTitle: 'ショートカットキー設定と競合回避',
     keybindingsSectionDesc: 'Vim移動キーを自由にカスタマイズし、YouTubeやGitHub、Gmail等の独自ショートカットとの衝突を防止します',
+    jumpModeSectionTitle: 'ジャンプ・復帰モード設定',
+    jumpModeSectionDesc: "'' または `` を2回押した時の動作を設定します",
+    fieldJumpMode: '復帰ナビゲーション',
+    hintJumpMode: '2点間のトグル往復か、履歴スタックを順に戻るかを選択',
+    jumpModeToggle: '2点間トグル切替 (Vim標準 - 推奨)',
+    jumpModeHistory: '履歴スタックを順に戻る',
+    fieldEnableJumpMenu: 'Neovim風 フローティングジャンプメニュー',
+    hintEnableJumpMenu: "' または ` キーを1回押して待つとジャンプ履歴が表示され、1-9キーで即座に移動可能",
+    enableJumpMenuText: 'フローティングHUDメニューを有効化',
     conflictStrategyTitle: 'Webショートカット衝突防止戦略',
     conflictStrategyDesc: 'ページ独自のショートカットが存在する場合の動作ポリシーを選択します',
     conflictModeActiveOnly: 'カーソル起動時のみ有効 (推奨)',
@@ -1006,6 +1054,10 @@ export const LOCALES: Record<Locale, Translations> = {
     descDocStart: 'g を連続2回押して文書の最上部へ',
     actionDocEnd: '文書の末尾へ (G)',
     descDocEnd: '文書の最下部へ直接ジャンプ',
+    actionJumpBackLine: "前の行頭へ戻る ('')",
+    descJumpBackLine: "' を2回連続で押して直前のジャンプ位置の行頭へ戻る",
+    actionJumpBackExact: '前の文字位置へ戻る (``)',
+    descJumpBackExact: '` を2回連続で押して直前のジャンプの精確な文字位置へ戻る',
     actionVisualMode: 'Visual選択モード',
     descVisualMode: '文字のハイライト選択を開始/終了',
     actionYank: '選択文字をコピー (Yank)',

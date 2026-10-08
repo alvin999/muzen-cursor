@@ -348,3 +348,100 @@ export function computeWaypointsBetween(
   }
   return waypoints;
 }
+
+/**
+ * 使用 CSSOM 螢幕幾何座標計算真實的視覺行邊界
+ * 支援向左穿透至行首 (isStart = true) 或向右穿透至行尾 (isStart = false)
+ * 自動穿透 <b>, <span>, <a>, <code> 等行內標籤，並相容無 \n 的自動折行段落
+ */
+export function findVisualLineBoundary(
+  target: TextTarget,
+  isStart: boolean,
+  rootElement: HTMLElement
+): TextTarget {
+  try {
+    const charRect = getCharRectOfTarget(target);
+    if (!charRect) return target;
+
+    const lineTop = charRect.y;
+    const charHeight = charRect.height > 0 ? charRect.height : 20;
+    const tolerance = charHeight * 0.55;
+    const range = document.createRange();
+
+    let bestTarget: TextTarget = { node: target.node, offset: target.offset };
+    let currentNode: Text | null = target.node;
+    let offset = target.offset;
+
+    if (isStart) {
+      // 往左掃描行首
+      while (currentNode) {
+        const text = currentNode.textContent || '';
+        const startIdx = Math.min(offset - 1, text.length - 1);
+
+        for (let i = startIdx; i >= 0; i--) {
+          const ch = text[i];
+          if (ch === '\n' || ch === '\r') {
+            return bestTarget;
+          }
+
+          range.setStart(currentNode, i);
+          range.setEnd(currentNode, i + 1);
+          const rect = range.getBoundingClientRect();
+          if (rect.width === 0 || rect.height === 0) continue;
+
+          // 比對是否在同一水平視覺行
+          if (Math.abs(rect.top - lineTop) <= tolerance) {
+            bestTarget = { node: currentNode, offset: i };
+          } else {
+            // 已向上折入上一行
+            return bestTarget;
+          }
+        }
+
+        // 穿透至前一個文字節點 (如 <b>, <span> 前方)
+        const prevNode = findPrevTextNode(currentNode, rootElement);
+        if (!prevNode) break;
+
+        currentNode = prevNode;
+        offset = currentNode.textContent?.length || 0;
+      }
+    } else {
+      // 往右掃描行尾
+      while (currentNode) {
+        const text = currentNode.textContent || '';
+        const len = text.length;
+
+        for (let i = offset; i < len; i++) {
+          const ch = text[i];
+          if (ch === '\n' || ch === '\r') {
+            return bestTarget;
+          }
+
+          range.setStart(currentNode, i);
+          range.setEnd(currentNode, i + 1);
+          const rect = range.getBoundingClientRect();
+          if (rect.width === 0 || rect.height === 0) continue;
+
+          // 比對是否在同一水平視覺行
+          if (Math.abs(rect.top - lineTop) <= tolerance) {
+            bestTarget = { node: currentNode, offset: i };
+          } else {
+            // 已向下折入下一行
+            return bestTarget;
+          }
+        }
+
+        // 穿透至下一個文字節點
+        const nextNode = findNextTextNode(currentNode, rootElement);
+        if (!nextNode) break;
+
+        currentNode = nextNode;
+        offset = 0;
+      }
+    }
+
+    return bestTarget;
+  } catch (err) {
+    return target;
+  }
+}

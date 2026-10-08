@@ -7,7 +7,8 @@ import {
   KeyActionId,
   KeybindingsConfig,
   DEFAULT_KEYBINDINGS,
-  formatKeyCombo
+  formatKeyCombo,
+  JumpMode
 } from '../src/core/cursorStore';
 import { initCursorHost } from '../src/content/hostElement';
 import { CursorController } from '../src/core/cursorController';
@@ -71,7 +72,9 @@ const KEY_GROUPS: KeyGroupDef[] = [
       { id: 'halfPageDown', nameKey: 'actionHalfPageDown', descKey: 'descHalfPageDown' },
       { id: 'halfPageUp', nameKey: 'actionHalfPageUp', descKey: 'descHalfPageUp' },
       { id: 'docStart', nameKey: 'actionDocStart', descKey: 'descDocStart' },
-      { id: 'docEnd', nameKey: 'actionDocEnd', descKey: 'descDocEnd' }
+      { id: 'docEnd', nameKey: 'actionDocEnd', descKey: 'descDocEnd' },
+      { id: 'jumpBackLine', nameKey: 'actionJumpBackLine', descKey: 'descJumpBackLine' },
+      { id: 'jumpBackExact', nameKey: 'actionJumpBackExact', descKey: 'descJumpBackExact' }
     ]
   },
   {
@@ -197,8 +200,11 @@ function renderKeybindingsList(): void {
 
       const recordBtn = document.createElement('button');
       recordBtn.type = 'button';
-      recordBtn.className = 'btn-key-record' + (recordingActionId === act.id ? ' recording' : '');
-      recordBtn.textContent = recordingActionId === act.id ? dict.recordingKeyPrompt : dict.recordKeyBtn;
+      const isPending = recordingPending?.actionId === act.id;
+      recordBtn.className = 'btn-key-record' + ((recordingActionId === act.id || isPending) ? ' recording' : '');
+      recordBtn.textContent = isPending
+        ? `${recordingPending!.key}...`
+        : (recordingActionId === act.id ? dict.recordingKeyPrompt : dict.recordKeyBtn);
       recordBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         if (recordingActionId === act.id) {
@@ -233,14 +239,38 @@ function renderKeybindingsList(): void {
 
     container.appendChild(block);
   });
+
+  const jumpModeSelect = document.getElementById('jump-mode-select') as HTMLSelectElement | null;
+  if (jumpModeSelect) {
+    jumpModeSelect.value = currentKeybindings.jumpMode || 'toggle';
+  }
+
+  const enableJumpMenuCheckbox = document.getElementById('enable-jump-menu') as HTMLInputElement | null;
+  if (enableJumpMenuCheckbox) {
+    enableJumpMenuCheckbox.checked = currentKeybindings.enableJumpMenu !== false;
+  }
 }
 
+let recordingPending: {
+  actionId: KeyActionId;
+  key: string;
+  timer: number;
+} | null = null;
+
 function startRecording(actionId: KeyActionId): void {
+  if (recordingPending) {
+    clearTimeout(recordingPending.timer);
+    recordingPending = null;
+  }
   recordingActionId = actionId;
   renderKeybindingsList();
 }
 
 function stopRecording(): void {
+  if (recordingPending) {
+    clearTimeout(recordingPending.timer);
+    recordingPending = null;
+  }
   recordingActionId = null;
   renderKeybindingsList();
 }
@@ -286,13 +316,71 @@ function handleGlobalRecordingKeyDown(e: KeyboardEvent): void {
   const altKey = e.altKey;
   const shiftKey = e.shiftKey && key.length > 1;
   const metaKey = e.metaKey;
+  const hasModifiers = ctrlKey || altKey || metaKey;
 
+  // 1. 若處於等待第二鍵狀態 (連按判定)
+  if (recordingPending && recordingPending.actionId === recordingActionId) {
+    clearTimeout(recordingPending.timer);
+    const prevKey = recordingPending.key;
+    recordingPending = null;
+
+    if (prevKey.toLowerCase() === key.toLowerCase() && !hasModifiers) {
+      // 成功判定為連按兩次 (例如 gg, '', ``)
+      currentKeybindings.bindings[recordingActionId] = {
+        key: prevKey,
+        ctrlKey: false,
+        altKey: false,
+        shiftKey: false,
+        metaKey: false,
+        isDouble: true,
+        enabled: true
+      };
+      recordingActionId = null;
+      saveKeybindings(false);
+      renderKeybindingsList();
+      return;
+    }
+  }
+
+  // 2. 若為一般單字元鍵 (無修飾鍵)，給予 500ms 等候連按
+  if (!hasModifiers && key.length === 1) {
+    const actId = recordingActionId;
+    const timer = window.setTimeout(() => {
+      // 逾時未按第二鍵，判定為單鍵
+      if (recordingActionId === actId) {
+        currentKeybindings.bindings[actId] = {
+          key,
+          ctrlKey: false,
+          altKey: false,
+          shiftKey: false,
+          metaKey: false,
+          isDouble: false,
+          enabled: true
+        };
+        recordingPending = null;
+        recordingActionId = null;
+        saveKeybindings(false);
+        renderKeybindingsList();
+      }
+    }, 500);
+
+    recordingPending = {
+      actionId: actId,
+      key,
+      timer
+    };
+    renderKeybindingsList();
+    return;
+  }
+
+  // 3. 組合鍵或特殊鍵 (Escape, Arrow 等)，直接儲存為單鍵組合
   currentKeybindings.bindings[recordingActionId] = {
     key,
     ctrlKey,
     altKey,
     shiftKey,
     metaKey,
+    isDouble: false,
     enabled: true
   };
 
@@ -895,8 +983,32 @@ function initEvents(): void {
     saveKeybindings(false);
     renderKeybindingsList();
 
+    const jumpModeSelect = document.getElementById('jump-mode-select') as HTMLSelectElement | null;
+    if (jumpModeSelect) {
+      jumpModeSelect.value = 'toggle';
+    }
+
+    const enableJumpMenuCheckbox = document.getElementById('enable-jump-menu') as HTMLInputElement | null;
+    if (enableJumpMenuCheckbox) {
+      enableJumpMenuCheckbox.checked = true;
+    }
+
     const dict = LOCALES[currentLocale] || LOCALES['zh-TW'];
     showToast(dict.toastKeybindingsReset);
+  });
+
+  // 12b. 跳轉模式切換
+  document.getElementById('jump-mode-select')?.addEventListener('change', (e) => {
+    const sel = e.target as HTMLSelectElement;
+    currentKeybindings.jumpMode = (sel.value as JumpMode) || 'toggle';
+    saveKeybindings();
+  });
+
+  // 12c. 浮動跳轉選單開關切換
+  document.getElementById('enable-jump-menu')?.addEventListener('change', (e) => {
+    const chk = e.target as HTMLInputElement;
+    currentKeybindings.enableJumpMenu = chk.checked;
+    saveKeybindings();
   });
 
   // 13. 全域按鍵錄製與點擊取消監聽

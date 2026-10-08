@@ -142,6 +142,8 @@ export type KeyActionId =
   | 'halfPageUp'
   | 'docStart'
   | 'docEnd'
+  | 'jumpBackLine'
+  | 'jumpBackExact'
   | 'visualMode'
   | 'yank';
 
@@ -151,14 +153,28 @@ export interface KeybindingDef {
   altKey?: boolean;
   shiftKey?: boolean;
   metaKey?: boolean;
+  isDouble?: boolean;     // 連按兩次 (例如 gg, '', ``)
   enabled: boolean;
 }
 
+export type JumpMode = 'toggle' | 'history';
+
+export interface JumpMenuItem {
+  index: number;         // 1 ~ 9
+  textPreview: string;   // 文字摘錄片段
+  scrollPercent: number; // 0 ~ 100%
+  point: any;
+}
+
 export interface KeybindingsConfig {
+  jumpMode?: JumpMode;       // 'toggle' (雙點來回切換) 或 'history' (依序回溯堆疊)
+  enableJumpMenu?: boolean;  // 是否開啟 Neovim 風格浮動歷史選單 (預設 true)
   bindings: Record<KeyActionId, KeybindingDef>;
 }
 
 export const DEFAULT_KEYBINDINGS: KeybindingsConfig = {
+  jumpMode: 'toggle',
+  enableJumpMenu: true,
   bindings: {
     toggleCursor: { key: 'v', altKey: true, enabled: true },
     escape: { key: 'Escape', enabled: true },
@@ -173,15 +189,17 @@ export const DEFAULT_KEYBINDINGS: KeybindingsConfig = {
     lineEnd: { key: '$', enabled: true },
     halfPageDown: { key: 'd', enabled: true },
     halfPageUp: { key: 'u', enabled: true },
-    docStart: { key: 'g', enabled: true }, // 連按兩次 g (或可自訂)
+    docStart: { key: 'g', isDouble: true, enabled: true }, // 連按兩次 g
     docEnd: { key: 'G', shiftKey: true, enabled: true },
+    jumpBackLine: { key: "'", isDouble: true, enabled: true }, // 連按兩次 ' 跳回前一跳轉點 (同一行行首)
+    jumpBackExact: { key: '`', isDouble: true, enabled: true }, // 連按兩次 ` 跳回前一跳轉點 (精確字元)
     visualMode: { key: 'v', enabled: true },
     yank: { key: 'y', enabled: true }
   }
 };
 
 /**
- * 格式化按鍵組合成人類可讀的標籤字串 (例如 "alt + v", "esc", "j")
+ * 格式化按鍵組合成人類可讀的標籤字串 (例如 "alt + v", "esc", "j", "gg", "''")
  */
 export function formatKeyCombo(binding?: KeybindingDef): string {
   if (!binding || !binding.enabled) return '已停用';
@@ -199,6 +217,10 @@ export function formatKeyCombo(binding?: KeybindingDef): string {
   else if (keyDisplay === 'ArrowLeft') keyDisplay = '←';
   else if (keyDisplay === 'ArrowRight') keyDisplay = '→';
   else if (!binding.shiftKey) keyDisplay = keyDisplay.toLowerCase();
+
+  if (binding.isDouble) {
+    keyDisplay = `${keyDisplay}${keyDisplay}`;
+  }
 
   parts.push(keyDisplay);
   return parts.join(' + ');
@@ -255,6 +277,8 @@ export interface CursorState {
   isScrollUpdate?: boolean; // 視窗捲動或縮放造成的座標貼齊（抑制殘影生成）
   readingProgress: number; // 0 - 100
   charOffset: number;
+  isJumpMenuOpen: boolean;
+  jumpMenuItems: JumpMenuItem[];
 }
 
 type Listener = (state: CursorState) => void;
@@ -286,7 +310,9 @@ class CursorStore {
     motionDirection: 'none',
     motionSequence: 0,
     readingProgress: 0,
-    charOffset: 0
+    charOffset: 0,
+    isJumpMenuOpen: false,
+    jumpMenuItems: []
   };
 
   private listeners: Set<Listener> = new Set();

@@ -1,4 +1,4 @@
-import { cursorStore, MotionDirection, CursorRect, matchesKeybinding, DEFAULT_KEYBINDINGS } from './cursorStore';
+import { cursorStore, MotionDirection, CursorRect, matchesKeybinding, DEFAULT_KEYBINDINGS, JumpMenuItem } from './cursorStore';
 import { isTypingContext } from '../utils/domUtils';
 import { WordNavigator, TextTarget } from './wordNavigator';
 import { resolveTextTargetFromPoint, isClickWithinDistanceThreshold, getRawCaretFromPoint } from '../utils/caretUtils';
@@ -10,13 +10,21 @@ import {
   getCharRectOfTarget,
   searchDownwardNextLine,
   searchUpwardPrevLine,
-  computeWaypointsBetween
+  computeWaypointsBetween,
+  findVisualLineBoundary
 } from './navigation/spatialNavigator';
 import { VisualSelectionManager } from './navigation/selectionManager';
 
 export interface CursorControllerOptions {
   containerRoot?: HTMLElement;
   enableScroll?: boolean;
+}
+
+export interface JumpPoint {
+  node: Node;
+  offset: number;
+  scrollX: number;
+  scrollY: number;
 }
 
 /**
@@ -30,6 +38,13 @@ export class CursorController {
   private lastKeyTime = 0;
   private lastKey = '';
   private moveTimer: any = null;
+
+  // Jump 歷史堆疊 (上限 30 筆) 與 Toggle 恢復點
+  private jumpHistory: JumpPoint[] = [];
+  private readonly MAX_JUMPS = 30;
+  private lastJumpBackTarget: JumpPoint | null = null;
+  private jumpMenuTimer: any = null;
+  private isJumpMenuExact = false;
 
   private selectionManager = new VisualSelectionManager();
 
@@ -108,12 +123,17 @@ export class CursorController {
       clearTimeout(this.moveTimer);
       this.moveTimer = null;
     }
+    if (this.jumpMenuTimer) {
+      clearTimeout(this.jumpMenuTimer);
+      this.jumpMenuTimer = null;
+    }
   }
 
   /**
    * 點擊網頁文字時，自動聚焦並初始化游標定位
    */
   private handleClick(e: MouseEvent): void {
+    this.closeJumpMenu();
     this.preferredX = null;
     const state = cursorStore.getState();
 
@@ -151,6 +171,13 @@ export class CursorController {
     // 4. 關鍵距離防禦：確認找到的文字節點與點擊處的物理距離
     if (!isClickWithinDistanceThreshold(clickX, clickY, resolved.node)) {
       return;
+    }
+
+    // 若原本已有游標定位，且點擊處造成實質位移，推入跳轉堆疊 (方便誤觸時按 '' 回復)
+    if (this.currentTarget && this.currentTarget.node && this.currentTarget.node.isConnected) {
+      if (this.currentTarget.node !== resolved.node || Math.abs(this.currentTarget.offset - resolved.offset) > 3) {
+        this.pushJumpPoint();
+      }
     }
 
     this.currentTarget = {
@@ -233,8 +260,27 @@ export class CursorController {
       e.stopImmediatePropagation();
     };
 
+    // 0. 若浮動歷史選單開啟中：優先處理數字鍵 [1-9] 跳轉與 Esc 取消
+    if (state.isJumpMenuOpen) {
+      if (/^[1-9]$/.test(e.key)) {
+        intercept();
+        this.jumpToMenuItem(Number(e.key));
+        return;
+      }
+      intercept();
+      this.closeJumpMenu();
+      return;
+    }
+
+    // 若有掛起的單按 ' 或 ` 浮動選單計時器，非單按時予以清除
+    if (this.jumpMenuTimer && e.key !== "'" && e.key !== '`') {
+      clearTimeout(this.jumpMenuTimer);
+      this.jumpMenuTimer = null;
+    }
+
     // Esc: 退出選取或隱藏游標返回休眠
     if (matchesKeybinding(e, bindings.escape)) {
+      this.closeJumpMenu();
       intercept();
       if (state.mode === 'VISUAL') {
         this.exitVisualMode();
@@ -244,17 +290,73 @@ export class CursorController {
       return;
     }
 
-    // 連續指令 gg (跳至全文頂部) 比對
+    // 連續指令比對 (如 gg 或 '', ``)
     const now = Date.now();
     const prevKey = this.lastKey;
-    const isDoubleG = prevKey === 'g' && e.key === 'g' && now - this.lastKeyTime < 500;
+    const isDoubleKey = prevKey.toLowerCase() === e.key.toLowerCase() && now - this.lastKeyTime < 500;
     this.lastKey = e.key;
     this.lastKeyTime = now;
 
+    // 1. 跳回前一跳轉點行首 (jumpBackLine: 預設 '')
+    const jumpBackLineDef = bindings.jumpBackLine;
+    if (jumpBackLineDef && jumpBackLineDef.enabled) {
+      const isConfiguredKey = jumpBackLineDef.key === e.key;
+      const isDoubleBack = isConfiguredKey && isDoubleKey;
+      if (jumpBackLineDef.isDouble ? isDoubleBack : matchesKeybinding(e, jumpBackLineDef)) {
+        if (this.jumpMenuTimer) {
+          clearTimeout(this.jumpMenuTimer);
+          this.jumpMenuTimer = null;
+        }
+        intercept();
+        this.lastKey = '';
+        this.jumpBack(false); // false: 同一行行首
+        return;
+      }
+
+      // 單按 ' 鍵：啟動 400ms 計時器，若未按第二下則喚醒 Neovim 浮動選單
+      if (e.key === "'" && !e.ctrlKey && !e.altKey && !e.metaKey && !isDoubleKey) {
+        if (config.enableJumpMenu !== false && this.jumpHistory.length > 0) {
+          this.jumpMenuTimer = setTimeout(() => {
+            this.openJumpMenu();
+          }, 400);
+        }
+      }
+    }
+
+    // 2. 跳回前一跳轉點精確字元 (jumpBackExact: 預設 ``)
+    const jumpBackExactDef = bindings.jumpBackExact;
+    if (jumpBackExactDef && jumpBackExactDef.enabled) {
+      const isConfiguredKey = jumpBackExactDef.key === e.key;
+      const isDoubleBack = isConfiguredKey && isDoubleKey;
+      if (jumpBackExactDef.isDouble ? isDoubleBack : matchesKeybinding(e, jumpBackExactDef)) {
+        if (this.jumpMenuTimer) {
+          clearTimeout(this.jumpMenuTimer);
+          this.jumpMenuTimer = null;
+        }
+        intercept();
+        this.lastKey = '';
+        this.jumpBack(true); // true: 同一字元精確位置
+        return;
+      }
+
+      // 單按 ` 鍵：啟動 400ms 計時器，若未按第二下則喚醒 Neovim 浮動選單 (精確字元模式)
+      if (e.key === '`' && !e.ctrlKey && !e.altKey && !e.metaKey && !isDoubleKey) {
+        if (config.enableJumpMenu !== false && this.jumpHistory.length > 0) {
+          this.jumpMenuTimer = setTimeout(() => {
+            this.openJumpMenu(true);
+          }, 400);
+        }
+      }
+    }
+
+    // 跳至全文頂部 (gg)
     const docStartDef = bindings.docStart;
     if (docStartDef && docStartDef.enabled) {
-      if ((docStartDef.key === 'g' && isDoubleG) || (docStartDef.key !== 'g' && matchesKeybinding(e, docStartDef))) {
+      const isConfiguredKey = docStartDef.key.toLowerCase() === e.key.toLowerCase();
+      const isDoubleDocStart = isConfiguredKey && isDoubleKey;
+      if (docStartDef.isDouble ? isDoubleDocStart : matchesKeybinding(e, docStartDef)) {
         intercept();
+        this.lastKey = '';
         this.jumpToDocumentStart();
         return;
       }
@@ -560,20 +662,193 @@ export class CursorController {
       return;
     }
 
-    const { node, offset } = this.currentTarget;
-    const text = node.textContent || '';
-    const targetOffset = isStart
-      ? WordNavigator.getLineStartOffset(text, offset)
-      : WordNavigator.getLineEndOffset(text, offset);
-
-    this.currentTarget.offset = targetOffset;
+    // 透過 CSSOM 精確計算真實視覺行邊界 (穿透 <b>, <span> 等行內標籤並相容折行)
+    const boundary = findVisualLineBoundary(this.currentTarget, isStart, this.rootElement);
+    this.currentTarget = boundary;
     this.updateCursorPosition(true);
+  }
+
+  /**
+   * 記錄當前游標與視窗捲動位置至 Jump 歷史堆疊
+   */
+  private pushJumpPoint(customPoint?: JumpPoint): void {
+    let pointToPush = customPoint;
+    if (!pointToPush) {
+      if (!this.currentTarget || !this.currentTarget.node) return;
+      const scrollParent = getScrollParent(this.currentTarget.node, this.options?.containerRoot);
+      const scrollX = scrollParent ? scrollParent.scrollLeft : (window.scrollX ?? window.pageXOffset ?? 0);
+      const scrollY = scrollParent ? scrollParent.scrollTop : (window.scrollY ?? window.pageYOffset ?? 0);
+
+      pointToPush = {
+        node: this.currentTarget.node,
+        offset: this.currentTarget.offset,
+        scrollX,
+        scrollY
+      };
+    }
+
+    const last = this.jumpHistory[this.jumpHistory.length - 1];
+    if (last && last.node === pointToPush.node && Math.abs(last.offset - pointToPush.offset) <= 2) {
+      return;
+    }
+
+    if (this.jumpHistory.length >= this.MAX_JUMPS) {
+      this.jumpHistory.shift();
+    }
+
+    this.jumpHistory.push(pointToPush);
+    this.lastJumpBackTarget = null;
+  }
+
+  /**
+   * 跳回前一跳轉點 / 復原位置
+   * @param exact true 為精確字元 (``)，false 為跳至該行行首 ('')
+   * 支援兩種模式：
+   * 1. 'toggle' (預設)：Vim 經典雙點來回切換，在跳轉前與跳轉後兩點間反覆互換
+   * 2. 'history'：沿著跳轉歷史堆疊依序回溯 (最多 30 步)
+   */
+  public jumpBack(exact: boolean = false): void {
+    const jumpMode = cursorStore.getState().keybindings?.jumpMode || 'toggle';
+
+    if (jumpMode === 'toggle') {
+      // 1. 若已有 Toggle 恢復點 (剛才跳回前的位置)，切換回該位置
+      if (this.lastJumpBackTarget) {
+        const toggleTarget = this.lastJumpBackTarget;
+        this.lastJumpBackTarget = null;
+
+        if (this.currentTarget && this.currentTarget.node) {
+          const scrollParent = getScrollParent(this.currentTarget.node, this.options?.containerRoot);
+          const scrollX = scrollParent ? scrollParent.scrollLeft : (window.scrollX ?? window.pageXOffset ?? 0);
+          const scrollY = scrollParent ? scrollParent.scrollTop : (window.scrollY ?? window.pageYOffset ?? 0);
+          this.lastJumpBackTarget = {
+            node: this.currentTarget.node,
+            offset: this.currentTarget.offset,
+            scrollX,
+            scrollY
+          };
+        }
+
+        this.restoreJumpPoint(toggleTarget, exact);
+        return;
+      }
+
+      // 2. 從歷史堆疊讀取最新一筆跳轉點 (不破壞堆疊)
+      if (this.jumpHistory.length === 0) {
+        return;
+      }
+
+      const targetPoint = this.jumpHistory[this.jumpHistory.length - 1];
+
+      // 保存跳轉前當前位置作為 Toggle 目標
+      if (this.currentTarget && this.currentTarget.node) {
+        const scrollParent = getScrollParent(this.currentTarget.node, this.options?.containerRoot);
+        const scrollX = scrollParent ? scrollParent.scrollLeft : (window.scrollX ?? window.pageXOffset ?? 0);
+        const scrollY = scrollParent ? scrollParent.scrollTop : (window.scrollY ?? window.pageYOffset ?? 0);
+        this.lastJumpBackTarget = {
+          node: this.currentTarget.node,
+          offset: this.currentTarget.offset,
+          scrollX,
+          scrollY
+        };
+      }
+
+      this.restoreJumpPoint(targetPoint, exact);
+      return;
+    }
+
+    // History 模式：依序從堆疊回溯
+    if (this.jumpHistory.length === 0) {
+      return;
+    }
+
+    const targetPoint = this.jumpHistory.pop()!;
+    this.restoreJumpPoint(targetPoint, exact);
+  }
+
+  private restoreJumpPoint(point: JumpPoint, exact: boolean = false): void {
+    const duration = cursorStore.getState().advanced?.scrollDurationMs ?? 380;
+
+    if (point.node && point.node.isConnected) {
+      let target: TextTarget = {
+        node: point.node as Text,
+        offset: Math.min(point.offset, point.node.textContent?.length || 0)
+      };
+
+      // 若為行首模式 (如 '')，透過 CSSOM 精確計算真實視覺行首 (穿透 <b>, <span> 等標籤)
+      if (!exact) {
+        target = findVisualLineBoundary(target, true, this.rootElement);
+      }
+
+      this.currentTarget = target;
+      this.updateCursorPosition(true);
+
+      if (this.options?.enableScroll !== false) {
+        const scrollParent = getScrollParent(this.currentTarget.node, this.options?.containerRoot);
+        if (scrollParent) {
+          animateScrollTo(scrollParent, point.scrollY, duration);
+        } else if (!this.options?.containerRoot) {
+          animateScrollTo(window, point.scrollY, duration);
+        }
+      }
+    } else {
+      if (this.options?.enableScroll !== false) {
+        if (!this.options?.containerRoot) {
+          animateScrollTo(window, point.scrollY, duration);
+        }
+      }
+    }
+  }
+
+  public openJumpMenu(exact: boolean = false): void {
+    const config = cursorStore.getState().keybindings;
+    if (config?.enableJumpMenu === false || this.jumpHistory.length === 0) {
+      return;
+    }
+
+    this.isJumpMenuExact = exact;
+    const recent = this.jumpHistory.slice(-9).reverse();
+    const maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+
+    const items: JumpMenuItem[] = recent.map((p, idx) => {
+      const raw = p.node?.textContent || '';
+      const snippet = raw.slice(p.offset, p.offset + 25).trim() || raw.slice(0, 25).trim() || '(位置錨點)';
+      const scrollPercent = Math.min(100, Math.max(0, Math.round((p.scrollY / maxScroll) * 100)));
+      return {
+        index: idx + 1,
+        textPreview: snippet,
+        scrollPercent,
+        point: p
+      };
+    });
+
+    cursorStore.setState({ isJumpMenuOpen: true, jumpMenuItems: items });
+  }
+
+  public closeJumpMenu(): void {
+    if (this.jumpMenuTimer) {
+      clearTimeout(this.jumpMenuTimer);
+      this.jumpMenuTimer = null;
+    }
+    if (cursorStore.getState().isJumpMenuOpen) {
+      cursorStore.setState({ isJumpMenuOpen: false });
+    }
+  }
+
+  public jumpToMenuItem(index: number): void {
+    const items = cursorStore.getState().jumpMenuItems || [];
+    const item = items.find((it) => it.index === index);
+    if (item && item.point) {
+      const exact = this.isJumpMenuExact;
+      this.closeJumpMenu();
+      this.restoreJumpPoint(item.point, exact);
+    }
   }
 
   /**
    * 跳至文章頂部 (gg)
    */
   public jumpToDocumentStart(): void {
+    this.pushJumpPoint();
     const firstText = findFirstTextNodeIn(this.rootElement);
     if (firstText) {
       this.currentTarget = { node: firstText, offset: 0 };
@@ -594,6 +869,7 @@ export class CursorController {
    * 跳至文章底部 (G)
    */
   public jumpToDocumentEnd(): void {
+    this.pushJumpPoint();
     const walker = document.createTreeWalker(this.rootElement, NodeFilter.SHOW_TEXT);
     let lastTextNode: Text | null = null;
     let n = walker.nextNode();

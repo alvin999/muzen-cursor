@@ -543,6 +543,42 @@
             </div>
           </div>
 
+          <!-- 區塊 B: 跳轉與回溯模式 (Jump Mode) -->
+          <div class="setting-group">
+            <div class="group-header">
+              <span class="group-icon">🔀</span>
+              <div class="group-title-wrap">
+                <h2 class="group-title" data-i18n="jumpModeSectionTitle">跳轉與回溯模式 (Jump Mode)</h2>
+                <p class="group-desc" data-i18n="jumpModeSectionDesc">設定連按 '' 或 `` 鍵時的跳轉行為</p>
+              </div>
+            </div>
+
+            <div class="field-card" style="max-width: 640px;">
+              <div class="field-label-row">
+                <label for="jump-mode-select" class="field-label" data-i18n="fieldJumpMode">回跳行為 (Back Navigation)</label>
+              </div>
+              <p class="field-hint" data-i18n="hintJumpMode">選擇雙點來回對照或依序回溯歷史堆疊</p>
+              <div class="select-with-badge">
+                <select id="jump-mode-select" class="adv-select">
+                  <option value="toggle" data-i18n="jumpModeToggle">雙點來回切換 (Vim 經典 Toggle - 推薦)</option>
+                  <option value="history" data-i18n="jumpModeHistory">歷史堆疊依序回溯 (Stack 歷史導航)</option>
+                </select>
+              </div>
+            <div class="field-card" style="max-width: 640px; margin-top: 10px;">
+              <div class="field-label-row">
+                <label for="enable-jump-menu" class="field-label" data-i18n="fieldEnableJumpMenu">Neovim 浮動跳轉選單 (Floating Jump Menu)</label>
+              </div>
+              <p class="field-hint" data-i18n="hintEnableJumpMenu">單按 ' 或 ` 鍵稍候即彈出最近跳轉歷史，按下數字鍵 1-9 即可精確飛躍</p>
+              <div class="checkbox-row" style="padding-top: 6px; display: flex; align-items: center;">
+                <label class="switch-small">
+                  <input type="checkbox" id="enable-jump-menu" checked>
+                  <span class="slider-small"></span>
+                </label>
+                <span style="font-size: 13px; color: var(--color-fg-muted, #7c6f64); margin-left: 8px;" data-i18n="enableJumpMenuText">啟用浮動選單 HUD</span>
+              </div>
+            </div>
+          </div>
+
           <!-- 區塊 C: 自訂快捷鍵配置表 -->
           <div class="setting-group">
             <div class="group-header" style="justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
