@@ -5,7 +5,7 @@ interface ThemeColorSet {
   visual: { r: number; g: number; b: number; hex: string };
 }
 
-const THEME_PALETTES: Record<CursorTheme, ThemeColorSet> = {
+export const THEME_PALETTES: Record<CursorTheme, ThemeColorSet> = {
   'gruvbox-dark': {
     normal: { r: 254, g: 128, b: 25, hex: '#fe8019' }, // Gruvbox Orange
     visual: { r: 250, g: 189, b: 47, hex: '#fabd2f' }  // Gruvbox Yellow
