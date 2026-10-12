@@ -48,6 +48,40 @@ export class CursorController {
   private jumpMenuTimer: any = null;
   private isJumpMenuExact = false;
 
+  // 按鍵輸入緩衝與次數前綴 (Count Prefix，例如 5j, 10k)
+  private countPrefix: number = 0;
+  private pendingKeyTimer: any = null;
+
+  private setPendingKeys(keys: string, timeoutMs: number = 0): void {
+    if (this.pendingKeyTimer) {
+      clearTimeout(this.pendingKeyTimer);
+      this.pendingKeyTimer = null;
+    }
+    cursorStore.setState({ pendingKeys: keys });
+    if (timeoutMs > 0) {
+      this.pendingKeyTimer = setTimeout(() => {
+        this.clearPendingKeys();
+      }, timeoutMs);
+    }
+  }
+
+  private clearPendingKeys(): void {
+    if (this.pendingKeyTimer) {
+      clearTimeout(this.pendingKeyTimer);
+      this.pendingKeyTimer = null;
+    }
+    this.countPrefix = 0;
+    if (cursorStore.getState().pendingKeys) {
+      cursorStore.setState({ pendingKeys: '' });
+    }
+  }
+
+  private consumeCount(): number {
+    const count = this.countPrefix > 0 ? this.countPrefix : 1;
+    this.clearPendingKeys();
+    return count;
+  }
+
   private selectionManager = new VisualSelectionManager();
 
   private keydownHandler: ((e: KeyboardEvent) => void) | null = null;
@@ -322,6 +356,12 @@ export class CursorController {
 
       // 單按 Esc：若 escape 啟用
       if (escapeDef?.enabled !== false) {
+        // 若有輸入緩衝或次數前綴，按 Esc 優先取消緩衝區
+        if (this.countPrefix > 0 || state.pendingKeys) {
+          this.clearPendingKeys();
+          return;
+        }
+
         // 單按 Esc：若處於 VISUAL 或 VISUAL_LINE 模式，退出選取回到 NORMAL
         if (state.mode === 'VISUAL' || state.mode === 'VISUAL_LINE') {
           this.exitVisualMode();
@@ -376,6 +416,23 @@ export class CursorController {
       return;
     }
 
+    // 0.5 處理數字計數前綴 (Count Prefix，例如 5j, 10k, 3w)
+    const isPlainNumber = /^[0-9]$/.test(e.key) && !e.ctrlKey && !e.altKey && !e.metaKey;
+    if (isPlainNumber) {
+      // 若尚未有計數，首個數字不得為 0 (Vim 中 0 為行首指令 lineStart)
+      if (this.countPrefix === 0 && e.key !== '0') {
+        intercept();
+        this.countPrefix = Number(e.key);
+        this.setPendingKeys(String(this.countPrefix));
+        return;
+      } else if (this.countPrefix > 0) {
+        intercept();
+        this.countPrefix = Math.min(999, this.countPrefix * 10 + Number(e.key));
+        this.setPendingKeys(String(this.countPrefix));
+        return;
+      }
+    }
+
     // 若有掛起的單按 ' 或 ` 浮動選單計時器，非單按時予以清除
     if (this.jumpMenuTimer && e.key !== "'" && e.key !== '`') {
       clearTimeout(this.jumpMenuTimer);
@@ -401,12 +458,14 @@ export class CursorController {
         }
         intercept();
         this.lastKey = '';
+        this.clearPendingKeys();
         this.jumpBack(false); // false: 同一行行首
         return;
       }
 
       // 單按 ' 鍵：啟動 400ms 計時器，若未按第二下則喚醒 Neovim 浮動選單
       if (e.key === "'" && !e.ctrlKey && !e.altKey && !e.metaKey && !isDoubleKey) {
+        this.setPendingKeys("'", 500);
         if (config.enableJumpMenu !== false && this.jumpHistory.length > 0) {
           this.jumpMenuTimer = setTimeout(() => {
             this.openJumpMenu();
@@ -427,12 +486,14 @@ export class CursorController {
         }
         intercept();
         this.lastKey = '';
+        this.clearPendingKeys();
         this.jumpBack(true); // true: 同一字元精確位置
         return;
       }
 
       // 單按 ` 鍵：啟動 400ms 計時器，若未按第二下則喚醒 Neovim 浮動選單 (精確字元模式)
       if (e.key === '`' && !e.ctrlKey && !e.altKey && !e.metaKey && !isDoubleKey) {
+        this.setPendingKeys('`', 500);
         if (config.enableJumpMenu !== false && this.jumpHistory.length > 0) {
           this.jumpMenuTimer = setTimeout(() => {
             this.openJumpMenu(true);
@@ -449,19 +510,24 @@ export class CursorController {
       if (docStartDef.isDouble ? isDoubleDocStart : matchesKeybinding(e, docStartDef)) {
         intercept();
         this.lastKey = '';
+        this.clearPendingKeys();
         this.jumpToDocumentStart();
         return;
+      } else if (isConfiguredKey && docStartDef.isDouble && !isDoubleKey) {
+        this.setPendingKeys(e.key, 500);
       }
     }
 
     if (matchesKeybinding(e, bindings.visualLineMode)) {
       intercept();
+      this.clearPendingKeys();
       this.toggleVisualLineMode();
       return;
     }
 
     if (matchesKeybinding(e, bindings.visualMode)) {
       intercept();
+      this.clearPendingKeys();
       this.toggleVisualMode();
       return;
     }
@@ -469,6 +535,7 @@ export class CursorController {
     if (matchesKeybinding(e, bindings.yank)) {
       if (state.mode === 'VISUAL' || state.mode === 'VISUAL_LINE') {
         intercept();
+        this.clearPendingKeys();
         this.yankSelection();
       }
       return;
@@ -476,74 +543,91 @@ export class CursorController {
 
     if (matchesKeybinding(e, bindings.moveLeft)) {
       intercept();
-      this.moveHorizontal(-1);
+      const count = this.consumeCount();
+      for (let i = 0; i < count; i++) this.moveHorizontal(-1);
       return;
     }
 
     if (matchesKeybinding(e, bindings.moveRight)) {
       intercept();
-      this.moveHorizontal(1);
+      const count = this.consumeCount();
+      for (let i = 0; i < count; i++) this.moveHorizontal(1);
       return;
     }
 
     if (matchesKeybinding(e, bindings.moveUp)) {
       intercept();
-      this.moveVertical(-1);
+      const count = this.consumeCount();
+      this.moveVertical(-1 * count);
       return;
     }
 
     if (matchesKeybinding(e, bindings.moveDown)) {
       intercept();
-      this.moveVertical(1);
+      const count = this.consumeCount();
+      this.moveVertical(1 * count);
       return;
     }
 
     if (matchesKeybinding(e, bindings.wordForward)) {
       intercept();
-      this.moveWordForward();
+      const count = this.consumeCount();
+      for (let i = 0; i < count; i++) this.moveWordForward();
       return;
     }
 
     if (matchesKeybinding(e, bindings.wordBackward)) {
       intercept();
-      this.moveWordBackward();
+      const count = this.consumeCount();
+      for (let i = 0; i < count; i++) this.moveWordBackward();
       return;
     }
 
     if (matchesKeybinding(e, bindings.wordEnd)) {
       intercept();
-      this.moveWordEnd();
+      const count = this.consumeCount();
+      for (let i = 0; i < count; i++) this.moveWordEnd();
       return;
     }
 
     if (matchesKeybinding(e, bindings.lineStart)) {
       intercept();
+      this.clearPendingKeys();
       this.jumpToLineBoundary(true);
       return;
     }
 
     if (matchesKeybinding(e, bindings.lineEnd)) {
       intercept();
+      this.clearPendingKeys();
       this.jumpToLineBoundary(false);
       return;
     }
 
     if (matchesKeybinding(e, bindings.halfPageDown)) {
       intercept();
+      this.clearPendingKeys();
       this.moveHalfPage(true);
       return;
     }
 
     if (matchesKeybinding(e, bindings.halfPageUp)) {
       intercept();
+      this.clearPendingKeys();
       this.moveHalfPage(false);
       return;
     }
 
     if (matchesKeybinding(e, bindings.docEnd)) {
       intercept();
+      this.clearPendingKeys();
       this.jumpToDocumentEnd();
       return;
+    }
+
+    // 其他未匹配之普通按鍵，若存在計數前綴則清空重置
+    if (!isPlainNumber && this.countPrefix > 0) {
+      this.clearPendingKeys();
     }
   }
 

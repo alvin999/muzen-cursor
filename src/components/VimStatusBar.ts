@@ -9,6 +9,7 @@ import { THEME_PALETTES } from './VimCursorOverlay';
 export class VimStatusBar {
   private element: HTMLElement;
   private modeEl: HTMLElement;
+  private pendingEl: HTMLElement;
   private infoEl: HTMLElement;
   private progressBarEl: HTMLElement;
   private unsubscribe: (() => void) | null = null;
@@ -23,6 +24,9 @@ export class VimStatusBar {
     this.modeEl = document.createElement('span');
     this.modeEl.className = 'muzen-mode-badge';
 
+    this.pendingEl = document.createElement('span');
+    this.pendingEl.className = 'muzen-pending-badge';
+
     this.infoEl = document.createElement('span');
     this.infoEl.className = 'muzen-info-badge';
 
@@ -30,6 +34,7 @@ export class VimStatusBar {
     this.progressBarEl.className = 'muzen-status-progress';
 
     this.element.appendChild(this.modeEl);
+    this.element.appendChild(this.pendingEl);
     this.element.appendChild(this.infoEl);
     this.element.appendChild(this.progressBarEl);
 
@@ -67,6 +72,15 @@ export class VimStatusBar {
     this.modeEl.style.fontWeight = 'bold';
     this.modeEl.style.letterSpacing = '1px';
     this.modeEl.style.transition = 'color 0.2s ease';
+
+    this.pendingEl.style.display = 'none';
+    this.pendingEl.style.padding = '1px 5px';
+    this.pendingEl.style.borderRadius = '3px';
+    this.pendingEl.style.fontSize = '11px';
+    this.pendingEl.style.fontWeight = 'bold';
+    this.pendingEl.style.lineHeight = '1';
+    this.pendingEl.style.letterSpacing = '0.5px';
+    this.pendingEl.style.transition = 'color 0.2s ease, background-color 0.2s ease';
 
     this.infoEl.style.opacity = '0.75';
     this.infoEl.style.transition = 'color 0.2s ease, opacity 0.2s ease';
@@ -159,12 +173,25 @@ export class VimStatusBar {
     this.progressBarEl.style.width = state.visible ? `${progress}%` : '0%';
     this.progressBarEl.style.backgroundColor = palette.normal.hex;
 
+    const isLight = themeKey === 'gruvbox-light' || themeKey === 'intellij-light';
+
     if (!state.visible) {
+      this.pendingEl.style.display = 'none';
       this.modeEl.textContent = 'MUZEN';
       this.modeEl.style.color = palette.normal.hex;
       const dict = LOCALES[state.locale || 'zh-TW'] || LOCALES['zh-TW'];
       this.infoEl.textContent = dict.statusStartPrompt;
       return;
+    }
+
+    // 即時按鍵緩衝區微章 (如次數前綴 5 或雙鍵等待 g, ')
+    if (state.pendingKeys) {
+      this.pendingEl.style.display = 'inline-block';
+      this.pendingEl.textContent = state.pendingKeys;
+      this.pendingEl.style.color = palette.visual.hex;
+      this.pendingEl.style.backgroundColor = isLight ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.14)';
+    } else {
+      this.pendingEl.style.display = 'none';
     }
 
     if (state.mode === 'VISUAL_LINE') {

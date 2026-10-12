@@ -297,6 +297,7 @@ export interface CursorState {
   jumpMenuItems: JumpMenuItem[];
   statusNotice?: string | null; // 底部狀態列臨時 Toast 提示訊息 (例如 yank 複製反饋)
   selectionStats?: { chars: number; lines: number } | null; // Visual 模式下即時選取字數與行數統計
+  pendingKeys: string; // 按鍵緩衝區 (例如次數前綴 5_ 或雙鍵等待 g-)
 }
 
 type Listener = (state: CursorState) => void;
@@ -332,7 +333,8 @@ class CursorStore {
     isJumpMenuOpen: false,
     jumpMenuItems: [],
     statusNotice: null,
-    selectionStats: null
+    selectionStats: null,
+    pendingKeys: ''
   };
 
   private listeners: Set<Listener> = new Set();
