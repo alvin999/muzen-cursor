@@ -1,5 +1,6 @@
 import { LOCALES, Locale, Translations, detectDefaultLocale } from '../src/i18n/locales';
 import { formatKeyCombo, DEFAULT_KEYBINDINGS, KeybindingsConfig } from '../src/core/cursorStore';
+import { checkExtensionUpdate, getCurrentVersion, ReleaseInfo } from '../src/utils/updater';
 
 /**
  * Popup 設定邏輯 (Vanilla TS)
@@ -34,6 +35,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const blacklistCount = document.getElementById('blacklist-count');
   const btnSaveBlacklist = document.getElementById('btn-save-blacklist');
   const collapseArrow = document.getElementById('collapse-arrow');
+
+  // 版本與更新控制項
+  const currentVersionTag = document.getElementById('current-version-tag');
+  const updateStatusDot = document.getElementById('update-status-dot');
+  const btnCheckUpdate = document.getElementById('btn-check-update') as HTMLButtonElement | null;
+  const updatePanel = document.getElementById('update-panel');
+  const latestVersionTag = document.getElementById('latest-version-tag');
+  const btnDownloadUpdate = document.getElementById('btn-download-update') as HTMLButtonElement | null;
+  const btnReloadExtension = document.getElementById('btn-reload-extension') as HTMLButtonElement | null;
+  let currentReleaseInfo: ReleaseInfo | null = null;
 
   let currentHostname = '';
   let excludedSites: string[] = [];
@@ -119,6 +130,84 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 4. 更新光暈數值顯示
     updateGlowUI(currentGlow);
+
+    // 5. 即時同步更新面板多國語言狀態
+    renderUpdateUI(currentReleaseInfo);
+  };
+
+  // ===== 版本檢查與一鍵更新模組 =====
+  const currVer = getCurrentVersion();
+  if (currentVersionTag) {
+    currentVersionTag.textContent = `v${currVer}`;
+  }
+
+  // 渲染更新狀態至介面
+  function renderUpdateUI(info: ReleaseInfo | null, isManual = false) {
+    const dict = LOCALES[currentLocale] || LOCALES['zh-TW'];
+    currentReleaseInfo = info;
+
+    if (!info) {
+      if (updateStatusDot) {
+        updateStatusDot.className = 'update-status-dot';
+      }
+      if (isManual && btnCheckUpdate) {
+        btnCheckUpdate.textContent = dict.updateCheckFailed;
+        setTimeout(() => {
+          btnCheckUpdate.textContent = dict.checkUpdateBtn;
+        }, 2500);
+      }
+      return;
+    }
+
+    if (info.hasUpdate) {
+      // 偵測到新版本發布
+      if (updateStatusDot) {
+        updateStatusDot.className = 'update-status-dot has-update';
+        updateStatusDot.title = `${dict.updateAvailable}: v${info.latestVersion}`;
+      }
+      if (latestVersionTag) {
+        latestVersionTag.textContent = `v${info.latestVersion}`;
+      }
+      if (updatePanel) {
+        updatePanel.style.display = 'flex';
+      }
+      if (btnCheckUpdate) {
+        btnCheckUpdate.textContent = `v${info.latestVersion} !`;
+      }
+    } else {
+      // 目前已為最新版
+      if (updateStatusDot) {
+        updateStatusDot.className = 'update-status-dot up-to-date';
+        updateStatusDot.title = dict.upToDate;
+      }
+      if (updatePanel) {
+        updatePanel.style.display = 'none';
+      }
+      if (btnCheckUpdate) {
+        btnCheckUpdate.textContent = isManual ? dict.upToDate : dict.checkUpdateBtn;
+        if (isManual) {
+          setTimeout(() => {
+            btnCheckUpdate.textContent = dict.checkUpdateBtn;
+          }, 2000);
+        }
+      }
+    }
+  }
+
+  // 執行檢查更新
+  const handleCheckUpdate = async (force = false) => {
+    const dict = LOCALES[currentLocale] || LOCALES['zh-TW'];
+    if (btnCheckUpdate) {
+      btnCheckUpdate.classList.add('loading');
+      if (force) btnCheckUpdate.textContent = dict.checkingUpdate;
+    }
+
+    const info = await checkExtensionUpdate(force);
+
+    if (btnCheckUpdate) {
+      btnCheckUpdate.classList.remove('loading');
+    }
+    renderUpdateUI(info, force);
   };
 
   // 比對網域是否被排除
@@ -529,4 +618,38 @@ document.addEventListener('DOMContentLoaded', () => {
       btnResetDefaults.classList.remove('success');
     }, 1500);
   });
+
+  // 綁定「檢查更新」按鈕點擊
+  if (btnCheckUpdate) {
+    btnCheckUpdate.addEventListener('click', () => {
+      handleCheckUpdate(true);
+    });
+  }
+
+  // 綁定「一鍵下載最新版」按鈕點擊
+  if (btnDownloadUpdate) {
+    btnDownloadUpdate.addEventListener('click', () => {
+      if (currentReleaseInfo?.downloadUrl) {
+        if (typeof chrome !== 'undefined' && chrome.tabs?.create) {
+          chrome.tabs.create({ url: currentReleaseInfo.downloadUrl });
+        } else {
+          window.open(currentReleaseInfo.downloadUrl, '_blank');
+        }
+      }
+    });
+  }
+
+  // 綁定「重新載入套件」按鈕點擊
+  if (btnReloadExtension) {
+    btnReloadExtension.addEventListener('click', () => {
+      if (typeof chrome !== 'undefined' && chrome.runtime?.reload) {
+        chrome.runtime.reload();
+      } else {
+        window.location.reload();
+      }
+    });
+  }
+
+  // 開啟 Popup 面板時自動執行輕量快取檢查
+  handleCheckUpdate(false);
 });

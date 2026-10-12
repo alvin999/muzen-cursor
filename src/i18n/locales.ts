@@ -287,6 +287,17 @@ export interface Translations {
   keyDisabledText: string;
   toastKeybindingsReset: string;
   openKeybindingsSettingsBtn: string;
+
+  // 版本與更新 (Updater)
+  versionLabel: string;
+  checkUpdateBtn: string;
+  checkingUpdate: string;
+  upToDate: string;
+  updateAvailable: string;
+  downloadUpdateBtn: string;
+  reloadExtensionBtn: string;
+  updateCheckFailed: string;
+  updateTipSideload: string;
 }
 
 export const LOCALES: Record<Locale, Translations> = {
@@ -561,7 +572,18 @@ export const LOCALES: Record<Locale, Translations> = {
     keyConflictWarning: '此按鍵已被其他動作使用！',
     keyDisabledText: '已停用',
     toastKeybindingsReset: '✓ 按鍵設定已還原為官方預設值',
-    openKeybindingsSettingsBtn: '⌨️ 自訂按鍵與防衝突設定'
+    openKeybindingsSettingsBtn: '⌨️ 自訂按鍵與防衝突設定',
+
+    // 版本與更新 (Updater)
+    versionLabel: '版本',
+    checkUpdateBtn: '檢查更新',
+    checkingUpdate: '正在檢查...',
+    upToDate: '已是最新版本',
+    updateAvailable: '發現新版本',
+    downloadUpdateBtn: '⬇️ 一鍵下載最新版',
+    reloadExtensionBtn: '🔄 重新載入套件',
+    updateCheckFailed: '無法取得更新資訊',
+    updateTipSideload: '下載解壓縮覆蓋原資料夾後，點擊「重新載入套件」即可立即生效。'
   },
   'en': {
     appName: 'Muzen Cursor',
@@ -834,7 +856,18 @@ export const LOCALES: Record<Locale, Translations> = {
     keyConflictWarning: 'Key is already assigned to another action!',
     keyDisabledText: 'Disabled',
     toastKeybindingsReset: '✓ Keybindings restored to defaults',
-    openKeybindingsSettingsBtn: '⌨️ Custom Keybindings & Conflicts'
+    openKeybindingsSettingsBtn: '⌨️ Custom Keybindings & Conflicts',
+
+    // 版本與更新 (Updater)
+    versionLabel: 'Version',
+    checkUpdateBtn: 'Check Update',
+    checkingUpdate: 'Checking...',
+    upToDate: 'Up to date',
+    updateAvailable: 'Update available',
+    downloadUpdateBtn: '⬇️ Download Latest (ZIP)',
+    reloadExtensionBtn: '🔄 Reload Extension',
+    updateCheckFailed: 'Failed to fetch update',
+    updateTipSideload: 'After extracting and overwriting the folder, click Reload Extension to apply.'
   },
   'ja': {
     appName: 'Muzen Cursor',
@@ -1107,7 +1140,18 @@ export const LOCALES: Record<Locale, Translations> = {
     keyConflictWarning: 'このキーは既に他の操作に割り当てられています！',
     keyDisabledText: '無効',
     toastKeybindingsReset: '✓ キー設定を初期値に戻しました',
-    openKeybindingsSettingsBtn: '⌨️ キー設定と衝突管理'
+    openKeybindingsSettingsBtn: '⌨️ キー設定と衝突管理',
+
+    // 版本與更新 (Updater)
+    versionLabel: 'バージョン',
+    checkUpdateBtn: '更新を確認',
+    checkingUpdate: '確認中...',
+    upToDate: '最新版です',
+    updateAvailable: '新バージョンあり',
+    downloadUpdateBtn: '⬇️ 最新版をダウンロード',
+    reloadExtensionBtn: '🔄 拡張機能を再読み込み',
+    updateCheckFailed: '更新情報の取得に失敗しました',
+    updateTipSideload: 'ZIPを展開して既存フォルダに上書き後、「拡張機能を再読み込み」をクリックしてください。'
   }
 };
 

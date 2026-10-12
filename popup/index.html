@@ -231,6 +231,43 @@
       </button>
     </section>
 
+    <section class="section update-section">
+      <div class="update-header">
+        <div class="version-badge-container">
+          <span class="version-label" data-i18n="versionLabel">版本</span>
+          <span class="current-version-badge" id="current-version-tag">v0.1.2</span>
+          <span class="update-status-dot" id="update-status-dot" title="狀態"></span>
+        </div>
+        <button type="button" id="btn-check-update" class="btn-check-update" data-i18n="checkUpdateBtn">
+          檢查更新
+        </button>
+      </div>
+
+      <!-- 更新通知面板 (有新版本時動態顯示) -->
+      <div class="update-panel" id="update-panel" style="display: none;">
+        <div class="update-banner">
+          <span class="update-icon">✨</span>
+          <div class="update-info-text">
+            <div class="update-title">
+              <span data-i18n="updateAvailable">發現新版本</span>
+              <strong id="latest-version-tag">v0.0.0</strong>
+            </div>
+            <div class="update-tip" data-i18n="updateTipSideload">
+              下載解壓縮覆蓋原資料夾後，點擊「重新載入套件」即可立即生效。
+            </div>
+          </div>
+        </div>
+        <div class="update-actions">
+          <button type="button" id="btn-download-update" class="btn-download-update" data-i18n="downloadUpdateBtn">
+            ⬇️ 一鍵下載最新版
+          </button>
+          <button type="button" id="btn-reload-extension" class="btn-reload-extension" data-i18n="reloadExtensionBtn">
+            🔄 重新載入套件
+          </button>
+        </div>
+      </div>
+    </section>
+
     <footer class="footer">
       <span data-i18n="footerTip">點擊網頁文字即可立即錨定閱讀焦點</span>
     </footer>
