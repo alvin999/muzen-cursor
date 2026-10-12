@@ -1,5 +1,5 @@
 import { cursorStore, MotionDirection, CursorRect, matchesKeybinding, DEFAULT_KEYBINDINGS, JumpMenuItem } from './cursorStore';
-import { isTypingContext, detectReadingScope, isOutOfNormalFlowWidget } from '../utils/domUtils';
+import { isTypingContext, detectReadingScope, isOutOfNormalFlowWidget, findCurrentSectionHeading, estimateReadingMinutes } from '../utils/domUtils';
 import { WordNavigator, TextTarget } from './wordNavigator';
 import { resolveTextTargetFromPoint, isClickWithinDistanceThreshold, getRawCaretFromPoint } from '../utils/caretUtils';
 import { animateScrollTo, getScrollParent, getViewportMetrics } from '../utils/smoothScroller';
@@ -51,6 +51,13 @@ export class CursorController {
   // 按鍵輸入緩衝與次數前綴 (Count Prefix，例如 5j, 10k)
   private countPrefix: number = 0;
   private pendingKeyTimer: any = null;
+
+  // 長文閱讀輔助與章節快取
+  private cachedTotalChars = 0;
+  private lastCharCountTime = 0;
+  private lastHeadingCheckTime = 0;
+  private cachedHeadingTitle = '';
+  private cachedReadingMinutes = 0;
 
   private setPendingKeys(keys: string, timeoutMs: number = 0): void {
     if (this.pendingKeyTimer) {
@@ -1315,6 +1322,20 @@ export class CursorController {
       ) - viewportH;
       const progress = totalHeight > 0 ? Math.min(100, Math.max(0, (scrollY / totalHeight) * 100)) : 100;
 
+      // 輔助閱讀：快取頁面純字元數與當前章節標題
+      const now = performance.now();
+      if (now - this.lastCharCountTime > 5000 || this.cachedTotalChars === 0) {
+        const root = this.getEffectiveRoot();
+        this.cachedTotalChars = root.textContent?.replace(/\s+/g, '').length || 0;
+        this.lastCharCountTime = now;
+      }
+
+      if (now - this.lastHeadingCheckTime > 300 || node !== this.previousTarget?.node) {
+        this.cachedHeadingTitle = findCurrentSectionHeading(node, this.getEffectiveRoot()) || '';
+        this.cachedReadingMinutes = estimateReadingMinutes(this.cachedTotalChars, progress);
+        this.lastHeadingCheckTime = now;
+      }
+
       // 容許適度邊界緩衝，避免邊界滾動時游標閃現閃退；若座標暫未就緒，安全維持當前可見狀態
       const hasValidCoords = typeof rect.top === 'number' && typeof rect.bottom === 'number' && !isNaN(rect.top) && !isNaN(rect.bottom);
       const isVisibleInViewport = hasValidCoords
@@ -1335,7 +1356,9 @@ export class CursorController {
             height: Math.max(rect.height, 16)
           },
           readingProgress: progress,
-          charOffset: safeOffset
+          charOffset: safeOffset,
+          currentSectionTitle: this.cachedHeadingTitle,
+          estimatedMinutesLeft: this.cachedReadingMinutes
         });
         this.previousTarget = { ...this.currentTarget };
         return;
@@ -1395,7 +1418,9 @@ export class CursorController {
         },
         trailWaypoints: finalWaypoints && finalWaypoints.length > 0 ? finalWaypoints : undefined,
         readingProgress: progress,
-        charOffset: safeOffset
+        charOffset: safeOffset,
+        currentSectionTitle: this.cachedHeadingTitle,
+        estimatedMinutesLeft: this.cachedReadingMinutes
       });
 
       this.previousTarget = { ...this.currentTarget };

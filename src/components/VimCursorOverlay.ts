@@ -377,8 +377,8 @@ export class VimCursorOverlay {
     this.element.style.setProperty('--muzen-glow-halo', `rgba(${color.r}, ${color.g}, ${color.b}, 0.45)`);
     this.element.style.setProperty('--muzen-breathe-peak-opacity', `${typeof adv.breathePeakOpacity === 'number' ? adv.breathePeakOpacity : 0.96}`);
 
-    // 處理光暈 (Glow Radius: 優先讀取進階設定 glowRadius，0 為無光暈)
-    const glow = typeof adv.glowRadius === 'number' ? Math.max(0, adv.glowRadius) : (typeof state.glow === 'number' ? Math.max(0, state.glow) : 0);
+    // 處理光暈 (Glow: 游標核心基本設定，0 為無光暈)
+    const glow = typeof state.glow === 'number' ? Math.max(0, state.glow) : 0;
     if (glow <= 0) {
       this.element.style.setProperty('--muzen-breathe-filter-min', 'none');
       this.element.style.setProperty('--muzen-breathe-filter-peak', 'none');
@@ -393,9 +393,9 @@ export class VimCursorOverlay {
       this.element.style.setProperty('--muzen-breathe-filter-max', `drop-shadow(0 0 ${coreMax}px var(--muzen-glow-core)) drop-shadow(0 0 ${haloMax}px var(--muzen-glow-halo))`);
     }
 
-    // 2. 依據游標形態 (Shape)、粗細 (Thickness) 與進階幾何數值調整
+    // 2. 依據游標形態 (Shape)、粗細 (Thickness) 與進階幾何微調參數
     const shape = state.shape || 'block';
-    const thickness = typeof adv.thickness === 'number' ? Math.max(0.5, adv.thickness) : (typeof state.thickness === 'number' ? Math.max(0.5, state.thickness) : 1.5);
+    const thickness = typeof state.thickness === 'number' ? Math.max(0.5, state.thickness) : 1.5;
     const borderRadius = typeof adv.borderRadius === 'number' ? Math.max(0, adv.borderRadius) : 1.5;
     const outlineOffset = typeof adv.outlineOffset === 'number' ? adv.outlineOffset : -1;
     const blockBgOpacity = typeof adv.blockBgOpacity === 'number' ? adv.blockBgOpacity : 0.22;

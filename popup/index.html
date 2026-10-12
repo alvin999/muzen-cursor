@@ -75,7 +75,6 @@
         <button type="button" class="preset-btn" data-thickness="1" data-i18n="thicknessPresetThin">1px 極細</button>
         <button type="button" class="preset-btn active" data-thickness="1.5" data-i18n="thicknessPresetClassic">1.5px 經典</button>
         <button type="button" class="preset-btn" data-thickness="2" data-i18n="thicknessPresetMedium">2px 標準</button>
-        <button type="button" class="preset-btn" data-thickness="3" data-i18n="thicknessPresetThick">3px 加粗</button>
       </div>
       <div class="slider-wrapper">
         <input type="range" id="thickness-slider" class="range-slider" min="1" max="5" step="0.5" value="1.5">
@@ -141,6 +140,13 @@
         </label>
       </div>
       <p class="section-desc" data-i18n="statusBarSectionDesc">畫面右下角呈現目前 Vim 模式與文章進度</p>
+      <div class="row-between status-sub-row" id="sub-status-bar-advanced">
+        <label class="section-sublabel" for="toggle-advanced-status-bar" data-i18n="statusBarAdvancedLabel">進階長文閱讀輔助 (章節標題與預估時間)</label>
+        <label class="switch-small">
+          <input type="checkbox" id="toggle-advanced-status-bar" checked>
+          <span class="slider-small"></span>
+        </label>
+      </div>
     </section>
 
     <section class="section blacklist-section">

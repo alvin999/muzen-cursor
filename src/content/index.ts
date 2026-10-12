@@ -50,10 +50,11 @@ function main(): void {
         cursorStore.setState({ shape: message.shape });
         sendResponse({ success: true });
       } else if (message.type === 'SET_THICKNESS') {
-        cursorStore.setState({ thickness: Number(message.thickness) || 2 });
+        cursorStore.setState({ thickness: Number(message.thickness) || 1.5 });
         sendResponse({ success: true });
       } else if (message.type === 'SET_GLOW') {
-        cursorStore.setState({ glow: typeof message.glow === 'number' ? message.glow : 6 });
+        cursorStore.setState({ glow: typeof message.glow === 'number' ? message.glow : 0 });
+        sendResponse({ success: true });
         sendResponse({ success: true });
       } else if (message.type === 'SET_EFFECTS') {
         const currentEffects = cursorStore.getState().effects;
@@ -66,6 +67,9 @@ function main(): void {
         sendResponse({ success: true });
       } else if (message.type === 'SET_STATUS_BAR') {
         cursorStore.setState({ showStatusBar: !!message.showStatusBar });
+        sendResponse({ success: true });
+      } else if (message.type === 'SET_ADVANCED_STATUS_BAR') {
+        cursorStore.setState({ showAdvancedStatusBar: !!message.showAdvancedStatusBar });
         sendResponse({ success: true });
       } else if (message.type === 'SET_LOCALE') {
         cursorStore.setState({ locale: message.locale });
@@ -131,6 +135,9 @@ function main(): void {
       }
       if (typeof result.muzen_show_status_bar === 'boolean') {
         cursorStore.setState({ showStatusBar: result.muzen_show_status_bar });
+      }
+      if (typeof result.muzen_show_advanced_status_bar === 'boolean') {
+        cursorStore.setState({ showAdvancedStatusBar: result.muzen_show_advanced_status_bar });
       }
       if (result.muzen_theme) {
         cursorStore.setState({ theme: result.muzen_theme });
@@ -201,6 +208,12 @@ function main(): void {
             ...updated
           }
         });
+      }
+      if (changes.muzen_thickness && typeof changes.muzen_thickness.newValue === 'number') {
+        cursorStore.setState({ thickness: changes.muzen_thickness.newValue });
+      }
+      if (changes.muzen_glow && typeof changes.muzen_glow.newValue === 'number') {
+        cursorStore.setState({ glow: changes.muzen_glow.newValue });
       }
       if (changes.muzen_keybindings) {
         const updatedKeys = changes.muzen_keybindings.newValue || {};

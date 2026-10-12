@@ -148,5 +148,99 @@ export function isOutOfNormalFlowWidget(node: Node, rootBound?: HTMLElement): bo
   return getOutOfNormalFlowContainer(node, rootBound) !== null;
 }
 
+/**
+ * 尋找當前游標文字節點所屬的最近章節/標題文字 (h1 ~ h6)
+ * 支援向左/向上 DOM 回溯，並自動截斷為最多 16 字
+ */
+export function findCurrentSectionHeading(node: Node | null, rootBound?: HTMLElement): string | null {
+  if (!node) return null;
+  const bound = rootBound || document.body;
+
+  // 1. 先從父元素同級與上層回溯
+  let current: Element | null = node instanceof Element ? node : node.parentElement;
+
+  while (current && current !== bound && current !== document.body && current !== document.documentElement) {
+    // 檢查目前元素前方的兄弟節點中的標題
+    let sibling = current.previousElementSibling;
+    while (sibling) {
+      if (/^H[1-6]$/.test(sibling.tagName)) {
+        const text = sibling.textContent?.trim().replace(/\s+/g, ' ');
+        if (text && text.length > 0) {
+          return truncateHeading(text, 16);
+        }
+      }
+      const nestedHeading = sibling.querySelector('h1, h2, h3, h4, h5, h6');
+      if (nestedHeading) {
+        const text = nestedHeading.textContent?.trim().replace(/\s+/g, ' ');
+        if (text && text.length > 0) {
+          return truncateHeading(text, 16);
+        }
+      }
+      sibling = sibling.previousElementSibling;
+    }
+
+    // 檢查父元素本身是否就是標題
+    if (/^H[1-6]$/.test(current.tagName)) {
+      const text = current.textContent?.trim().replace(/\s+/g, ' ');
+      if (text && text.length > 0) {
+        return truncateHeading(text, 16);
+      }
+    }
+
+    current = current.parentElement;
+  }
+
+  // 2. 若上層未直接找到，在全域標題清單中以 Y 軸座標比對最靠近之標題 (容錯備援)
+  try {
+    const range = document.createRange();
+    range.selectNode(node);
+    const nodeRect = range.getBoundingClientRect();
+    if (nodeRect.top > 0) {
+      const allHeadings = Array.from((rootBound || document).querySelectorAll('h1, h2, h3, h4, h5, h6'));
+      let closestHeading: Element | null = null;
+      let closestTopDiff = Infinity;
+
+      for (const h of allHeadings) {
+        const hRect = h.getBoundingClientRect();
+        if (hRect.top <= nodeRect.top + 10) {
+          const diff = nodeRect.top - hRect.top;
+          if (diff < closestTopDiff) {
+            closestTopDiff = diff;
+            closestHeading = h;
+          }
+        }
+      }
+
+      if (closestHeading) {
+        const text = closestHeading.textContent?.trim().replace(/\s+/g, ' ');
+        if (text && text.length > 0) {
+          return truncateHeading(text, 16);
+        }
+      }
+    }
+  } catch {
+    // 容錯防禦
+  }
+
+  return null;
+}
+
+function truncateHeading(text: string, maxLen: number): string {
+  // 清理錨點符號與編號前綴如 "#", "1.2" 等
+  const clean = text.replace(/^#+\s*/, '');
+  if (clean.length <= maxLen) return clean;
+  return clean.slice(0, maxLen).trim() + '…';
+}
+
+/**
+ * 依據頁面字元總量與當前進度百分比，估算剩餘閱讀時間 (分鐘數)
+ * 基準：一般人專注閱讀速度約每分鐘 400 字元 (中英混合)
+ */
+export function estimateReadingMinutes(totalChars: number, progressPercent: number): number {
+  if (totalChars <= 0) return 0;
+  const remaining = Math.max(0, totalChars * (1 - Math.min(100, Math.max(0, progressPercent)) / 100));
+  return Math.max(0, Math.ceil(remaining / 400));
+}
+
 
 

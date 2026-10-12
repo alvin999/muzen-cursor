@@ -43,11 +43,9 @@ export interface CursorRect {
 export type TrailMode = 'line' | 'direct';
 
 export interface AdvancedConfig {
-  // 1. 幾何外觀與筆觸
-  thickness: number;          // 游標粗細/線寬 (px)
+  // 1. 幾何外觀與微調筆觸
   borderRadius: number;       // 圓角半徑 (px)
   outlineOffset: number;      // 外框偏移 (px)
-  glowRadius: number;         // 光暈擴散半徑 (px)
   blockBgOpacity: number;     // NORMAL 方塊背景不透明度 (0~1)
   visualBgOpacity: number;    // VISUAL 選取不透明度 (0~1)
   hollowBgOpacity: number;    // 空心內部不透明度 (0~1)
@@ -88,10 +86,8 @@ export interface AdvancedConfig {
 }
 
 export const DEFAULT_ADVANCED_CONFIG: AdvancedConfig = {
-  thickness: 1.5,
   borderRadius: 1.5,
   outlineOffset: -1,
-  glowRadius: 0,
   blockBgOpacity: 0.22,
   visualBgOpacity: 0.35,
   hollowBgOpacity: 0.05,
@@ -284,6 +280,7 @@ export interface CursorState {
   advanced: AdvancedConfig; // 進階數值調校配置
   keybindings: KeybindingsConfig; // 自訂按鍵與防衝突配置
   showStatusBar: boolean;
+  showAdvancedStatusBar: boolean; // 是否啟用進階狀態列 (章節標題麵包屑與預估剩餘時間)
   rect: CursorRect;
   trailWaypoints?: CursorRect[]; // 跨行移動時由正版 j / k 演算法探測之各行真實路徑點
   visible: boolean;
@@ -298,6 +295,8 @@ export interface CursorState {
   statusNotice?: string | null; // 底部狀態列臨時 Toast 提示訊息 (例如 yank 複製反饋)
   selectionStats?: { chars: number; lines: number } | null; // Visual 模式下即時選取字數與行數統計
   pendingKeys: string; // 按鍵緩衝區 (例如次數前綴 5_ 或雙鍵等待 g-)
+  currentSectionTitle?: string; // 當前游標所處之文章章節/標題文字 (例如 § 快速上手)
+  estimatedMinutesLeft?: number; // 預估剩餘閱讀時間 (分鐘數)
 }
 
 type Listener = (state: CursorState) => void;
@@ -323,6 +322,7 @@ class CursorStore {
     advanced: { ...DEFAULT_ADVANCED_CONFIG },
     keybindings: { ...DEFAULT_KEYBINDINGS },
     showStatusBar: true,
+    showAdvancedStatusBar: true,
     rect: { x: 0, y: 0, width: 10, height: 20 },
     visible: false,
     isMoving: false,
@@ -334,7 +334,9 @@ class CursorStore {
     jumpMenuItems: [],
     statusNotice: null,
     selectionStats: null,
-    pendingKeys: ''
+    pendingKeys: '',
+    currentSectionTitle: '',
+    estimatedMinutesLeft: undefined
   };
 
   private listeners: Set<Listener> = new Set();

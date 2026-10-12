@@ -29,6 +29,8 @@ let toastTimer: number | null = null;
 let sandboxTheme: CursorTheme = 'gruvbox-dark';
 let sandboxShape: CursorShape = 'block';
 let controller: CursorController | null = null;
+let currentThickness: number = 1.5;
+let currentGlow: number = 0;
 
 interface KeyGroupDef {
   groupTitleKey: keyof Translations;
@@ -220,6 +222,8 @@ function syncCursorStore(): void {
     visible: true,
     theme: sandboxTheme,
     shape: sandboxShape,
+    thickness: currentThickness,
+    glow: currentGlow,
     advanced: currentConfig,
     keybindings: currentKeybindings
   });
@@ -663,6 +667,11 @@ function stopPreview(): void {
 }
 
 function populateForm(config: AdvancedConfig): void {
+  const thicknessInput = document.getElementById('adv-thickness') as HTMLInputElement | null;
+  if (thicknessInput) thicknessInput.value = String(currentThickness);
+  const glowInput = document.getElementById('adv-glowRadius') as HTMLInputElement | null;
+  if (glowInput) glowInput.value = String(currentGlow);
+
   const inputs = document.querySelectorAll<HTMLInputElement>('input[data-key]');
   inputs.forEach((input) => {
     const key = input.getAttribute('data-key') as keyof AdvancedConfig;
@@ -689,11 +698,17 @@ function populateForm(config: AdvancedConfig): void {
 
 function saveConfig(silent = false): void {
   if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
-    chrome.storage.sync.set({ muzen_advanced: currentConfig }, () => {
+    chrome.storage.sync.set({
+      muzen_advanced: currentConfig,
+      muzen_thickness: currentThickness,
+      muzen_glow: currentGlow
+    }, () => {
       if (!silent) showToast();
     });
   } else {
     localStorage.setItem('muzen_advanced', JSON.stringify(currentConfig));
+    localStorage.setItem('muzen_thickness', String(currentThickness));
+    localStorage.setItem('muzen_glow', String(currentGlow));
     if (!silent) showToast();
   }
   updateDiagnostics();
@@ -702,9 +717,12 @@ function saveConfig(silent = false): void {
 
 function loadConfig(): void {
   if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
-    chrome.storage.sync.get(['muzen_advanced', 'muzen_theme', 'muzen_shape', 'muzen_locale', 'muzen_keybindings', 'muzen_excluded_sites'], (res) => {
+    chrome.storage.sync.get(['muzen_advanced', 'muzen_thickness', 'muzen_glow', 'muzen_theme', 'muzen_shape', 'muzen_locale', 'muzen_keybindings', 'muzen_excluded_sites'], (res) => {
       const savedLocale = (res.muzen_locale as Locale) || detectDefaultLocale();
       applyLocale(savedLocale);
+
+      if (typeof res.muzen_thickness === 'number') currentThickness = res.muzen_thickness;
+      if (typeof res.muzen_glow === 'number') currentGlow = res.muzen_glow;
 
       if (res.muzen_advanced && typeof res.muzen_advanced === 'object') {
         currentConfig = { ...DEFAULT_ADVANCED_CONFIG, ...res.muzen_advanced };
@@ -854,8 +872,25 @@ function initEvents(): void {
   const inputs = document.querySelectorAll<HTMLInputElement>('input[data-key]');
   inputs.forEach((input) => {
     const handleInput = () => {
-      const key = input.getAttribute('data-key') as keyof AdvancedConfig;
+      const key = input.getAttribute('data-key') as any;
       if (!key) return;
+
+      if (key === 'thickness') {
+        const numVal = parseFloat(input.value);
+        if (!isNaN(numVal)) {
+          currentThickness = numVal;
+          saveConfig(false);
+        }
+        return;
+      }
+      if (key === 'glowRadius') {
+        const numVal = parseFloat(input.value);
+        if (!isNaN(numVal)) {
+          currentGlow = numVal;
+          saveConfig(false);
+        }
+        return;
+      }
 
       if (input.type === 'checkbox') {
         (currentConfig as any)[key] = input.checked;
@@ -887,10 +922,29 @@ function initEvents(): void {
   // 2. 單項重設按鈕
   document.querySelectorAll<HTMLButtonElement>('.btn-field-reset').forEach((btn) => {
     btn.addEventListener('click', () => {
-      const key = btn.getAttribute('data-key') as keyof AdvancedConfig;
+      const key = btn.getAttribute('data-key') as any;
       if (!key) return;
 
-      const defaultVal = DEFAULT_ADVANCED_CONFIG[key];
+      if (key === 'thickness') {
+        currentThickness = 1.5;
+        const targetControl = document.getElementById('adv-thickness') as HTMLInputElement | null;
+        if (targetControl) targetControl.value = '1.5';
+        saveConfig(false);
+        const dict = LOCALES[currentLocale] || LOCALES['zh-TW'];
+        showToast(dict.toastFieldReset.replace('{field}', 'thickness') + ' (1.5)');
+        return;
+      }
+      if (key === 'glowRadius') {
+        currentGlow = 0;
+        const targetControl = document.getElementById('adv-glowRadius') as HTMLInputElement | null;
+        if (targetControl) targetControl.value = '0';
+        saveConfig(false);
+        const dict = LOCALES[currentLocale] || LOCALES['zh-TW'];
+        showToast(dict.toastFieldReset.replace('{field}', 'glowRadius') + ' (0)');
+        return;
+      }
+
+      const defaultVal = (DEFAULT_ADVANCED_CONFIG as any)[key];
       (currentConfig as any)[key] = defaultVal;
 
       const targetControl = document.querySelector<HTMLInputElement | HTMLSelectElement>(`[data-key="${key}"]`);
@@ -922,6 +976,8 @@ function initEvents(): void {
       });
       if (confirmed) {
         currentConfig = { ...DEFAULT_ADVANCED_CONFIG };
+        currentThickness = 1.5;
+        currentGlow = 0;
         populateForm(currentConfig);
         saveConfig(false);
         showToast(dict.toastResetAll);

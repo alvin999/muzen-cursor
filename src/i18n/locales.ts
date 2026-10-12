@@ -47,6 +47,7 @@ export interface Translations {
   effectTrail: string;
   statusBarSectionLabel: string;
   statusBarSectionDesc: string;
+  statusBarAdvancedLabel: string;
   blacklistSectionLabel: string;
   blacklistSectionDesc: string;
   blacklistDetecting: string;
@@ -74,6 +75,8 @@ export interface Translations {
   statusCopiedLines: string;
   statusCharsCount: string;
   statusLinesCount: string;
+  statusMinutesLeft: string;
+  statusLessMinute: string;
   advancedSettingsBtn: string;
   resetDefaultsBtn: string;
   resetDefaultsConfirm: string;
@@ -354,6 +357,7 @@ export const LOCALES: Record<Locale, Translations> = {
     effectTrail: '流光殘影',
     statusBarSectionLabel: '顯示底部狀態列',
     statusBarSectionDesc: '畫面右下角呈現目前 Vim 模式與文章進度',
+    statusBarAdvancedLabel: '進階長文閱讀輔助 (章節標題與預估時間)',
     blacklistSectionLabel: '在此網站停用',
     blacklistSectionDesc: '排除之網域將自動凍結游標，避免干擾編輯器或專用快捷鍵',
     blacklistManage: '⚙️ 管理排除名單',
@@ -381,6 +385,8 @@ export const LOCALES: Record<Locale, Translations> = {
     statusCopiedLines: '✓ 已複製 {count} 行',
     statusCharsCount: '{count} 字',
     statusLinesCount: '{count} 行',
+    statusMinutesLeft: '剩 ~{min} 分鐘',
+    statusLessMinute: '< 1 分鐘',
     advancedSettingsBtn: '⚙️ 進階數值調校 (物理與動態)',
     resetDefaultsBtn: '回復預設值',
     resetDefaultsConfirm: '確定回復預設值？',
@@ -648,6 +654,7 @@ export const LOCALES: Record<Locale, Translations> = {
     effectTrail: 'Motion Trail',
     statusBarSectionLabel: 'Show Status Bar',
     statusBarSectionDesc: 'Display Vim mode & reading progress at bottom-right',
+    statusBarAdvancedLabel: 'Advanced Reading Aids (Section & Time Left)',
     blacklistSectionLabel: 'Disable on Current Site',
     blacklistSectionDesc: 'Muzen will be deactivated on excluded sites to prevent interference',
     blacklistManage: '⚙️ Manage Excluded Sites',
@@ -675,6 +682,8 @@ export const LOCALES: Record<Locale, Translations> = {
     statusCopiedLines: '✓ {count} lines yanked',
     statusCharsCount: '{count} chars',
     statusLinesCount: '{count} lines',
+    statusMinutesLeft: '~{min}m left',
+    statusLessMinute: '< 1m left',
     advancedSettingsBtn: '⚙️ Advanced Physics Tuning',
     resetDefaultsBtn: 'Reset to Defaults',
     resetDefaultsConfirm: 'Confirm Reset?',
@@ -942,6 +951,7 @@ export const LOCALES: Record<Locale, Translations> = {
     effectTrail: '流光残像',
     statusBarSectionLabel: 'ステータスバーを表示',
     statusBarSectionDesc: '画面右下に現在のVimモードと読書進捗を表示',
+    statusBarAdvancedLabel: '高度な読書支援 (章見出し・残り時間)',
     blacklistSectionLabel: 'このサイトで無効化',
     blacklistSectionDesc: '除外リスト内のドメインではカーソルを自動休止します',
     blacklistManage: '⚙️ 除外リストの管理',
@@ -969,6 +979,8 @@ export const LOCALES: Record<Locale, Translations> = {
     statusCopiedLines: '✓ {count} 行をコピーしました',
     statusCharsCount: '{count} 文字',
     statusLinesCount: '{count} 行',
+    statusMinutesLeft: '残り ~{min} 分',
+    statusLessMinute: '< 1 分',
     advancedSettingsBtn: '⚙️ 高度な物理・動態調整',
     resetDefaultsBtn: '初期設定に戻す',
     resetDefaultsConfirm: '初期化しますか？',

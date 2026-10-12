@@ -9,6 +9,8 @@ import { checkExtensionUpdate, getCurrentVersion, ReleaseInfo } from '../src/uti
 document.addEventListener('DOMContentLoaded', () => {
   const toggleEnabled = document.getElementById('toggle-enabled') as HTMLInputElement | null;
   const toggleStatusBar = document.getElementById('toggle-status-bar') as HTMLInputElement | null;
+  const toggleAdvancedStatusBar = document.getElementById('toggle-advanced-status-bar') as HTMLInputElement | null;
+  const subStatusBarAdvanced = document.getElementById('sub-status-bar-advanced');
   const togglePdf = document.getElementById('toggle-pdf') as HTMLInputElement | null;
   const localeSelect = document.getElementById('locale-select') as HTMLSelectElement | null;
   const themeSelect = document.getElementById('theme-select') as HTMLSelectElement | null;
@@ -249,6 +251,10 @@ document.addEventListener('DOMContentLoaded', () => {
       if (toggleStatusBar && typeof data.muzen_show_status_bar === 'boolean') {
         toggleStatusBar.checked = data.muzen_show_status_bar;
       }
+      if (toggleAdvancedStatusBar && typeof data.muzen_show_advanced_status_bar === 'boolean') {
+        toggleAdvancedStatusBar.checked = data.muzen_show_advanced_status_bar;
+      }
+      updateStatusBarSubRowState();
       if (togglePdf && typeof data.muzen_intercept_pdf === 'boolean') {
         togglePdf.checked = data.muzen_intercept_pdf;
       }
@@ -355,13 +361,34 @@ document.addEventListener('DOMContentLoaded', () => {
     broadcastToActiveTab({ type: 'TOGGLE_CURSOR', enabled: isEnabled });
   });
 
+  // 輔助函式：切換狀態列子選項啟用/禁用狀態
+  const updateStatusBarSubRowState = () => {
+    const isParentEnabled = toggleStatusBar ? toggleStatusBar.checked : true;
+    if (subStatusBarAdvanced) {
+      subStatusBarAdvanced.classList.toggle('disabled', !isParentEnabled);
+    }
+    if (toggleAdvancedStatusBar) {
+      toggleAdvancedStatusBar.disabled = !isParentEnabled;
+    }
+  };
+
   // 3. 狀態列顯示開關變更事件
   toggleStatusBar?.addEventListener('change', () => {
     const isShow = toggleStatusBar.checked;
+    updateStatusBarSubRowState();
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
       chrome.storage.sync.set({ muzen_show_status_bar: isShow });
     }
     broadcastToActiveTab({ type: 'SET_STATUS_BAR', showStatusBar: isShow });
+  });
+
+  // 3.1 進階長文閱讀輔助開關變更事件
+  toggleAdvancedStatusBar?.addEventListener('change', () => {
+    const isAdvanced = toggleAdvancedStatusBar.checked;
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
+      chrome.storage.sync.set({ muzen_show_advanced_status_bar: isAdvanced });
+    }
+    broadcastToActiveTab({ type: 'SET_ADVANCED_STATUS_BAR', showAdvancedStatusBar: isAdvanced });
   });
 
   // 4. 當前網站排除開關
@@ -614,6 +641,7 @@ document.addEventListener('DOMContentLoaded', () => {
       blink: true
     };
     const defaultShowStatusBar = true;
+    const defaultShowAdvancedStatusBar = true;
     const defaultInterceptPdf = true;
 
     // 1. 更新 UI 控制項狀態
@@ -630,6 +658,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (effectTrail) effectTrail.checked = true;
     pulseRadios.forEach((r) => { r.checked = r.value === 'blink'; });
     if (toggleStatusBar) toggleStatusBar.checked = defaultShowStatusBar;
+    if (toggleAdvancedStatusBar) toggleAdvancedStatusBar.checked = defaultShowAdvancedStatusBar;
+    updateStatusBarSubRowState();
     if (togglePdf) togglePdf.checked = defaultInterceptPdf;
 
     // 2. 寫入 chrome.storage.sync
@@ -641,6 +671,7 @@ document.addEventListener('DOMContentLoaded', () => {
         muzen_glow: defaultGlow,
         muzen_effects: defaultEffects,
         muzen_show_status_bar: defaultShowStatusBar,
+        muzen_show_advanced_status_bar: defaultShowAdvancedStatusBar,
         muzen_intercept_pdf: defaultInterceptPdf
       });
     }
@@ -651,7 +682,8 @@ document.addEventListener('DOMContentLoaded', () => {
     broadcastToActiveTab({ type: 'SET_THICKNESS', thickness: defaultThickness });
     broadcastToActiveTab({ type: 'SET_GLOW', glow: defaultGlow });
     broadcastToActiveTab({ type: 'SET_EFFECTS', effects: defaultEffects });
-    broadcastToActiveTab({ type: 'SET_STATUS_BAR', show: defaultShowStatusBar });
+    broadcastToActiveTab({ type: 'SET_STATUS_BAR', showStatusBar: defaultShowStatusBar });
+    broadcastToActiveTab({ type: 'SET_ADVANCED_STATUS_BAR', showAdvancedStatusBar: defaultShowAdvancedStatusBar });
 
     // 4. 按鈕微動畫回饋
     const btnIcon = btnResetDefaults?.querySelector('.btn-icon');

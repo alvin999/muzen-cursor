@@ -10,8 +10,8 @@ export class VimStatusBar {
   private element: HTMLElement;
   private modeEl: HTMLElement;
   private pendingEl: HTMLElement;
+  private sectionEl: HTMLElement;
   private infoEl: HTMLElement;
-  private progressBarEl: HTMLElement;
   private unsubscribe: (() => void) | null = null;
   private mouseMoveHandler: ((e: MouseEvent) => void) | null = null;
   private isMouseNearby: boolean = false;
@@ -27,16 +27,16 @@ export class VimStatusBar {
     this.pendingEl = document.createElement('span');
     this.pendingEl.className = 'muzen-pending-badge';
 
+    this.sectionEl = document.createElement('span');
+    this.sectionEl.className = 'muzen-section-badge';
+
     this.infoEl = document.createElement('span');
     this.infoEl.className = 'muzen-info-badge';
 
-    this.progressBarEl = document.createElement('div');
-    this.progressBarEl.className = 'muzen-status-progress';
-
     this.element.appendChild(this.modeEl);
     this.element.appendChild(this.pendingEl);
+    this.element.appendChild(this.sectionEl);
     this.element.appendChild(this.infoEl);
-    this.element.appendChild(this.progressBarEl);
 
     this.applyStyles();
     this.setupAntiObstruction();
@@ -60,7 +60,6 @@ export class VimStatusBar {
     this.element.style.lineHeight = '1';
     this.element.style.padding = '5px 12px 6px 12px';
     this.element.style.borderRadius = '5px';
-    this.element.style.overflow = 'hidden'; // 切齊微型進度條底緣
     this.element.style.backdropFilter = 'blur(8px)';
     (this.element.style as any).webkitBackdropFilter = 'blur(8px)';
     this.element.style.pointerEvents = 'none';
@@ -82,15 +81,17 @@ export class VimStatusBar {
     this.pendingEl.style.letterSpacing = '0.5px';
     this.pendingEl.style.transition = 'color 0.2s ease, background-color 0.2s ease';
 
+    this.sectionEl.style.display = 'none';
+    this.sectionEl.style.opacity = '0.7';
+    this.sectionEl.style.fontSize = '11px';
+    this.sectionEl.style.maxWidth = '160px';
+    this.sectionEl.style.whiteSpace = 'nowrap';
+    this.sectionEl.style.overflow = 'hidden';
+    this.sectionEl.style.textOverflow = 'ellipsis';
+    this.sectionEl.style.transition = 'color 0.2s ease, opacity 0.2s ease';
+
     this.infoEl.style.opacity = '0.75';
     this.infoEl.style.transition = 'color 0.2s ease, opacity 0.2s ease';
-
-    this.progressBarEl.style.position = 'absolute';
-    this.progressBarEl.style.bottom = '0';
-    this.progressBarEl.style.left = '0';
-    this.progressBarEl.style.height = '2px';
-    this.progressBarEl.style.width = '0%';
-    this.progressBarEl.style.transition = 'width 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s ease';
   }
 
   /**
@@ -168,15 +169,13 @@ export class VimStatusBar {
     const palette = THEME_PALETTES[themeKey] || THEME_PALETTES['gruvbox-dark'];
     this.applyThemeStyles(themeKey);
 
-    // 微型進度條渲染 (與主題高亮色同步)
     const progress = Math.max(0, Math.min(100, Math.round(state.readingProgress)));
-    this.progressBarEl.style.width = state.visible ? `${progress}%` : '0%';
-    this.progressBarEl.style.backgroundColor = palette.normal.hex;
-
     const isLight = themeKey === 'gruvbox-light' || themeKey === 'intellij-light';
+    const isAdvanced = state.showAdvancedStatusBar !== false;
 
     if (!state.visible) {
       this.pendingEl.style.display = 'none';
+      this.sectionEl.style.display = 'none';
       this.modeEl.textContent = 'MUZEN';
       this.modeEl.style.color = palette.normal.hex;
       const dict = LOCALES[state.locale || 'zh-TW'] || LOCALES['zh-TW'];
@@ -192,6 +191,15 @@ export class VimStatusBar {
       this.pendingEl.style.backgroundColor = isLight ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.14)';
     } else {
       this.pendingEl.style.display = 'none';
+    }
+
+    // 當前章節標題麵包屑 (§ 章節名，僅在進階狀態列模式下呈現)
+    if (isAdvanced && state.currentSectionTitle) {
+      this.sectionEl.style.display = 'inline-block';
+      this.sectionEl.textContent = `§ ${state.currentSectionTitle}`;
+      this.sectionEl.title = state.currentSectionTitle;
+    } else {
+      this.sectionEl.style.display = 'none';
     }
 
     if (state.mode === 'VISUAL_LINE') {
@@ -229,7 +237,16 @@ export class VimStatusBar {
       return;
     }
 
-    this.infoEl.textContent = `[${progress}%]`;
+    // 長文閱讀進度 (進階模式額外顯示剩餘時間估算，例如 [45% · 剩 ~3 分鐘])
+    const minLeft = state.estimatedMinutesLeft;
+    if (isAdvanced && typeof minLeft === 'number' && minLeft > 0) {
+      const timeLeftText = minLeft < 1
+        ? dict.statusLessMinute
+        : dict.statusMinutesLeft.replace('{min}', String(minLeft));
+      this.infoEl.textContent = `[${progress}% · ${timeLeftText}]`;
+    } else {
+      this.infoEl.textContent = `[${progress}%]`;
+    }
   }
 
   public destroy(): void {
