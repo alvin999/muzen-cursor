@@ -750,6 +750,14 @@ input:checked + .slider-small:before {
   color: var(--accent-green);
 }
 
+.btn-reset.confirming {
+  background: color-mix(in srgb, var(--accent-red) 16%, var(--bg-card));
+  border-color: var(--accent-red);
+  color: var(--accent-red);
+  font-weight: 600;
+  box-shadow: 0 0 10px color-mix(in srgb, var(--accent-red) 25%, transparent);
+}
+
 /* 版本資訊與一鍵更新卡片樣式 */
 .update-section {
   background: var(--bg-card);

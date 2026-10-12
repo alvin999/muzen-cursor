@@ -71,6 +71,7 @@ export interface Translations {
   statusStartPrompt: string;
   advancedSettingsBtn: string;
   resetDefaultsBtn: string;
+  resetDefaultsConfirm: string;
   resetDefaultsSuccess: string;
   // Options 頁面翻譯
   optionsTitle: string;
@@ -368,6 +369,7 @@ export const LOCALES: Record<Locale, Translations> = {
     statusStartPrompt: '點擊文字或按 j 開始',
     advancedSettingsBtn: '⚙️ 進階數值調校 (物理與動態)',
     resetDefaultsBtn: '回復預設值',
+    resetDefaultsConfirm: '確定回復預設值？',
     resetDefaultsSuccess: '已回復預設值',
     optionsTitle: 'Muzen Cursor 進階數值調校',
     optionsSubtitle: '自由輸入精確數值，客製化物理阻尼、梯形形變與視覺筆觸',
@@ -652,6 +654,7 @@ export const LOCALES: Record<Locale, Translations> = {
     statusStartPrompt: 'Click text or press j to begin',
     advancedSettingsBtn: '⚙️ Advanced Physics Tuning',
     resetDefaultsBtn: 'Reset to Defaults',
+    resetDefaultsConfirm: 'Confirm Reset?',
     resetDefaultsSuccess: 'Restored Defaults',
     optionsTitle: 'Muzen Cursor Advanced Tuning',
     optionsSubtitle: 'Fine-tune physics damping, trapezoid bounce, and geometry parameters',
@@ -936,6 +939,7 @@ export const LOCALES: Record<Locale, Translations> = {
     statusStartPrompt: 'クリックまたは j で開始',
     advancedSettingsBtn: '⚙️ 高度な物理・動態調整',
     resetDefaultsBtn: '初期設定に戻す',
+    resetDefaultsConfirm: '初期化しますか？',
     resetDefaultsSuccess: '初期値に戻しました',
     optionsTitle: 'Muzen Cursor 高度な数値調整',
     optionsSubtitle: '物理減衰、台形バウンス、幾何学パラメータを自在に入力・調整',

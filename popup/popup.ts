@@ -550,8 +550,53 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // 15. 回復預設值事件
-  btnResetDefaults?.addEventListener('click', () => {
+  // 15. 回復預設值事件 (二段式按鈕確認防呆)
+  let isResetConfirming = false;
+  let resetConfirmTimer: any = null;
+
+  const resetConfirmState = () => {
+    if (!btnResetDefaults) return;
+    isResetConfirming = false;
+    if (resetConfirmTimer) {
+      clearTimeout(resetConfirmTimer);
+      resetConfirmTimer = null;
+    }
+    const btnIcon = btnResetDefaults.querySelector('.btn-icon');
+    const btnText = btnResetDefaults.querySelector('.btn-text');
+    const strings = LOCALES[currentLocale] || LOCALES['zh-TW'];
+    if (btnIcon) btnIcon.textContent = '↺';
+    if (btnText) btnText.textContent = strings.resetDefaultsBtn;
+    btnResetDefaults.classList.remove('confirming');
+  };
+
+  btnResetDefaults?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const strings = LOCALES[currentLocale] || LOCALES['zh-TW'];
+    const btnIcon = btnResetDefaults.querySelector('.btn-icon');
+    const btnText = btnResetDefaults.querySelector('.btn-text');
+
+    if (!isResetConfirming) {
+      // 第一階段：進入確認模式
+      isResetConfirming = true;
+      btnResetDefaults.classList.add('confirming');
+      if (btnIcon) btnIcon.textContent = '⚠️';
+      if (btnText) btnText.textContent = strings.resetDefaultsConfirm || '確定回復預設值？';
+
+      // 3.5 秒內未再點擊則自動復原
+      resetConfirmTimer = setTimeout(() => {
+        resetConfirmState();
+      }, 3500);
+      return;
+    }
+
+    // 第二階段：使用者再次點擊，正式執行回復預設值
+    if (resetConfirmTimer) {
+      clearTimeout(resetConfirmTimer);
+      resetConfirmTimer = null;
+    }
+    isResetConfirming = false;
+    btnResetDefaults.classList.remove('confirming');
+
     // 預設參數對齊經典體驗
     const defaultTheme = 'gruvbox-dark';
     const defaultShape = 'block';
@@ -606,9 +651,6 @@ document.addEventListener('DOMContentLoaded', () => {
     broadcastToActiveTab({ type: 'SET_STATUS_BAR', show: defaultShowStatusBar });
 
     // 4. 按鈕微動畫回饋
-    const btnIcon = btnResetDefaults.querySelector('.btn-icon');
-    const btnText = btnResetDefaults.querySelector('.btn-text');
-    const strings = LOCALES[currentLocale] || LOCALES['zh-TW'];
     if (btnIcon) btnIcon.textContent = '✓';
     if (btnText) btnText.textContent = strings.resetDefaultsSuccess;
     btnResetDefaults.classList.add('success');
@@ -617,6 +659,13 @@ document.addEventListener('DOMContentLoaded', () => {
       if (btnText) btnText.textContent = strings.resetDefaultsBtn;
       btnResetDefaults.classList.remove('success');
     }, 1500);
+  });
+
+  // 點擊 Popup 任意其他地方時若處於確認狀態，自動取消
+  document.addEventListener('click', (e) => {
+    if (isResetConfirming && !btnResetDefaults?.contains(e.target as Node)) {
+      resetConfirmState();
+    }
   });
 
   // 綁定「檢查更新」按鈕點擊
