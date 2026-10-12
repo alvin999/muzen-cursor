@@ -43,8 +43,9 @@ const KEY_GROUPS: KeyGroupDef[] = [
   {
     groupTitleKey: 'groupSystemKeysTitle',
     actions: [
-      { id: 'toggleCursor', nameKey: 'actionToggleCursor', descKey: 'descToggleCursor' },
-      { id: 'escape', nameKey: 'actionEscape', descKey: 'descEscape' }
+      { id: 'escape', nameKey: 'actionEscape', descKey: 'descEscape' },
+      { id: 'escapeDouble', nameKey: 'actionEscapeDouble', descKey: 'descEscapeDouble' },
+      { id: 'toggleCursor', nameKey: 'actionToggleCursor', descKey: 'descToggleCursor' }
     ]
   },
   {
@@ -81,6 +82,7 @@ const KEY_GROUPS: KeyGroupDef[] = [
     groupTitleKey: 'groupVisualKeysTitle',
     actions: [
       { id: 'visualMode', nameKey: 'actionVisualMode', descKey: 'descVisualMode' },
+      { id: 'visualLineMode', nameKey: 'actionVisualLineMode', descKey: 'descVisualLineMode' },
       { id: 'yank', nameKey: 'actionYank', descKey: 'descYank' }
     ]
   }
@@ -260,6 +262,10 @@ function renderKeybindingsList(): void {
     block.appendChild(groupTitle);
 
     group.actions.forEach((act) => {
+      // 若本地儲存之 bindings 缺少此動作，自動回補預設值，確保新按鍵必定顯示
+      if (!currentKeybindings.bindings[act.id] && DEFAULT_KEYBINDINGS.bindings[act.id]) {
+        currentKeybindings.bindings[act.id] = { ...DEFAULT_KEYBINDINGS.bindings[act.id] };
+      }
       const binding = currentKeybindings.bindings[act.id];
       const row = document.createElement('div');
       row.className = 'keybinding-row';

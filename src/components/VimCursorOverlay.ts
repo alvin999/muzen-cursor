@@ -83,6 +83,10 @@ export class VimCursorOverlay {
   private ghostIndex = 0;
   private trajectoryTimers: number[] = [];
 
+  // Visual Line (Shift + V) 整行展開光束特效元素與模式記憶
+  private lineSweepElement: HTMLElement;
+  private lastMode: string = 'NORMAL';
+
   constructor() {
     this.container = document.createElement('div');
     this.container.className = 'muzen-cursor-container';
@@ -96,6 +100,17 @@ export class VimCursorOverlay {
 
     this.element = document.createElement('div');
     this.element.className = 'muzen-cursor-overlay';
+
+    // 整行選取光束掃掠器
+    this.lineSweepElement = document.createElement('div');
+    this.lineSweepElement.className = 'muzen-cursor-line-sweep';
+    this.lineSweepElement.style.position = 'fixed';
+    this.lineSweepElement.style.pointerEvents = 'none';
+    this.lineSweepElement.style.boxSizing = 'border-box';
+    this.lineSweepElement.style.display = 'none';
+    this.lineSweepElement.style.transformOrigin = 'center center';
+    this.lineSweepElement.style.willChange = 'transform, opacity';
+    this.container.appendChild(this.lineSweepElement);
 
     // 初始化殘影節點池並加入 container（位於主游標下層）
     for (let i = 0; i < this.MAX_GHOSTS; i++) {
@@ -118,6 +133,23 @@ export class VimCursorOverlay {
 
     this.styleSheet = document.createElement('style');
     this.styleSheet.textContent = `
+      @keyframes muzen-line-sweep {
+        0% {
+          transform: scaleX(0.06);
+          opacity: 0.92;
+          filter: drop-shadow(0 0 10px var(--muzen-glow-core));
+        }
+        50% {
+          transform: scaleX(1.02);
+          opacity: 0.7;
+          filter: drop-shadow(0 0 16px var(--muzen-glow-halo));
+        }
+        100% {
+          transform: scaleX(1);
+          opacity: 0;
+          filter: blur(1.5px);
+        }
+      }
       @keyframes muzen-breathe {
         0%, 100% {
           opacity: 0;
@@ -297,6 +329,10 @@ export class VimCursorOverlay {
     if (!state.enabled || !state.visible || state.isExcluded) {
       this.element.style.opacity = '0';
       this.element.style.display = 'none';
+      if (this.lineSweepElement) {
+        this.lineSweepElement.style.display = 'none';
+        this.lineSweepElement.style.animation = 'none';
+      }
       this.clearAllGhosts();
       this.lastRect = null;
       return;
@@ -309,7 +345,8 @@ export class VimCursorOverlay {
     // 1. 取得配色票券
     const themeKey = state.theme || 'gruvbox-dark';
     const palette = THEME_PALETTES[themeKey] || THEME_PALETTES['gruvbox-dark'];
-    const color = state.mode === 'VISUAL' ? palette.visual : palette.normal;
+    const isVisual = state.mode === 'VISUAL' || state.mode === 'VISUAL_LINE';
+    const color = isVisual ? palette.visual : palette.normal;
 
     // 同步主題選取透明效果 (自訂 visualBgOpacity，預設 0.35)
     const visualColor = palette.visual;
@@ -318,6 +355,21 @@ export class VimCursorOverlay {
       '--muzen-selection-bg',
       `rgba(${visualColor.r}, ${visualColor.g}, ${visualColor.b}, ${visualBgOpacity})`
     );
+
+    // Visual Line 專屬整行展開掃掠光效 (Shift + V)
+    if (state.mode === 'VISUAL_LINE') {
+      const modeJustChanged = this.lastMode !== 'VISUAL_LINE';
+      const lineYChanged = this.lastRect !== null && Math.abs(this.lastRect.y - state.rect.y) > 4;
+      if (modeJustChanged || lineYChanged) {
+        this.triggerLineSweep(state.rect, palette.visual);
+      }
+    } else {
+      if (this.lineSweepElement.style.display !== 'none') {
+        this.lineSweepElement.style.display = 'none';
+        this.lineSweepElement.style.animation = 'none';
+      }
+    }
+    this.lastMode = state.mode;
 
     // 設定 CSS 變數供呼吸動畫引用
     this.element.style.setProperty('--muzen-glow', `rgba(${color.r}, ${color.g}, ${color.b}, 0.8)`);
@@ -928,6 +980,32 @@ export class VimCursorOverlay {
     }
   }
 
+  /**
+   * 觸發 Visual Line 整行展開光束動效
+   */
+  private triggerLineSweep(
+    rect: CursorRect,
+    color: { r: number; g: number; b: number; hex: string }
+  ): void {
+    const sweep = this.lineSweepElement;
+    const viewportW = window.visualViewport?.width ?? window.innerWidth;
+    const lineH = Math.max(rect.height, 18);
+
+    sweep.style.left = '0px';
+    sweep.style.top = `${rect.y}px`;
+    sweep.style.width = `${viewportW}px`;
+    sweep.style.height = `${lineH}px`;
+    sweep.style.background = `linear-gradient(90deg, transparent 0%, rgba(${color.r}, ${color.g}, ${color.b}, 0.25) 15%, rgba(${color.r}, ${color.g}, ${color.b}, 0.65) 50%, rgba(${color.r}, ${color.g}, ${color.b}, 0.25) 85%, transparent 100%)`;
+    sweep.style.borderTop = `1px solid rgba(${color.r}, ${color.g}, ${color.b}, 0.55)`;
+    sweep.style.borderBottom = `1px solid rgba(${color.r}, ${color.g}, ${color.b}, 0.55)`;
+    sweep.style.borderRadius = '2px';
+    sweep.style.display = 'block';
+    sweep.style.animation = 'none';
+    // 強制重繪重啟 CSS 動畫
+    void sweep.offsetWidth;
+    sweep.style.animation = 'muzen-line-sweep 0.26s cubic-bezier(0.16, 1, 0.3, 1) forwards';
+  }
+
   public destroy(): void {
     if (this.settleTimer !== null) {
       clearTimeout(this.settleTimer);
@@ -939,6 +1017,7 @@ export class VimCursorOverlay {
       this.unsubscribe = null;
     }
     document.documentElement.style.removeProperty('--muzen-selection-bg');
+    this.lineSweepElement.remove();
     this.container.remove();
     this.styleSheet.remove();
   }

@@ -211,7 +211,8 @@ export class CursorController {
     };
     this.updateActiveScope(resolved.node);
 
-    if (cursorStore.getState().mode !== 'VISUAL') {
+    const curMode = cursorStore.getState().mode;
+    if (curMode !== 'VISUAL' && curMode !== 'VISUAL_LINE') {
       this.selectionManager.clearAnchor();
     }
 
@@ -258,17 +259,42 @@ export class CursorController {
       return;
     }
 
+    const isEscKey = e.key === 'Escape' && !e.ctrlKey && !e.altKey && !e.metaKey;
+    const escapeDoubleDef = bindings.escapeDouble;
+    const escapeDef = bindings.escape;
+
+    // 若功能處於深層關閉狀態 (!state.enabled)：支援連按兩次 Esc 雙向重新喚醒 (無需按 Alt + V)
     if (!state.enabled) {
+      if (isEscKey && escapeDoubleDef?.enabled !== false) {
+        const now = Date.now();
+        const isDoubleEsc = now - this.lastEscTime < 500;
+        this.lastEscTime = now;
+
+        if (isDoubleEsc) {
+          // 連按兩次 Esc：強制重新喚醒游標與狀態列！
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+          this.lastEscTime = 0;
+          cursorStore.setState({ enabled: true, visible: true });
+          if (!this.currentTarget || !document.contains(this.currentTarget.node)) {
+            this.findInitialTarget();
+          } else {
+            this.updateCursorPosition(true);
+          }
+          return;
+        }
+      }
       return;
     }
 
-    // 3. Esc 鍵處理：單按為淺層待機，連按為深層休眠
-    if (matchesKeybinding(e, bindings.escape)) {
+    // 3. Esc 鍵處理：單按為淺層休眠 (保留狀態列)，連按為深層關閉 (關閉狀態列釋放按鍵)
+    if (isEscKey) {
       const now = Date.now();
       const isDoubleEsc = now - this.lastEscTime < 500;
       this.lastEscTime = now;
 
-      // 若浮動選單開啟中，優先關閉選單，並重置 Esc 計時器避免誤觸深層休眠
+      // 若浮動選單開啟中，優先關閉選單，並重置 Esc 計時器避免誤觸深層關閉
       if (state.isJumpMenuOpen) {
         e.preventDefault();
         e.stopPropagation();
@@ -287,27 +313,30 @@ export class CursorController {
       e.stopPropagation();
       e.stopImmediatePropagation();
 
-      if (isDoubleEsc) {
-        // 連按 Esc：深層休眠 (狀態列關閉，100% 釋放按鍵與滑鼠點擊)
+      // 連按兩次 Esc：若 escapeDouble 啟用，深層關閉功能 (狀態列一併關閉隱藏，100% 釋放按鍵與點擊)
+      if (isDoubleEsc && escapeDoubleDef?.enabled !== false) {
         this.lastEscTime = 0;
         cursorStore.setState({ enabled: false, visible: false });
         return;
       }
 
-      // 單按 Esc：若處於 VISUAL 模式，退出選取回到 NORMAL
-      if (state.mode === 'VISUAL') {
-        this.exitVisualMode();
+      // 單按 Esc：若 escape 啟用
+      if (escapeDef?.enabled !== false) {
+        // 單按 Esc：若處於 VISUAL 或 VISUAL_LINE 模式，退出選取回到 NORMAL
+        if (state.mode === 'VISUAL' || state.mode === 'VISUAL_LINE') {
+          this.exitVisualMode();
+          return;
+        }
+
+        // 若原本就已處於淺層待命 (!visible)，維持待命
+        if (!state.visible) {
+          return;
+        }
+
+        // 單按 Esc：由活動狀態轉為淺層休眠待機 (隱藏游標，保留右下角狀態列「按 j 開始」，隨時可喚醒)
+        cursorStore.setState({ visible: false });
         return;
       }
-
-      // 若原本就已處於淺層待命 (!visible)，維持待命
-      if (!state.visible) {
-        return;
-      }
-
-      // 單按 Esc：由活動狀態轉為淺層待機 (隱藏游標，保留右下角「按 j 開始」，j 鍵與點擊仍可喚醒)
-      cursorStore.setState({ visible: false });
-      return;
     }
 
     // 4. 落實右下角「按 j 開始」：若游標處於淺層待機 (!visible)，按下 j (moveDown) 時直接喚醒
@@ -425,6 +454,12 @@ export class CursorController {
       }
     }
 
+    if (matchesKeybinding(e, bindings.visualLineMode)) {
+      intercept();
+      this.toggleVisualLineMode();
+      return;
+    }
+
     if (matchesKeybinding(e, bindings.visualMode)) {
       intercept();
       this.toggleVisualMode();
@@ -432,7 +467,7 @@ export class CursorController {
     }
 
     if (matchesKeybinding(e, bindings.yank)) {
-      if (state.mode === 'VISUAL') {
+      if (state.mode === 'VISUAL' || state.mode === 'VISUAL_LINE') {
         intercept();
         this.yankSelection();
       }
@@ -974,7 +1009,7 @@ export class CursorController {
   }
 
   /**
-   * 切換 Visual 模式
+   * 切換 Visual (字元) 模式
    */
   public toggleVisualMode(): void {
     const currentMode = cursorStore.getState().mode;
@@ -987,6 +1022,33 @@ export class CursorController {
         cursorStore.setState({ mode: 'VISUAL' });
         this.selectionManager.syncNativeSelection(this.currentTarget);
       }
+    } else if (currentMode === 'VISUAL_LINE') {
+      // 從整行選取切換為字元選取 (對齊 Vim 行為：保留 Anchor)
+      cursorStore.setState({ mode: 'VISUAL' });
+      this.selectionManager.syncNativeSelection(this.currentTarget);
+    } else {
+      this.exitVisualMode();
+    }
+  }
+
+  /**
+   * 切換 Visual Line (整行) 模式 (Shift + V)
+   */
+  public toggleVisualLineMode(): void {
+    const currentMode = cursorStore.getState().mode;
+    if (currentMode === 'NORMAL') {
+      if (!this.currentTarget) {
+        this.findInitialTarget();
+      }
+      if (this.currentTarget) {
+        this.selectionManager.setAnchor({ ...this.currentTarget });
+        cursorStore.setState({ mode: 'VISUAL_LINE' });
+        this.selectionManager.syncVisualLineSelection(this.currentTarget, this.getEffectiveRoot());
+      }
+    } else if (currentMode === 'VISUAL') {
+      // 從字元選取切換為整行選取 (對齊 Vim 行為：保留 Anchor 並展開整行)
+      cursorStore.setState({ mode: 'VISUAL_LINE' });
+      this.selectionManager.syncVisualLineSelection(this.currentTarget, this.getEffectiveRoot());
     } else {
       this.exitVisualMode();
     }
@@ -1254,9 +1316,12 @@ export class CursorController {
 
       this.previousTarget = { ...this.currentTarget };
 
-      // Visual 模式下即時更新原生選取
-      if (cursorStore.getState().mode === 'VISUAL') {
+      // Visual 與 Visual Line 模式下即時更新原生選取
+      const currentMode = cursorStore.getState().mode;
+      if (currentMode === 'VISUAL') {
         this.selectionManager.syncNativeSelection(this.currentTarget);
+      } else if (currentMode === 'VISUAL_LINE') {
+        this.selectionManager.syncVisualLineSelection(this.currentTarget, this.getEffectiveRoot());
       }
 
       // 只有在鍵盤主動導航且明確要求跟隨時才執行自動捲動 (自適應黃金視野區間演算法)

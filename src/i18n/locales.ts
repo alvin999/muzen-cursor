@@ -67,6 +67,7 @@ export interface Translations {
   shortcutVisual: string;
   shortcutToggle: string;
   shortcutEscape: string;
+  shortcutEscapeDouble: string;
   footerTip: string;
   statusStartPrompt: string;
   advancedSettingsBtn: string;
@@ -245,6 +246,8 @@ export interface Translations {
   descToggleCursor: string;
   actionEscape: string;
   descEscape: string;
+  actionEscapeDouble: string;
+  descEscapeDouble: string;
   actionMoveLeft: string;
   descMoveLeft: string;
   actionMoveRight: string;
@@ -277,6 +280,8 @@ export interface Translations {
   descJumpBackExact: string;
   actionVisualMode: string;
   descVisualMode: string;
+  actionVisualLineMode: string;
+  descVisualLineMode: string;
   actionYank: string;
   descYank: string;
 
@@ -362,9 +367,10 @@ export const LOCALES: Record<Locale, Translations> = {
     shortcutWbe: '中英文智慧跳詞 / 詞尾',
     shortcutLineBoundary: '跳至行首 / 行尾',
     shortcutDocBoundary: '全文開頭 / 結尾',
-    shortcutVisual: 'Visual 選取 / 複製 (Yank)',
-    shortcutToggle: '快速啟動 / 凍結游標',
-    shortcutEscape: '取消選取 / 隱藏游標',
+    shortcutVisual: '字元 / 行選取 / 複製',
+    shortcutEscape: '淺層休眠 / 退出選取',
+    shortcutEscapeDouble: '深層休眠雙向開關',
+    shortcutToggle: '備用深層休眠開關',
     footerTip: '點擊網頁文字即可立即錨定閱讀焦點',
     statusStartPrompt: '點擊文字或按 j 開始',
     advancedSettingsBtn: '⚙️ 進階數值調校 (物理與動態)',
@@ -528,10 +534,12 @@ export const LOCALES: Record<Locale, Translations> = {
     groupPageKeysTitle: '翻頁與全文躍遷',
     groupVisualKeysTitle: 'Visual 選取與文字複製',
 
-    actionToggleCursor: '啟動 / 凍結游標',
-    descToggleCursor: '切換游標主開關，喚醒或休眠',
-    actionEscape: '取消選取 / 隱藏游標',
-    descEscape: '退出 Visual 模式，或隱藏游標並將單鍵交還網頁',
+    actionEscape: '淺層休眠 / 退出選取',
+    descEscape: '退出 Visual 選取回到普通模式，或隱藏游標進入淺層休眠 (保留狀態列，隨時按 j 喚醒)',
+    actionEscapeDouble: '深層休眠雙向開關',
+    descEscapeDouble: '開啟時深層休眠並隱藏狀態列；休眠時重新喚醒接管',
+    actionToggleCursor: '備用深層休眠開關',
+    descToggleCursor: '強制切換深層休眠或喚醒接管 (全域備用)',
     actionMoveLeft: '向左移動 (Move Left)',
     descMoveLeft: '游標向左移動一個字元',
     actionMoveRight: '向右移動 (Move Right)',
@@ -564,6 +572,8 @@ export const LOCALES: Record<Locale, Translations> = {
     descJumpBackExact: '連按兩次 ` 跳回前一跳轉點的精確游標字元，再按一次可切換',
     actionVisualMode: 'Visual 選取模式',
     descVisualMode: '進入文字高亮反白選取狀態',
+    actionVisualLineMode: 'Visual Line 整行選取模式',
+    descVisualLineMode: '整行選取文字並觸發流光展開動效',
     actionYank: '複製選取文字 (Yank)',
     descYank: '將 Visual 選取字句複製至剪貼簿',
 
@@ -647,9 +657,10 @@ export const LOCALES: Record<Locale, Translations> = {
     shortcutWbe: 'Smart Word Navigation (w/b/e)',
     shortcutLineBoundary: 'Line Start / End',
     shortcutDocBoundary: 'Document Start / End',
-    shortcutVisual: 'Visual Selection / Copy (Yank)',
-    shortcutToggle: 'Toggle Cursor Active',
-    shortcutEscape: 'Clear Selection / Dismiss',
+    shortcutVisual: 'Char / Line Visual / Yank',
+    shortcutEscape: 'Light Sleep / Deselect',
+    shortcutEscapeDouble: 'Deep Sleep Toggle',
+    shortcutToggle: 'Fallback Deep Sleep Switch',
     footerTip: 'Click any text on the page to anchor cursor',
     statusStartPrompt: 'Click text or press j to begin',
     advancedSettingsBtn: '⚙️ Advanced Physics Tuning',
@@ -813,10 +824,12 @@ export const LOCALES: Record<Locale, Translations> = {
     groupPageKeysTitle: 'Page Scrolling & Document Boundary',
     groupVisualKeysTitle: 'Visual Selection & Yank',
 
-    actionToggleCursor: 'Toggle Cursor',
-    descToggleCursor: 'Turn the cursor master switch on or off',
-    actionEscape: 'Cancel / Hide Cursor',
-    descEscape: 'Exit Visual mode or hide cursor and return keys to web',
+    actionEscape: 'Light Sleep / Deselect',
+    descEscape: 'Exit Visual selection or hide cursor into light sleep (keeps status bar active to resume with j)',
+    actionEscapeDouble: 'Deep Sleep Toggle',
+    descEscapeDouble: 'Deep sleep and hide status bar when active; wake up when asleep',
+    actionToggleCursor: 'Fallback Deep Sleep Switch',
+    descToggleCursor: 'Force toggle deep sleep or wake up (global fallback)',
     actionMoveLeft: 'Move Left',
     descMoveLeft: 'Move cursor left by one character',
     actionMoveRight: 'Move Right',
@@ -849,6 +862,8 @@ export const LOCALES: Record<Locale, Translations> = {
     descJumpBackExact: 'Double-press ` to jump back to exact character position before last jump',
     actionVisualMode: 'Visual Selection Mode',
     descVisualMode: 'Toggle character highlight selection',
+    actionVisualLineMode: 'Visual Line Selection Mode',
+    descVisualLineMode: 'Select entire line with beam sweep animation',
     actionYank: 'Copy Selection (Yank)',
     descYank: 'Copy selected text to clipboard',
 
@@ -932,9 +947,10 @@ export const LOCALES: Record<Locale, Translations> = {
     shortcutWbe: '単語移動 / 語尾へ',
     shortcutLineBoundary: '行頭 / 行末へジャンプ',
     shortcutDocBoundary: '文書の先頭 / 末尾',
-    shortcutVisual: 'ビジュアル選択 / コピー (Yank)',
-    shortcutToggle: 'カーソル起動 / 停止',
-    shortcutEscape: '選択解除 / 非表示',
+    shortcutVisual: '文字 / 行選択 / コピー',
+    shortcutEscape: '浅いスリープ / 選択解除',
+    shortcutEscapeDouble: '深いスリープ双方向トグル',
+    shortcutToggle: '予備の深いスリープ切替',
     footerTip: 'テキストをクリックして読書アンカーを設定',
     statusStartPrompt: 'クリックまたは j で開始',
     advancedSettingsBtn: '⚙️ 高度な物理・動態調整',
@@ -1098,10 +1114,12 @@ export const LOCALES: Record<Locale, Translations> = {
     groupPageKeysTitle: 'ページスクロールと文書境界',
     groupVisualKeysTitle: 'Visual選択とコピー',
 
-    actionToggleCursor: 'カーソル有効/無効',
-    descToggleCursor: 'カーソルのメインスイッチを切り替えます',
-    actionEscape: '選択解除 / カーソル非表示',
-    descEscape: 'Visualモードを解除、またはカーソルを非表示にしてキーを返却',
+    actionEscape: '浅いスリープ / 選択解除',
+    descEscape: 'Visual選択を解除、またはカーソルを非表示にして浅いスリープへ (ステータスバー維持、jキーで復帰)',
+    actionEscapeDouble: '深いスリープ双方向トグル',
+    descEscapeDouble: '起動時はステータスバーを含め深いスリープへ、スリープ時は即座に再起動',
+    actionToggleCursor: '予備の深いスリープ切替',
+    descToggleCursor: '深いスリープまたは再起動を強制切替 (予備スイッチ)',
     actionMoveLeft: '左へ移動',
     descMoveLeft: 'カーソルを1文字左へ移動',
     actionMoveRight: '右へ移動',
@@ -1134,6 +1152,8 @@ export const LOCALES: Record<Locale, Translations> = {
     descJumpBackExact: '` を2回連続で押して直前のジャンプの精確な文字位置へ戻る',
     actionVisualMode: 'Visual選択モード',
     descVisualMode: '文字のハイライト選択を開始/終了',
+    actionVisualLineMode: 'Visual Line 行選択モード',
+    descVisualLineMode: '行全体を選択しビーム展開アニメーションを表示',
     actionYank: '選択文字をコピー (Yank)',
     descYank: '選択範囲のテキストをクリップボードにコピー',
 

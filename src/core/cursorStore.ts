@@ -4,7 +4,7 @@ import { Locale } from '../i18n/locales';
  * Muzen Cursor 全域輕量狀態管理庫 (Vanilla Store)
  */
 
-export type CursorMode = 'NORMAL' | 'VISUAL';
+export type CursorMode = 'NORMAL' | 'VISUAL' | 'VISUAL_LINE';
 export type CursorTheme =
   | 'gruvbox-dark'
   | 'gruvbox-light'
@@ -145,7 +145,9 @@ export type KeyActionId =
   | 'jumpBackLine'
   | 'jumpBackExact'
   | 'visualMode'
-  | 'yank';
+  | 'visualLineMode'
+  | 'yank'
+  | 'escapeDouble';
 
 export interface KeybindingDef {
   key: string;            // 例如 'v', 'Escape', 'ArrowLeft', 'g', 'G', '$'
@@ -153,7 +155,7 @@ export interface KeybindingDef {
   altKey?: boolean;
   shiftKey?: boolean;
   metaKey?: boolean;
-  isDouble?: boolean;     // 連按兩次 (例如 gg, '', ``)
+  isDouble?: boolean;     // 連按兩次 (例如 gg, '', ``, EscEsc)
   enabled: boolean;
 }
 
@@ -178,6 +180,7 @@ export const DEFAULT_KEYBINDINGS: KeybindingsConfig = {
   bindings: {
     toggleCursor: { key: 'v', altKey: true, enabled: true },
     escape: { key: 'Escape', enabled: true },
+    escapeDouble: { key: 'Escape', isDouble: true, enabled: true }, // 連按兩次 Esc 深層關閉功能 (關閉狀態列並釋放按鍵)
     moveLeft: { key: 'h', enabled: true },
     moveRight: { key: 'l', enabled: true },
     moveUp: { key: 'k', enabled: true },
@@ -194,19 +197,19 @@ export const DEFAULT_KEYBINDINGS: KeybindingsConfig = {
     jumpBackLine: { key: "'", isDouble: true, enabled: true }, // 連按兩次 ' 跳回前一跳轉點 (同一行行首)
     jumpBackExact: { key: '`', isDouble: true, enabled: true }, // 連按兩次 ` 跳回前一跳轉點 (精確字元)
     visualMode: { key: 'v', enabled: true },
+    visualLineMode: { key: 'V', shiftKey: true, enabled: true },
     yank: { key: 'y', enabled: true }
   }
 };
 
 /**
- * 格式化按鍵組合成人類可讀的標籤字串 (例如 "alt + v", "esc", "j", "gg", "''")
+ * 格式化按鍵組合成人類可讀的標籤字串 (例如 "alt + v", "esc", "V (shift + v)", "gg", "esc esc")
  */
 export function formatKeyCombo(binding?: KeybindingDef): string {
   if (!binding || !binding.enabled) return '已停用';
   const parts: string[] = [];
   if (binding.ctrlKey) parts.push('ctrl');
   if (binding.altKey) parts.push('alt');
-  if (binding.shiftKey && binding.key.length > 1) parts.push('shift');
   if (binding.metaKey) parts.push('cmd');
 
   let keyDisplay = binding.key;
@@ -216,10 +219,13 @@ export function formatKeyCombo(binding?: KeybindingDef): string {
   else if (keyDisplay === 'ArrowDown') keyDisplay = '↓';
   else if (keyDisplay === 'ArrowLeft') keyDisplay = '←';
   else if (keyDisplay === 'ArrowRight') keyDisplay = '→';
-  else if (!binding.shiftKey) keyDisplay = keyDisplay.toLowerCase();
+
+  const isUppercaseLetter = keyDisplay.length === 1 && keyDisplay >= 'A' && keyDisplay <= 'Z';
 
   if (binding.isDouble) {
-    keyDisplay = `${keyDisplay}${keyDisplay}`;
+    keyDisplay = `${keyDisplay} ${keyDisplay}`;
+  } else if (binding.shiftKey && !isUppercaseLetter && keyDisplay.length > 1) {
+    parts.push('shift');
   }
 
   parts.push(keyDisplay);
@@ -227,7 +233,7 @@ export function formatKeyCombo(binding?: KeybindingDef): string {
 }
 
 /**
- * 檢查鍵盤事件是否匹配指定的按鍵定義 (支援大小寫容錯)
+ * 檢查鍵盤事件是否匹配指定的按鍵定義 (嚴格修飾鍵防誤觸與大小寫區分)
  */
 export function matchesKeybinding(e: KeyboardEvent, binding?: KeybindingDef): boolean {
   if (!binding || !binding.enabled) return false;
@@ -237,21 +243,31 @@ export function matchesKeybinding(e: KeyboardEvent, binding?: KeybindingDef): bo
   if (Boolean(binding.altKey) !== e.altKey) return false;
   if (Boolean(binding.metaKey) !== e.metaKey) return false;
 
-  if (binding.shiftKey !== undefined && Boolean(binding.shiftKey) !== e.shiftKey) {
-    return false;
-  }
-
   const targetKey = binding.key;
+
+  // Escape 鍵特化
   if (targetKey === 'Escape' || targetKey === 'esc' || targetKey === 'Esc') {
-    return e.key === 'Escape';
+    return e.key === 'Escape' && !e.shiftKey;
   }
 
-  // 大寫特定鍵 (如 Shift + G)
-  if (binding.shiftKey || (targetKey.length === 1 && targetKey >= 'A' && targetKey <= 'Z')) {
+  const isTargetUppercase = targetKey.length === 1 && targetKey >= 'A' && targetKey <= 'Z';
+  const expectedShift = binding.shiftKey !== undefined ? Boolean(binding.shiftKey) : isTargetUppercase;
+
+  // Shift 鍵嚴格檢查：若預期無 Shift 但使用者按了 Shift，防止誤觸小寫單鍵 (如按 Shift+V 不應誤觸 v)
+  if (expectedShift !== e.shiftKey) {
+    // 特殊符號 (如 '$', '?', ':', '{' 等) 在美式鍵盤需 Shift，容許通過
+    const isSpecialSymbol = targetKey.length === 1 && !/[a-zA-Z0-9]/.test(targetKey);
+    if (!isSpecialSymbol || !e.shiftKey) {
+      return false;
+    }
+  }
+
+  // 大寫特定鍵 (如 Shift + G, Shift + V)
+  if (expectedShift || isTargetUppercase) {
     return e.key === targetKey;
   }
 
-  // 一般單鍵與組合鍵 (如 alt + v) 進行大小寫無關比對
+  // 一般單鍵與組合鍵進行精確大小寫無關比對
   return e.key.toLowerCase() === targetKey.toLowerCase();
 }
 

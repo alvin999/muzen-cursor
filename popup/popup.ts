@@ -76,10 +76,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 動態更新快捷鍵指引
   const formatToKbds = (binding?: any) => {
-    if (!binding) return '';
+    if (!binding || !binding.enabled) return '';
     const text = formatKeyCombo(binding);
     if (text.includes(' + ')) {
       return text.split(' + ').map((k) => `<kbd>${k}</kbd>`).join(' + ');
+    }
+    if (text.includes(' ')) {
+      return text.split(' ').map((k) => `<kbd>${k}</kbd>`).join(' ');
     }
     return `<kbd>${text}</kbd>`;
   };
@@ -88,17 +91,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const config = keybindings || DEFAULT_KEYBINDINGS;
     const bindings = config.bindings || DEFAULT_KEYBINDINGS.bindings;
 
-    const toggleEl = document.getElementById('guide-toggle');
-    if (toggleEl && bindings.toggleCursor) {
-      toggleEl.innerHTML = formatToKbds(bindings.toggleCursor);
+    const escDoubleEl = document.getElementById('guide-esc-double');
+    if (escDoubleEl && bindings.escapeDouble) {
+      escDoubleEl.innerHTML = formatToKbds(bindings.escapeDouble);
     }
     const escEl = document.getElementById('guide-esc');
     if (escEl && bindings.escape) {
       escEl.innerHTML = formatToKbds(bindings.escape);
     }
+    const toggleEl = document.getElementById('guide-toggle');
+    if (toggleEl && bindings.toggleCursor) {
+      toggleEl.innerHTML = formatToKbds(bindings.toggleCursor);
+    }
     const visualEl = document.getElementById('guide-visual');
     if (visualEl && bindings.visualMode && bindings.yank) {
-      visualEl.innerHTML = `${formatToKbds(bindings.visualMode)} / ${formatToKbds(bindings.yank)}`;
+      const lineStr = bindings.visualLineMode && bindings.visualLineMode.enabled ? ` / ${formatToKbds(bindings.visualLineMode)}` : '';
+      visualEl.innerHTML = `${formatToKbds(bindings.visualMode)}${lineStr} / ${formatToKbds(bindings.yank)}`;
     }
   };
 
