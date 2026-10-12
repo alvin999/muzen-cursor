@@ -125,6 +125,93 @@ function showToast(message?: string): void {
   }, 2200);
 }
 
+interface CustomModalOptions {
+  title: string;
+  message: string;
+  confirmText?: string;
+  cancelText?: string;
+  type?: 'danger' | 'warning' | 'info';
+  singleButton?: boolean;
+}
+
+let activeModalResolve: ((val: boolean) => void) | null = null;
+
+function showCustomModal(opts: CustomModalOptions): Promise<boolean> {
+  return new Promise((resolve) => {
+    const backdrop = document.getElementById('custom-modal-backdrop');
+    const titleEl = document.getElementById('modal-title');
+    const msgEl = document.getElementById('modal-message');
+    const iconEl = document.getElementById('modal-icon');
+    const btnCancel = document.getElementById('modal-btn-cancel') as HTMLButtonElement | null;
+    const btnConfirm = document.getElementById('modal-btn-confirm') as HTMLButtonElement | null;
+
+    if (!backdrop || !titleEl || !msgEl || !iconEl || !btnConfirm || !btnCancel) {
+      resolve(opts.singleButton ? true : window.confirm(opts.message));
+      return;
+    }
+
+    if (activeModalResolve) {
+      activeModalResolve(false);
+      activeModalResolve = null;
+    }
+    activeModalResolve = resolve;
+
+    titleEl.textContent = opts.title;
+    msgEl.textContent = opts.message;
+
+    const type = opts.type || 'info';
+    if (type === 'danger') {
+      iconEl.textContent = '⚠️';
+      iconEl.className = 'modal-icon modal-icon-danger';
+      btnConfirm.className = 'btn btn-danger';
+    } else if (type === 'warning') {
+      iconEl.textContent = '⚡';
+      iconEl.className = 'modal-icon modal-icon-warning';
+      btnConfirm.className = 'btn btn-primary';
+    } else {
+      iconEl.textContent = 'ℹ️';
+      iconEl.className = 'modal-icon modal-icon-info';
+      btnConfirm.className = 'btn btn-primary';
+    }
+
+    const dict = LOCALES[currentLocale] || LOCALES['zh-TW'];
+    btnConfirm.textContent = opts.confirmText || (opts.singleButton ? dict.modalBtnGotIt : dict.modalBtnConfirm);
+
+    if (opts.singleButton) {
+      btnCancel.style.display = 'none';
+    } else {
+      btnCancel.style.display = '';
+      btnCancel.textContent = opts.cancelText || dict.modalBtnCancel;
+    }
+
+    backdrop.classList.remove('hidden');
+    if (opts.singleButton) {
+      btnConfirm.focus();
+    } else {
+      btnCancel.focus();
+    }
+  });
+}
+
+function hideCustomModal(result: boolean): void {
+  const backdrop = document.getElementById('custom-modal-backdrop');
+  if (backdrop) {
+    backdrop.classList.add('hidden');
+  }
+  if (activeModalResolve) {
+    activeModalResolve(result);
+    activeModalResolve = null;
+  }
+}
+
+function showCustomConfirm(opts: Omit<CustomModalOptions, 'singleButton'>): Promise<boolean> {
+  return showCustomModal({ ...opts, singleButton: false });
+}
+
+function showCustomAlert(opts: Omit<CustomModalOptions, 'singleButton' | 'cancelText'>): Promise<void> {
+  return showCustomModal({ ...opts, singleButton: true }).then(() => {});
+}
+
 function syncCursorStore(): void {
   cursorStore.setState({
     enabled: true,
@@ -818,9 +905,16 @@ function initEvents(): void {
   // 3. 全部回復預設值
   const btnResetAll = document.getElementById('btn-reset-all');
   if (btnResetAll) {
-    btnResetAll.addEventListener('click', () => {
+    btnResetAll.addEventListener('click', async () => {
       const dict = LOCALES[currentLocale] || LOCALES['zh-TW'];
-      if (confirm(dict.confirmResetAll)) {
+      const confirmed = await showCustomConfirm({
+        title: dict.modalTitleResetAll,
+        message: dict.confirmResetAll,
+        confirmText: dict.modalBtnConfirm,
+        cancelText: dict.modalBtnCancel,
+        type: 'danger'
+      });
+      if (confirmed) {
         currentConfig = { ...DEFAULT_ADVANCED_CONFIG };
         populateForm(currentConfig);
         saveConfig(false);
@@ -870,7 +964,12 @@ function initEvents(): void {
             showToast(dict.toastImportSuccess);
           }
         } catch (err) {
-          alert(dict.alertImportError);
+          showCustomAlert({
+            title: dict.modalTitleError,
+            message: dict.alertImportError,
+            confirmText: dict.modalBtnGotIt,
+            type: 'danger'
+          });
         }
         target.value = '';
       };
@@ -975,7 +1074,17 @@ function initEvents(): void {
   });
 
   // 12. 還原預設按鍵
-  document.getElementById('btn-reset-keybindings')?.addEventListener('click', () => {
+  document.getElementById('btn-reset-keybindings')?.addEventListener('click', async () => {
+    const dict = LOCALES[currentLocale] || LOCALES['zh-TW'];
+    const confirmed = await showCustomConfirm({
+      title: dict.modalTitleResetKeys,
+      message: dict.confirmResetKeysMsg,
+      confirmText: dict.modalBtnConfirm,
+      cancelText: dict.modalBtnCancel,
+      type: 'warning'
+    });
+    if (!confirmed) return;
+
     currentKeybindings = {
       ...DEFAULT_KEYBINDINGS,
       bindings: { ...DEFAULT_KEYBINDINGS.bindings }
@@ -993,7 +1102,6 @@ function initEvents(): void {
       enableJumpMenuCheckbox.checked = true;
     }
 
-    const dict = LOCALES[currentLocale] || LOCALES['zh-TW'];
     showToast(dict.toastKeybindingsReset);
   });
 
@@ -1011,7 +1119,38 @@ function initEvents(): void {
     saveKeybindings();
   });
 
-  // 13. 全域按鍵錄製與點擊取消監聽
+  // 13. 自訂 Modal 事件綁定 (取消/確認/背景點擊/快捷鍵)
+  const modalBackdrop = document.getElementById('custom-modal-backdrop');
+  const modalBtnCancel = document.getElementById('modal-btn-cancel');
+  const modalBtnConfirm = document.getElementById('modal-btn-confirm');
+
+  modalBtnCancel?.addEventListener('click', () => hideCustomModal(false));
+  modalBtnConfirm?.addEventListener('click', () => hideCustomModal(true));
+  modalBackdrop?.addEventListener('click', (e) => {
+    if (e.target === modalBackdrop) {
+      hideCustomModal(false);
+    }
+  });
+
+  window.addEventListener(
+    'keydown',
+    (e) => {
+      if (!modalBackdrop?.classList.contains('hidden')) {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          e.stopPropagation();
+          hideCustomModal(false);
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          e.stopPropagation();
+          hideCustomModal(true);
+        }
+      }
+    },
+    true
+  );
+
+  // 14. 全域按鍵錄製與點擊取消監聽
   window.addEventListener('keydown', handleGlobalRecordingKeyDown, true);
   window.addEventListener('click', () => {
     if (recordingActionId) {

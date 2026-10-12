@@ -1,5 +1,6 @@
 import { CursorRect } from '../cursorStore';
 import { TextTarget } from '../wordNavigator';
+import { isOutOfNormalFlowWidget } from '../../utils/domUtils';
 
 /**
  * 判定文字節點是否為實質可見/可閱讀文字（相容 pre/code 保留空白與換行）
@@ -50,35 +51,79 @@ export function findFirstTextNodeIn(root: Node): Text | null {
 }
 
 /**
+ * 建立主閱讀流感知的 TreeWalker
+ * 當 allowOutOfFlow 為 false 時，遇到 float 或 position: fixed/sticky 掛件直接 FILTER_REJECT 整棵子樹
+ */
+export function createFlowTreeWalker(rootElement: HTMLElement, allowOutOfFlow: boolean): TreeWalker {
+  return document.createTreeWalker(
+    rootElement,
+    NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT,
+    {
+      acceptNode(node: Node) {
+        if (node.nodeType === Node.ELEMENT_NODE) {
+          const el = node as HTMLElement;
+          if (el.id === 'muzen-cursor-host-root') {
+            return NodeFilter.FILTER_REJECT;
+          }
+          const tag = el.tagName;
+          if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'NOSCRIPT' || tag === 'TEMPLATE') {
+            return NodeFilter.FILTER_REJECT;
+          }
+          // 不可見元素過濾：排除 hidden、display: none、visibility: hidden，整棵子樹直接 REJECT
+          if (el.hidden) {
+            return NodeFilter.FILTER_REJECT;
+          }
+          try {
+            const style = window.getComputedStyle(el);
+            if (style.display === 'none' || style.visibility === 'hidden') {
+              return NodeFilter.FILTER_REJECT;
+            }
+            // 主閱讀流隔離：遇到浮動年表/固定側欄直接 REJECT 整棵子樹，0 微秒跳過龐大子節點群
+            if (!allowOutOfFlow && isOutOfNormalFlowWidget(el, rootElement)) {
+              return NodeFilter.FILTER_REJECT;
+            }
+          } catch {}
+
+          return NodeFilter.FILTER_SKIP;
+        }
+
+        if (node.nodeType === Node.TEXT_NODE) {
+          if (isValidReadableTextNode(node as Text)) {
+            return NodeFilter.FILTER_ACCEPT;
+          }
+          return NodeFilter.FILTER_SKIP;
+        }
+
+        return NodeFilter.FILTER_SKIP;
+      }
+    }
+  );
+}
+
+/**
  * 尋找當前節點之向下一個可閱讀 Text 節點
  */
-export function findNextTextNode(current: Text, rootElement: HTMLElement): Text | null {
-  const walker = document.createTreeWalker(rootElement, NodeFilter.SHOW_TEXT);
+export function findNextTextNode(
+  current: Text,
+  rootElement: HTMLElement,
+  allowOutOfFlow = true
+): Text | null {
+  const walker = createFlowTreeWalker(rootElement, allowOutOfFlow);
   walker.currentNode = current;
-  let next = walker.nextNode();
-  while (next) {
-    if (isValidReadableTextNode(next as Text)) {
-      return next as Text;
-    }
-    next = walker.nextNode();
-  }
-  return null;
+  return walker.nextNode() as Text | null;
 }
 
 /**
  * 尋找當前節點之向上一個可閱讀 Text 節點
  */
-export function findPrevTextNode(current: Text, rootElement: HTMLElement): Text | null {
-  const walker = document.createTreeWalker(rootElement, NodeFilter.SHOW_TEXT);
+export function findPrevTextNode(
+  current: Text,
+  rootElement: HTMLElement,
+  allowOutOfFlow = true
+): Text | null {
+  const walker = createFlowTreeWalker(rootElement, allowOutOfFlow);
   walker.currentNode = current;
-  let prev = walker.previousNode();
-  while (prev) {
-    if (isValidReadableTextNode(prev as Text)) {
-      return prev as Text;
-    }
-    prev = walker.previousNode();
-  }
-  return null;
+  return walker.previousNode() as Text | null;
 }
 
 /**
@@ -176,6 +221,10 @@ export function searchDownwardNextLine(
   let targetCharHeight = charHeight;
   const lineCandidates: CandidateCharacter[] = [];
 
+  const isStartOutOfFlow = isOutOfNormalFlowWidget(startNode, rootElement);
+  const walker = createFlowTreeWalker(rootElement, isStartOutOfFlow);
+  walker.currentNode = startNode;
+
   let currentNode: Text | null = startNode;
   let nodeOffsetStart = startOffset + 1;
   let nodesScanned = 0;
@@ -183,6 +232,7 @@ export function searchDownwardNextLine(
 
   while (currentNode && nodesScanned < MAX_NODES_TO_SCAN) {
     nodesScanned++;
+
     const text = currentNode.textContent || '';
     const len = text.length;
 
@@ -216,7 +266,7 @@ export function searchDownwardNextLine(
       }
     }
 
-    currentNode = findNextTextNode(currentNode, rootElement);
+    currentNode = walker.nextNode() as Text | null;
     nodeOffsetStart = 0;
   }
 
@@ -244,6 +294,10 @@ export function searchUpwardPrevLine(
   let targetCharHeight = charHeight;
   const lineCandidates: CandidateCharacter[] = [];
 
+  const isStartOutOfFlow = isOutOfNormalFlowWidget(startNode, rootElement);
+  const walker = createFlowTreeWalker(rootElement, isStartOutOfFlow);
+  walker.currentNode = startNode;
+
   let currentNode: Text | null = startNode;
   let nodeOffsetStart = startOffset - 1;
   let nodesScanned = 0;
@@ -251,6 +305,7 @@ export function searchUpwardPrevLine(
 
   while (currentNode && nodesScanned < MAX_NODES_TO_SCAN) {
     nodesScanned++;
+
     const text = currentNode.textContent || '';
     const startFrom = nodeOffsetStart >= 0 ? Math.min(nodeOffsetStart, text.length - 1) : -1;
 
@@ -283,7 +338,7 @@ export function searchUpwardPrevLine(
       }
     }
 
-    currentNode = findPrevTextNode(currentNode, rootElement);
+    currentNode = walker.previousNode() as Text | null;
     if (currentNode) {
       nodeOffsetStart = (currentNode.textContent?.length || 1) - 1;
     }
@@ -368,6 +423,7 @@ export function findVisualLineBoundary(
     const tolerance = charHeight * 0.55;
     const range = document.createRange();
 
+    const isOutOfFlow = isOutOfNormalFlowWidget(target.node, rootElement);
     let bestTarget: TextTarget = { node: target.node, offset: target.offset };
     let currentNode: Text | null = target.node;
     let offset = target.offset;
@@ -399,7 +455,7 @@ export function findVisualLineBoundary(
         }
 
         // 穿透至前一個文字節點 (如 <b>, <span> 前方)
-        const prevNode = findPrevTextNode(currentNode, rootElement);
+        const prevNode = findPrevTextNode(currentNode, rootElement, isOutOfFlow);
         if (!prevNode) break;
 
         currentNode = prevNode;
@@ -432,7 +488,7 @@ export function findVisualLineBoundary(
         }
 
         // 穿透至下一個文字節點
-        const nextNode = findNextTextNode(currentNode, rootElement);
+        const nextNode = findNextTextNode(currentNode, rootElement, isOutOfFlow);
         if (!nextNode) break;
 
         currentNode = nextNode;

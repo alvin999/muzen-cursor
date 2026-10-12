@@ -194,6 +194,16 @@ export interface Translations {
   toastImportSuccess: string;
   alertImportError: string;
 
+  // 自訂對話框 (Custom Modal)
+  modalTitleConfirm: string;
+  modalTitleResetAll: string;
+  modalTitleResetKeys: string;
+  modalTitleError: string;
+  confirmResetKeysMsg: string;
+  modalBtnConfirm: string;
+  modalBtnCancel: string;
+  modalBtnGotIt: string;
+
   // 標籤頁與按鍵設定
   tabPhysicsTitle: string;
   tabKeybindingsTitle: string;
@@ -461,6 +471,15 @@ export const LOCALES: Record<Locale, Translations> = {
     toastImportSuccess: '✓ 成功匯入外部進階設定',
     alertImportError: '匯入失敗：JSON 格式無效',
 
+    modalTitleConfirm: '確認操作',
+    modalTitleResetAll: '回復所有預設值',
+    modalTitleResetKeys: '還原預設按鍵',
+    modalTitleError: '錯誤提示',
+    confirmResetKeysMsg: '確定要將所有自訂快捷鍵還原為初始設定嗎？現有的按鍵配置將被覆蓋。',
+    modalBtnConfirm: '確定還原',
+    modalBtnCancel: '取消',
+    modalBtnGotIt: '我知道了',
+
     tabPhysicsTitle: '📐 物理與動態調校',
     tabKeybindingsTitle: '⌨️ 按鍵設定與衝突管理',
     keybindingsSectionTitle: '快捷鍵設定與防衝突機制',
@@ -725,6 +744,15 @@ export const LOCALES: Record<Locale, Translations> = {
     toastImportSuccess: '✓ Successfully imported advanced settings',
     alertImportError: 'Import failed: Invalid JSON format',
 
+    modalTitleConfirm: 'Confirmation',
+    modalTitleResetAll: 'Reset All to Defaults',
+    modalTitleResetKeys: 'Reset Keybindings',
+    modalTitleError: 'Error',
+    confirmResetKeysMsg: 'Are you sure you want to reset all shortcuts to their defaults? Your custom configurations will be overwritten.',
+    modalBtnConfirm: 'Reset',
+    modalBtnCancel: 'Cancel',
+    modalBtnGotIt: 'Got it',
+
     tabPhysicsTitle: '📐 Physics & Motion',
     tabKeybindingsTitle: '⌨️ Keybindings & Shortcuts',
     keybindingsSectionTitle: 'Keybindings & Conflict Resolution',
@@ -988,6 +1016,15 @@ export const LOCALES: Record<Locale, Translations> = {
     toastExportSuccess: '✓ 設定をエクスポートしました (JSON)',
     toastImportSuccess: '✓ 高度な設定をインポートしました',
     alertImportError: 'インポート失敗：無効な JSON 形式です',
+
+    modalTitleConfirm: '操作の確認',
+    modalTitleResetAll: 'すべての設定を初期化',
+    modalTitleResetKeys: 'キー割り当ての初期化',
+    modalTitleError: 'エラー',
+    confirmResetKeysMsg: 'すべてのショートカット設定を初期値に戻してもよろしいですか？現在のカスタム設定は上書きされます。',
+    modalBtnConfirm: '初期化する',
+    modalBtnCancel: 'キャンセル',
+    modalBtnGotIt: '了解',
 
     tabPhysicsTitle: '📐 物理とモーション調律',
     tabKeybindingsTitle: '⌨️ キー設定と衝突管理',

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="utf-8">
+  <title>維基百科浮動圖說與標題穿透導航測試 - Muzen Cursor</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      padding: 40px;
+      max-width: 960px;
+      margin: 0 auto;
+      line-height: 1.8;
+      color: #202122;
+      background: #fff;
+    }
+    #content { position: relative; }
+    
+    /* 維基百科典型圖片浮動樣式 (Float Right) */
+    figure.thumb {
+      float: right;
+      clear: right;
+      margin: 0.5em 0 1.3em 1.4em;
+      border: 1px solid #c8ccd1;
+      background-color: #f8f9fa;
+      padding: 4px;
+      max-width: 260px;
+    }
+    figure.thumb .img-placeholder {
+      width: 100%;
+      height: 220px;
+      background: #e0e4e8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      color: #72777d;
+    }
+    figcaption.thumbcaption {
+      padding: 4px;
+      line-height: 1.4;
+      font-size: 13px;
+      color: #54595d;
+      text-align: left;
+    }
+
+    h2, h3, h4, .mw-heading {
+      margin-top: 1.5em;
+      margin-bottom: 0.5em;
+      border-bottom: 1px solid #a2a9b1;
+      padding-bottom: 0.2em;
+      clear: none;
+    }
+    p { margin: 0.5em 0 1.2em 0; }
+  </style>
+</head>
+<body>
+  <div id="content" class="mw-body" role="main">
+    <div class="mw-heading mw-heading3">
+      <h3>臺灣民主國與日軍接收過程</h3>
+    </div>
+    <p>
+      1895年4月17日，清廷因甲午戰爭戰敗簽訂《馬關條約》，將臺灣全島及澎湖列島割讓給日本。臺灣軍民反對割讓，於5月25日宣告成立「臺灣民主國」，由唐景崧出任大總統，劉永福任大將軍，丘逢甲任副總統。
+    </p>
+
+    <!-- 第一張浮動圖片 -->
+    <figure class="thumb" typeof="mw:File/Thumb">
+      <div class="img-placeholder">國立臺灣博物館藏旗幟摹本</div>
+      <figcaption class="thumbcaption">藏於國立臺灣博物館的臺灣民主國國旗摹繪本</figcaption>
+    </figure>
+
+    <p>
+      日軍隨後於5月29日登陸澳底，迅速攻陷基隆，6月7日進佔臺北城。民主國主要領袖相繼內渡，但各地義勇軍依然持續進行激烈反抗。
+    </p>
+
+    <!-- 第二張浮動圖片：測試目標圖片 -->
+    <figure class="thumb" id="target-map-figure" typeof="mw:File/Thumb">
+      <div class="img-placeholder">1911年日本地圖文物圖檔</div>
+      <figcaption class="thumbcaption" id="target-map-caption">1911年的日本地圖，其中包括臺灣</figcaption>
+    </figure>
+
+    <div class="mw-heading mw-heading4">
+      <h4 id="始政時期">始政時期（1895～1918）</h4>
+    </div>
+    <p>
+      臺灣日治時期自1895年6月17日臺灣總督於臺北城舉行「始政式」起，至1945年9月2日第二次世界大戰結束日本投降，計約50年。日本接收臺灣初期，臺灣總督職務均由軍人擔任，採取嚴格的軍政統治以敉平各地的抗日義軍。
+    </p>
+    <p>
+      在後藤新平擔任民政長官期間，總督府開始在全臺推行現代化基礎建設，包括全島土地調查、人口普查、鐵路貫通、基隆與高雄築港工程、度量衡統一以及專賣制度建立，奠定了臺灣邁向現代化社會的物理基礎。
+    </p>
+    <p>
+      此外，公共衛生防疫與西式醫療體系在此時期全面引入，有效遏止了鼠疫、霍亂等傳統風土病，使臺灣的人口總數與平均壽命均呈現顯著增長趨勢。
+    </p>
+  </div>
+</body>
+</html>

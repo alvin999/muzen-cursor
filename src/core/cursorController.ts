@@ -1,5 +1,5 @@
 import { cursorStore, MotionDirection, CursorRect, matchesKeybinding, DEFAULT_KEYBINDINGS, JumpMenuItem } from './cursorStore';
-import { isTypingContext } from '../utils/domUtils';
+import { isTypingContext, detectReadingScope, isOutOfNormalFlowWidget } from '../utils/domUtils';
 import { WordNavigator, TextTarget } from './wordNavigator';
 import { resolveTextTargetFromPoint, isClickWithinDistanceThreshold, getRawCaretFromPoint } from '../utils/caretUtils';
 import { animateScrollTo, getScrollParent, getViewportMetrics } from '../utils/smoothScroller';
@@ -35,6 +35,7 @@ export class CursorController {
   private currentTarget: TextTarget | null = null;
   private previousTarget: TextTarget | null = null;
   private preferredX: number | null = null;
+  private activeScopeElement: HTMLElement | null = null;
   private lastKeyTime = 0;
   private lastKey = '';
   private moveTimer: any = null;
@@ -59,6 +60,29 @@ export class CursorController {
 
   private get rootElement(): HTMLElement {
     return this.options?.containerRoot || document.body;
+  }
+
+  /**
+   * 取得當前導航的作用域根節點
+   * 若已鎖定閱讀區塊且該區塊仍在 DOM 中，優先作為邊界；否則回退至全域 rootElement
+   */
+  private getEffectiveRoot(): HTMLElement {
+    if (this.activeScopeElement && this.activeScopeElement.isConnected) {
+      return this.activeScopeElement;
+    }
+    return this.rootElement;
+  }
+
+  private updateActiveScope(targetNode?: Node | null): void {
+    if (this.options?.containerRoot) {
+      this.activeScopeElement = this.options.containerRoot;
+      return;
+    }
+    const node = targetNode || this.currentTarget?.node;
+    const parentEl = node ? (node instanceof Element ? (node as HTMLElement) : node.parentElement) : null;
+    if (parentEl) {
+      this.activeScopeElement = detectReadingScope(parentEl, this.rootElement);
+    }
   }
 
   public init(): void {
@@ -184,6 +208,7 @@ export class CursorController {
       node: resolved.node,
       offset: resolved.offset
     };
+    this.updateActiveScope(resolved.node);
 
     if (cursorStore.getState().mode !== 'VISUAL') {
       this.selectionManager.clearAnchor();
@@ -462,6 +487,9 @@ export class CursorController {
     const { node, offset } = this.currentTarget;
     const textLength = node.textContent?.length || 0;
 
+    const effectiveRoot = this.getEffectiveRoot();
+    const isOutOfFlow = isOutOfNormalFlowWidget(node, effectiveRoot);
+
     if (delta > 0) {
       // 向右移動 (l)
       const nextOffset = offset + delta;
@@ -470,7 +498,7 @@ export class CursorController {
         this.updateCursorPosition(true);
       } else {
         // 到達當前文字節點末尾，平滑無縫跨入下一個文字標籤之首字元
-        const nextNode = findNextTextNode(node, this.rootElement);
+        const nextNode = findNextTextNode(node, effectiveRoot, isOutOfFlow);
         if (nextNode) {
           this.currentTarget = { node: nextNode, offset: 0 };
           this.updateCursorPosition(true);
@@ -484,7 +512,7 @@ export class CursorController {
         this.updateCursorPosition(true);
       } else {
         // 到達當前文字節點開頭，平滑跨入前一個文字節點之末尾字元
-        const prevNode = findPrevTextNode(node, this.rootElement);
+        const prevNode = findPrevTextNode(node, effectiveRoot, isOutOfFlow);
         if (prevNode) {
           const prevLen = prevNode.textContent?.length || 0;
           this.currentTarget = {
@@ -536,8 +564,8 @@ export class CursorController {
       const targetX = this.preferredX;
 
       const foundTarget: TextTarget | null = isDownward
-        ? searchDownwardNextLine(node, offset, currentCharTop, lineThreshold, charHeight, targetX, this.rootElement)
-        : searchUpwardPrevLine(node, offset, currentCharTop, lineThreshold, charHeight, targetX, this.rootElement);
+        ? searchDownwardNextLine(node, offset, currentCharTop, lineThreshold, charHeight, targetX, this.getEffectiveRoot())
+        : searchUpwardPrevLine(node, offset, currentCharTop, lineThreshold, charHeight, targetX, this.getEffectiveRoot());
 
       if (foundTarget) {
         this.currentTarget = foundTarget;
@@ -576,7 +604,9 @@ export class CursorController {
       this.updateCursorPosition(true);
     } else {
       // 跨節點尋找下一個詞首
-      const nextNode = findNextTextNode(node, this.rootElement);
+      const effectiveRoot = this.getEffectiveRoot();
+      const isOutOfFlow = isOutOfNormalFlowWidget(node, effectiveRoot);
+      const nextNode = findNextTextNode(node, effectiveRoot, isOutOfFlow);
       if (nextNode) {
         const nextText = nextNode.textContent || '';
         const initialOffset = WordNavigator.getNextWordOffset(nextText, -1);
@@ -608,7 +638,9 @@ export class CursorController {
       this.updateCursorPosition(true);
     } else {
       // 跨至前一個文字節點
-      const prevNode = findPrevTextNode(node, this.rootElement);
+      const effectiveRoot = this.getEffectiveRoot();
+      const isOutOfFlow = isOutOfNormalFlowWidget(node, effectiveRoot);
+      const prevNode = findPrevTextNode(node, effectiveRoot, isOutOfFlow);
       if (prevNode) {
         const prevText = prevNode.textContent || '';
         const lastWord = WordNavigator.getPrevWordOffset(prevText, prevText.length);
@@ -639,7 +671,9 @@ export class CursorController {
       this.currentTarget.offset = endOffset;
       this.updateCursorPosition(true);
     } else {
-      const nextNode = findNextTextNode(node, this.rootElement);
+      const effectiveRoot = this.getEffectiveRoot();
+      const isOutOfFlow = isOutOfNormalFlowWidget(node, effectiveRoot);
+      const nextNode = findNextTextNode(node, effectiveRoot, isOutOfFlow);
       if (nextNode) {
         const nextText = nextNode.textContent || '';
         const nextEnd = WordNavigator.getWordEndOffset(nextText, 0);
@@ -663,7 +697,7 @@ export class CursorController {
     }
 
     // 透過 CSSOM 精確計算真實視覺行邊界 (穿透 <b>, <span> 等行內標籤並相容折行)
-    const boundary = findVisualLineBoundary(this.currentTarget, isStart, this.rootElement);
+    const boundary = findVisualLineBoundary(this.currentTarget, isStart, this.getEffectiveRoot());
     this.currentTarget = boundary;
     this.updateCursorPosition(true);
   }
@@ -955,12 +989,14 @@ export class CursorController {
           node: rawCaret.node as Text,
           offset: rawCaret.offset
         };
+        this.updateActiveScope(rawCaret.node);
         this.updateCursorPosition();
         return;
       } else if (rawCaret.node.nodeType === Node.ELEMENT_NODE) {
         const textNode = findFirstTextNodeIn(rawCaret.node);
         if (textNode) {
           this.currentTarget = { node: textNode, offset: 0 };
+          this.updateActiveScope(textNode);
           this.updateCursorPosition();
           return;
         }
@@ -968,7 +1004,10 @@ export class CursorController {
     }
 
     // 視窗可見文字深度探測：使用 Range 精確測量文字節點在目前視窗中的座標
-    const walker = document.createTreeWalker(this.rootElement, NodeFilter.SHOW_TEXT);
+    const targetRoot = (this.activeScopeElement && this.activeScopeElement.isConnected)
+      ? this.activeScopeElement
+      : this.rootElement;
+    const walker = document.createTreeWalker(targetRoot, NodeFilter.SHOW_TEXT);
     let n = walker.nextNode();
     while (n) {
       const text = n.textContent?.trim();
@@ -977,7 +1016,8 @@ export class CursorController {
         text &&
         text.length > 0 &&
         parent &&
-        !['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEXTAREA', 'INPUT'].includes(parent.tagName)
+        !['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEXTAREA', 'INPUT'].includes(parent.tagName) &&
+        !parent.closest('nav, header, footer, aside, [role="navigation"], [role="banner"]')
       ) {
         try {
           const testRange = document.createRange();
@@ -985,6 +1025,7 @@ export class CursorController {
           const rect = testRange.getBoundingClientRect();
           if (rect.width > 0 && rect.height > 0 && rect.bottom >= 0 && rect.top <= window.innerHeight) {
             this.currentTarget = { node: n as Text, offset: 0 };
+            this.updateActiveScope(n);
             this.updateCursorPosition();
             return;
           }

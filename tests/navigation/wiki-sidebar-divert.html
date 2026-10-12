@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="utf-8">
+  <title>維基百科側邊導覽盒防吸附隔離測試 - Muzen Cursor</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      padding: 40px;
+      max-width: 980px;
+      margin: 0 auto;
+      line-height: 1.8;
+      color: #202122;
+      background: #fff;
+    }
+    .mw-parser-output { position: relative; }
+
+    /* 正文文字段落 */
+    p {
+      margin: 0.5em 0 1em 0;
+      font-size: 15px;
+    }
+
+    /* 右側懸掛的維基百科側邊導覽盒 (Sidebar / Navbox) */
+    .sidebar.vertical-navbox {
+      float: right;
+      clear: right;
+      width: 220px;
+      margin: 0 0 1em 1.4em;
+      background: #fdf2e9;
+      border: 1px solid #a2a9b1;
+      padding: 6px;
+      font-size: 13px;
+      text-align: center;
+      line-height: 1.5;
+    }
+    .sidebar .sidebar-title {
+      font-weight: bold;
+      margin-bottom: 6px;
+      color: #000;
+    }
+    .sidebar .sidebar-list {
+      margin: 6px 0;
+      font-size: 12px;
+      color: #0645ad;
+    }
+    .sidebar .sidebar-navbar {
+      border-top: 1px solid #eaecf0;
+      padding-top: 4px;
+      font-size: 12px;
+      color: #555;
+    }
+
+    /* 大標題 */
+    h3 {
+      font-size: 20px;
+      margin-top: 1.5em;
+      margin-bottom: 0.5em;
+      border-bottom: 1px solid #a2a9b1;
+      padding-bottom: 0.2em;
+    }
+  </style>
+</head>
+<body>
+  <div class="mw-parser-output" role="main">
+    <!-- 正文第一段 (使用者閱讀起始點) -->
+    <p id="para-start">
+      光緒二十年（1894年）12月唐景崧就任臺灣巡撫；清廷在甲午戰爭的失敗，加上日軍1895年3月先佔領澎湖，迫使清廷簽訂馬關條約將臺灣和澎湖之主權割讓給日本。梁啟超及康有為等士人發起公車上書抗議清廷割讓臺灣之舉，然清廷不為所動；臺灣建立臺灣民主國對抗日本，以藍地黃虎的「黃虎旗」當作國旗，以唐景崧就任臨時大總統，劉永福任大將軍。日軍為接收臺灣，於未完成台灣授受手續下，提前於1895年5月29日登陸澳底（新北市貢寮區三貂角附近），後遭遇臺灣民主國正規軍（五營棟軍，廿營粵勇）和義軍抵抗暴發乙未戰爭（1895年5月29日－11月18日），臺灣民主國逐次節節抵抗，因武器落後和後援不繼而讓日本帝國武力佔領臺灣成功。
+    </p>
+
+    <!-- 右側懸掛的維基百科側邊導覽盒 (干擾源) -->
+    <div class="sidebar vertical-navbox" role="navigation">
+      <div class="sidebar-title">其他史料 [展開]</div>
+      <div style="font-weight: bold; color: #000;">其他臺灣系列</div>
+      <div class="sidebar-list">
+        人口 - 族群 - 經濟 - 交通<br>
+        地理 - 文化 - 教育 - 法律<br>
+        政治 - 政府 - 軍事 - 外交
+      </div>
+      <div>🌲 臺灣主題首頁</div>
+      <div class="sidebar-navbar" id="target-navbar">閱 · 論 · 編</div>
+    </div>
+
+    <!-- 正文後續章節 (游標應該順暢前進的目標) -->
+    <h3 id="target-heading">日治時期</h3>
+    <p id="para-next">
+      臺灣日治時期自1895年6月17日臺灣總督於臺北城舉行「始政式」起，至1945年9月2日第二次世界大戰結束日本投降，計約50年。日本接收臺灣前，臺灣本地官員士紳如丘逢甲等人抗拒割讓日本，於臺北城成立臺灣民主國。
+    </p>
+  </div>
+</body>
+</html>

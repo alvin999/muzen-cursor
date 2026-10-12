@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="utf-8">
+  <title>Facebook 虛擬動態饋給高頻 DOM 更新壓力測試 - Muzen Cursor</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #f0f2f5;
+      color: #050505;
+      overflow-x: hidden;
+    }
+
+    /* 頂部導覽列 (Fixed Header) */
+    header.fb-header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 56px;
+      background: #ffffff;
+      border-bottom: 1px solid #ced0d4;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      z-index: 1000;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+    }
+    header .fb-logo { font-size: 24px; font-weight: bold; color: #1877f2; margin-right: 16px; }
+    header .fb-search { background: #f0f2f5; padding: 8px 16px; border-radius: 20px; font-size: 14px; color: #65676b; }
+
+    /* 三欄主容器 */
+    .fb-layout {
+      display: flex;
+      padding-top: 56px;
+      min-height: 100vh;
+      justify-content: center;
+    }
+
+    /* 左側邊欄選單 (Fixed Sidebar) */
+    nav.fb-left-sidebar {
+      position: fixed;
+      top: 56px;
+      left: 0;
+      width: 280px;
+      height: calc(100vh - 56px);
+      padding: 16px;
+      overflow-y: auto;
+      border-right: 1px solid #e4e6eb;
+      background: #ffffff;
+    }
+    nav.fb-left-sidebar h3 { font-size: 14px; color: #65676b; margin-bottom: 12px; }
+    nav.fb-left-sidebar ul { list-style: none; }
+    nav.fb-left-sidebar li {
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 500;
+      color: #050505;
+      margin-bottom: 4px;
+      cursor: pointer;
+    }
+    nav.fb-left-sidebar li:hover { background: #f2f2f2; }
+
+    /* 右側邊欄 (Sponsored & Contacts) */
+    aside.fb-right-sidebar {
+      position: fixed;
+      top: 56px;
+      right: 0;
+      width: 280px;
+      height: calc(100vh - 56px);
+      padding: 16px;
+      overflow-y: auto;
+      border-left: 1px solid #e4e6eb;
+      background: #ffffff;
+    }
+    aside.fb-right-sidebar h3 { font-size: 14px; color: #65676b; margin-bottom: 12px; }
+    aside.fb-right-sidebar p { font-size: 13px; color: #65676b; margin-bottom: 8px; }
+
+    /* 中間動態牆 (Feed Stream) */
+    main.fb-main-stream {
+      margin-left: 280px;
+      margin-right: 280px;
+      width: 600px;
+      padding: 20px 0;
+      min-height: 2500px;
+    }
+
+    /* 單篇貼文卡片 */
+    article.fb-post {
+      background: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+      margin-bottom: 16px;
+      padding: 16px;
+      border: 1px solid #e4e6eb;
+      position: relative;
+    }
+    article.fb-post .post-author {
+      font-weight: 600;
+      font-size: 15px;
+      margin-bottom: 4px;
+      color: #050505;
+    }
+    article.fb-post .post-time {
+      font-size: 12px;
+      color: #65676b;
+      margin-bottom: 12px;
+    }
+    article.fb-post .post-content {
+      font-size: 15px;
+      line-height: 1.6;
+      color: #050505;
+      margin-bottom: 12px;
+    }
+    article.fb-post .post-actions {
+      display: flex;
+      border-top: 1px solid #e4e6eb;
+      padding-top: 8px;
+      font-size: 13px;
+      color: #65676b;
+      justify-content: space-around;
+    }
+    article.fb-post .live-counter {
+      color: #1877f2;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 頂部導覽列 (外溢防護檢測目標) -->
+  <header class="fb-header" role="banner">
+    <div class="fb-logo">facebook</div>
+    <div class="fb-search">搜尋 Facebook 或社團...</div>
+  </header>
+
+  <div class="fb-layout">
+    <!-- 左側選單欄位 (外溢防護檢測目標) -->
+    <nav class="fb-left-sidebar" role="navigation">
+      <h3>我的捷徑與功能</h3>
+      <ul>
+        <li>個人檔案 (Alvin Wang)</li>
+        <li>朋友名單 (1,420 位)</li>
+        <li>專業社團與技術交流群</li>
+        <li>Marketplace 二手市集</li>
+        <li>影片 Watch 影音專區</li>
+        <li>活動與聚會通知</li>
+        <li>回憶與歷史動態回顧</li>
+        <li>已儲存的精選貼文與連結</li>
+        <li>氣象與生活情報中心</li>
+        <li>系統設定與隱私權保護</li>
+      </ul>
+    </nav>
+
+    <!-- 中間主要動態饋給 (Reading Scope 鎖定目標) -->
+    <main class="fb-main-stream" role="main">
+      <div role="feed" id="fb-feed-container">
+        <!-- 貼文清單由腳本動態初始化並高頻更新 -->
+      </div>
+    </main>
+
+    <!-- 右側選單欄位 (外溢防護檢測目標) -->
+    <aside class="fb-right-sidebar" role="complementary">
+      <h3>贊助商活動</h3>
+      <p>現代極簡 Vim 閱讀神器 Muzen Cursor 盛大發布！</p>
+      <h3>線上聯絡人 (18)</h3>
+      <p>王小明、陳大華、林小美、張志明...</p>
+    </aside>
+  </div>
+
+  <script>
+    // 貼文語料庫 (模擬真實社交媒體長文章)
+    const SAMPLE_POSTS = [
+      {
+        author: '科技趨勢觀察室',
+        time: '剛剛',
+        content: '現代前端框架普遍採用虛擬滾動 (Virtual Scroll) 技術以維持百萬 DOM 下的流暢幀率。但在多欄複雜排版中，如何保持純鍵盤導航的連續性是極富挑戰性的幾何計算課題。'
+      },
+      {
+        author: '開源架構隨想',
+        time: '5 分鐘前',
+        content: '我們在設計鍵盤游標擴充功能時，發現許多單頁應用在使用者往下閱讀時，會即時卸載視窗上方的舊節點，並在下方動態注入新文章。若沒有作用域邊界鎖定，游標非常容易外溢到左側導覽列。'
+      },
+      {
+        author: 'TypeScript 核心實踐',
+        time: '12 分鐘前',
+        content: '透過語義邊界容器 (如 role="feed" 或 role="main") 進行動態 Reading Scope 鎖定，是徹底解決多欄式版面游標迷航的最優解法，既不需要固定座標，也能完全免疫 React 的頻繁重新渲染。'
+      },
+      {
+        author: '極簡生活筆記',
+        time: '30 分鐘前',
+        content: '專注閱讀的本質是排除不必要的視覺干擾。當使用 Vim 的 j 與 k 鍵時，使用者期望視覺焦點始終維持在核心文章脈絡中，這也是 Muzen Cursor 打造沉浸式體驗的最高原則。'
+      },
+      {
+        author: '網頁幾何學研究',
+        time: '1 小時前',
+        content: 'CSS OM 提供了豐富的文字與段落邊界測量工具。結合 Range 與 TreeWalker，能精確穿透行內標籤，在任何折行與多欄佈局下保持像素級別的水平對齊。'
+      },
+      {
+        author: '瀏覽器技術前沿',
+        time: '2 小時前',
+        content: '這是持續向下滾動時新載入的第 6 篇貼文。動態饋給機制在此處持續更新，檢驗游標是否能平順地從上一篇貼文過渡到新注入的內容。'
+      },
+      {
+        author: '軟體工藝探討',
+        time: '3 小時前',
+        content: '這是第 7 篇動態貼文。良好的工程架構應該具備高度自適應能力，無須特殊規則也能優雅應對各類非同步資料流與 DOM 樹的頻繁抽換。'
+      },
+      {
+        author: '無障礙設計專題',
+        time: '4 小時前',
+        content: '這是第 8 篇動態貼文。WAI-ARIA 的 role="feed" 為輔助科技提供了標準的動態內容語義，也是現代瀏覽器自動導航的重要定錨依據。'
+      }
+    ];
+
+    const feedEl = document.getElementById('fb-feed-container');
+
+    function createPostElement(data, index) {
+      const art = document.createElement('article');
+      art.className = 'fb-post';
+      art.id = 'post-' + index;
+      art.setAttribute('role', 'article');
+      art.innerHTML = `
+        <div class="post-author">${data.author} #${index}</div>
+        <div class="post-time">${data.time}</div>
+        <div class="post-content">${data.content}</div>
+        <div class="post-actions">
+          <span>👍 讚 (<span class="live-counter" id="like-${index}">12</span>)</span>
+          <span>💬 留言 (3)</span>
+          <span>🔄 分享</span>
+        </div>
+      `;
+      return art;
+    }
+
+    // 1. 初始化貼文
+    let postCount = 0;
+    for (let i = 0; i < 5; i++) {
+      feedEl.appendChild(createPostElement(SAMPLE_POSTS[i % SAMPLE_POSTS.length], ++postCount));
+    }
+
+    // 2. 模擬 Facebook 高頻動態 DOM 更新 (壓力測試背景線程)
+    window.startFbDomChurn = function() {
+      // (a) 每 200ms 高頻微更新：模擬按讚數變更、React re-render
+      setInterval(() => {
+        const counters = document.querySelectorAll('.live-counter');
+        if (counters.length > 0) {
+          const randCounter = counters[Math.floor(Math.random() * counters.length)];
+          const curVal = parseInt(randCounter.textContent) || 12;
+          randCounter.textContent = (curVal + 1);
+        }
+      }, 200);
+
+      // (b) 每 1000ms 動態在底部 append 新貼文 (Infinite Scroll)
+      setInterval(() => {
+        if (postCount < 20) {
+          const newPost = createPostElement(SAMPLE_POSTS[postCount % SAMPLE_POSTS.length], ++postCount);
+          feedEl.appendChild(newPost);
+        }
+      }, 1000);
+
+      // (c) 每 1800ms 動態移除非可視舊貼文 (模擬 Virtual Scrolling Unmount)
+      setInterval(() => {
+        const posts = feedEl.querySelectorAll('article.fb-post');
+        if (posts.length > 8 && window.scrollY > 800) {
+          const firstPost = posts[0];
+          const rect = firstPost.getBoundingClientRect();
+          if (rect.bottom < -100) {
+            firstPost.remove();
+          }
+        }
+      }, 1800);
+    };
+  </script>
+</body>
+</html>

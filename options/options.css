@@ -800,3 +800,110 @@ body {
   border-color: rgba(251, 73, 52, 0.3);
 }
 
+/* ==========================================================================
+   自訂對話視窗 (Custom Modal Dialog) - 霧前禪夢風格
+   ========================================================================== */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(15, 16, 17, 0.78);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.modal-backdrop.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.modal-card {
+  width: 100%;
+  max-width: 440px;
+  background: var(--bg-card);
+  border: 1px solid rgba(254, 128, 25, 0.25);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), 0 0 24px rgba(254, 128, 25, 0.12);
+  padding: 26px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  transform: scale(1);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal-backdrop.hidden .modal-card {
+  transform: scale(0.94);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.modal-icon {
+  font-size: 1.6rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.modal-icon-danger {
+  background: rgba(251, 73, 52, 0.15);
+  box-shadow: 0 0 12px rgba(251, 73, 52, 0.25);
+}
+
+.modal-icon-warning {
+  background: rgba(250, 189, 47, 0.15);
+  box-shadow: 0 0 12px rgba(250, 189, 47, 0.25);
+}
+
+.modal-icon-info {
+  background: rgba(142, 192, 124, 0.15);
+  box-shadow: 0 0 12px rgba(142, 192, 124, 0.25);
+}
+
+.modal-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: -0.2px;
+}
+
+.modal-body {
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  line-height: 1.6;
+  word-break: break-word;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.modal-actions .btn {
+  min-width: 90px;
+  padding: 9px 18px;
+  font-size: 0.9rem;
+}
+
+
