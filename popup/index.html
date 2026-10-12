@@ -225,10 +225,22 @@
       <button type="button" id="btn-open-options" class="action-btn" style="margin-bottom: 8px;" data-i18n="advancedSettingsBtn">
         ⚙️ 進階數值調校 (物理與動態)
       </button>
-      <button type="button" id="btn-reset-defaults" class="btn-reset">
-        <span class="btn-icon">↺</span>
-        <span class="btn-text" data-i18n="resetDefaultsBtn">回復預設值</span>
-      </button>
+      <div class="reset-action-wrapper">
+        <button type="button" id="btn-reset-defaults" class="btn-reset">
+          <span class="btn-icon">↺</span>
+          <span class="btn-text" data-i18n="resetDefaultsBtn">回復預設值</span>
+        </button>
+        <div id="reset-confirm-group" class="reset-confirm-group hidden">
+          <button type="button" id="btn-reset-cancel" class="btn-sub btn-cancel">
+            <span class="btn-icon">✕</span>
+            <span class="btn-text" data-i18n="modalBtnCancel">取消</span>
+          </button>
+          <button type="button" id="btn-reset-confirm" class="btn-sub btn-confirm-danger">
+            <span class="btn-icon">✓</span>
+            <span class="btn-text" data-i18n="modalBtnConfirm">確定</span>
+          </button>
+        </div>
+      </div>
     </section>
 
     <section class="section update-section">

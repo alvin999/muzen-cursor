@@ -24,6 +24,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const effectTrail = document.getElementById('effect-trail') as HTMLInputElement | null;
   const pulseRadios = document.querySelectorAll<HTMLInputElement>('input[name="muzen-pulse"]');
   const btnResetDefaults = document.getElementById('btn-reset-defaults') as HTMLButtonElement | null;
+  const resetConfirmGroup = document.getElementById('reset-confirm-group');
+  const btnResetCancel = document.getElementById('btn-reset-cancel') as HTMLButtonElement | null;
+  const btnResetConfirm = document.getElementById('btn-reset-confirm') as HTMLButtonElement | null;
   const btnOpenKeybindings = document.getElementById('btn-open-keybindings') as HTMLButtonElement | null;
   const btnOpenOptions = document.getElementById('btn-open-options') as HTMLButtonElement | null;
   const btnOpenPdf = document.getElementById('btn-open-pdf-viewer') as HTMLButtonElement | null;
@@ -550,52 +553,44 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // 15. 回復預設值事件 (二段式按鈕確認防呆)
+  // 15. 回復預設值事件 (展開【取消】與【確定】雙按鈕防呆)
   let isResetConfirming = false;
   let resetConfirmTimer: any = null;
 
-  const resetConfirmState = () => {
-    if (!btnResetDefaults) return;
+  const showConfirmButtons = () => {
+    isResetConfirming = true;
+    if (btnResetDefaults) btnResetDefaults.style.display = 'none';
+    if (resetConfirmGroup) resetConfirmGroup.classList.remove('hidden');
+
+    if (resetConfirmTimer) clearTimeout(resetConfirmTimer);
+    resetConfirmTimer = setTimeout(() => {
+      hideConfirmButtons();
+    }, 5000);
+  };
+
+  const hideConfirmButtons = () => {
     isResetConfirming = false;
     if (resetConfirmTimer) {
       clearTimeout(resetConfirmTimer);
       resetConfirmTimer = null;
     }
-    const btnIcon = btnResetDefaults.querySelector('.btn-icon');
-    const btnText = btnResetDefaults.querySelector('.btn-text');
-    const strings = LOCALES[currentLocale] || LOCALES['zh-TW'];
-    if (btnIcon) btnIcon.textContent = '↺';
-    if (btnText) btnText.textContent = strings.resetDefaultsBtn;
-    btnResetDefaults.classList.remove('confirming');
+    if (resetConfirmGroup) resetConfirmGroup.classList.add('hidden');
+    if (btnResetDefaults) btnResetDefaults.style.display = '';
   };
 
   btnResetDefaults?.addEventListener('click', (e) => {
     e.stopPropagation();
-    const strings = LOCALES[currentLocale] || LOCALES['zh-TW'];
-    const btnIcon = btnResetDefaults.querySelector('.btn-icon');
-    const btnText = btnResetDefaults.querySelector('.btn-text');
+    showConfirmButtons();
+  });
 
-    if (!isResetConfirming) {
-      // 第一階段：進入確認模式
-      isResetConfirming = true;
-      btnResetDefaults.classList.add('confirming');
-      if (btnIcon) btnIcon.textContent = '⚠️';
-      if (btnText) btnText.textContent = strings.resetDefaultsConfirm || '確定回復預設值？';
+  btnResetCancel?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    hideConfirmButtons();
+  });
 
-      // 3.5 秒內未再點擊則自動復原
-      resetConfirmTimer = setTimeout(() => {
-        resetConfirmState();
-      }, 3500);
-      return;
-    }
-
-    // 第二階段：使用者再次點擊，正式執行回復預設值
-    if (resetConfirmTimer) {
-      clearTimeout(resetConfirmTimer);
-      resetConfirmTimer = null;
-    }
-    isResetConfirming = false;
-    btnResetDefaults.classList.remove('confirming');
+  btnResetConfirm?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    hideConfirmButtons();
 
     // 預設參數對齊經典體驗
     const defaultTheme = 'gruvbox-dark';
@@ -651,20 +646,26 @@ document.addEventListener('DOMContentLoaded', () => {
     broadcastToActiveTab({ type: 'SET_STATUS_BAR', show: defaultShowStatusBar });
 
     // 4. 按鈕微動畫回饋
+    const btnIcon = btnResetDefaults?.querySelector('.btn-icon');
+    const btnText = btnResetDefaults?.querySelector('.btn-text');
+    const strings = LOCALES[currentLocale] || LOCALES['zh-TW'];
     if (btnIcon) btnIcon.textContent = '✓';
     if (btnText) btnText.textContent = strings.resetDefaultsSuccess;
-    btnResetDefaults.classList.add('success');
+    btnResetDefaults?.classList.add('success');
     setTimeout(() => {
       if (btnIcon) btnIcon.textContent = '↺';
       if (btnText) btnText.textContent = strings.resetDefaultsBtn;
-      btnResetDefaults.classList.remove('success');
+      btnResetDefaults?.classList.remove('success');
     }, 1500);
   });
 
   // 點擊 Popup 任意其他地方時若處於確認狀態，自動取消
   document.addEventListener('click', (e) => {
-    if (isResetConfirming && !btnResetDefaults?.contains(e.target as Node)) {
-      resetConfirmState();
+    if (isResetConfirming) {
+      const target = e.target as Node;
+      if (!resetConfirmGroup?.contains(target) && !btnResetDefaults?.contains(target)) {
+        hideConfirmButtons();
+      }
     }
   });
 

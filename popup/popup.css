@@ -750,12 +750,73 @@ input:checked + .slider-small:before {
   color: var(--accent-green);
 }
 
-.btn-reset.confirming {
-  background: color-mix(in srgb, var(--accent-red) 16%, var(--bg-card));
-  border-color: var(--accent-red);
-  color: var(--accent-red);
+.reset-action-wrapper {
+  width: 100%;
+}
+
+.reset-confirm-group {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  animation: fadeInFast 0.15s ease-out;
+}
+
+.reset-confirm-group.hidden {
+  display: none;
+}
+
+.btn-sub {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
   font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.btn-sub:active {
+  transform: scale(0.97);
+}
+
+.btn-cancel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--fg-muted);
+}
+
+.btn-cancel:hover {
+  background: color-mix(in srgb, white 8%, var(--bg-card));
+  color: var(--fg-color);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.btn-confirm-danger {
+  background: color-mix(in srgb, var(--accent-red) 20%, var(--bg-card));
+  border: 1px solid var(--accent-red);
+  color: var(--accent-red);
   box-shadow: 0 0 10px color-mix(in srgb, var(--accent-red) 25%, transparent);
+}
+
+.btn-confirm-danger:hover {
+  background: var(--accent-red);
+  color: #ffffff;
+  box-shadow: 0 0 14px color-mix(in srgb, var(--accent-red) 50%, transparent);
+}
+
+@keyframes fadeInFast {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 /* 版本資訊與一鍵更新卡片樣式 */
