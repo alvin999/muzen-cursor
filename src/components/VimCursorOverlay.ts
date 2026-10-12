@@ -87,6 +87,14 @@ export class VimCursorOverlay {
   private lineSweepElement: HTMLElement;
   private lastMode: string = 'NORMAL';
 
+  // 動態輸入蓄力與超載物理引擎 (Kinetic Charge Overdrive Engine)
+  private currentCharge = 0; // 0.0 ~ 1.0
+  private chargeRafId: number | null = null;
+  private lastMotionTime = 0;
+  private isKeyUpReceived = true;
+  private keyupListener: ((e: KeyboardEvent) => void) | null = null;
+  private lastState: CursorState | null = null;
+
   constructor() {
     this.container = document.createElement('div');
     this.container.className = 'muzen-cursor-container';
@@ -97,6 +105,11 @@ export class VimCursorOverlay {
     this.container.style.height = '0px';
     this.container.style.pointerEvents = 'none';
     this.container.style.zIndex = '2147483647';
+
+    this.keyupListener = () => {
+      this.isKeyUpReceived = true;
+    };
+    window.addEventListener('keyup', this.keyupListener, true);
 
     this.element = document.createElement('div');
     this.element.className = 'muzen-cursor-overlay';
@@ -319,6 +332,124 @@ export class VimCursorOverlay {
     this.element.style.display = 'none';
   }
 
+  /**
+   * 計算當前蓄力能階對應的動態過載色 (Color Interpolation & Overdrive)
+   * Lv.0 常態: 原生主題色
+   * Lv.1~2 升溫: 飽和度與明度提升、高光溢出 (不變白)
+   * Lv.3 超載 (滿蓄力): 白熱高能核心 (White-hot Core) 混入熾白光
+   */
+  private computeChargedColor(
+    base: { r: number; g: number; b: number; hex: string },
+    charge: number,
+    threshold: number = 0.70
+  ): { r: number; g: number; b: number; hex: string } {
+    if (charge <= 0.01) return base;
+
+    // 提高混白臨界門檻（預設 0.70）：未達門檻前 100% 保持主題原色調，僅增強光澤與飽和度
+    const whiteBlend = charge >= threshold
+      ? Math.pow((charge - threshold) / (1 - threshold), 1.25) * 0.75
+      : 0;
+    const boost = 1 + charge * 0.22;
+
+    const r = Math.min(255, Math.round(base.r * boost + (255 - base.r) * whiteBlend));
+    const g = Math.min(255, Math.round(base.g * boost + (255 - base.g) * whiteBlend));
+    const b = Math.min(255, Math.round(base.b * boost + (255 - base.b) * whiteBlend));
+    const hex = `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+    return { r, g, b, hex };
+  }
+
+  /**
+   * 啟動 60/120fps RAF 平滑散熱冷卻循環
+   */
+  private startChargeCooldownLoop(adv: any): void {
+    if (this.chargeRafId !== null) return;
+
+    let lastFrameTime = performance.now();
+    const decayDuration = typeof adv?.chargeDecayMs === 'number' ? adv.chargeDecayMs : 800;
+
+    const step = (time: number) => {
+      const dt = time - lastFrameTime;
+      lastFrameTime = time;
+
+      const idleTime = time - this.lastMotionTime;
+      // 超過 80ms 未觸發新移動，或是已收到 keyup，開始衰減散熱
+      if (idleTime > 80 || this.isKeyUpReceived) {
+        const decayAmount = dt / decayDuration;
+        this.currentCharge = Math.max(0, this.currentCharge - decayAmount);
+
+        if (this.lastState && this.element.style.display !== 'none') {
+          this.applyActiveChargeStyles(this.lastState, this.currentCharge, adv);
+        }
+      }
+
+      if (this.currentCharge > 0.005) {
+        this.chargeRafId = requestAnimationFrame(step);
+      } else {
+        this.currentCharge = 0;
+        if (this.lastState && this.element.style.display !== 'none') {
+          this.applyActiveChargeStyles(this.lastState, 0, adv);
+        }
+        this.chargeRafId = null;
+      }
+    };
+
+    this.chargeRafId = requestAnimationFrame(step);
+  }
+
+  /**
+   * RAF 平滑降溫時，即時更新主游標之色彩、邊框與光暈
+   */
+  private applyActiveChargeStyles(state: CursorState, charge: number, adv: any): void {
+    const themeKey = state.theme || 'gruvbox-dark';
+    const palette = THEME_PALETTES[themeKey] || THEME_PALETTES['gruvbox-dark'];
+    const isVisual = state.mode === 'VISUAL' || state.mode === 'VISUAL_LINE';
+    const baseColor = isVisual ? palette.visual : palette.normal;
+    const threshold = typeof adv?.chargeThreshold === 'number' ? adv.chargeThreshold : 0.70;
+    const color = this.computeChargedColor(baseColor, charge, threshold);
+
+    const baseGlow = typeof state.glow === 'number' ? Math.max(0, state.glow) : 0;
+    const chargeGlow = charge * (adv?.chargeMaxGlow ?? 14);
+    const glow = Math.round(baseGlow + chargeGlow);
+
+    this.element.style.setProperty('--muzen-glow', `rgba(${color.r}, ${color.g}, ${color.b}, 0.8)`);
+    this.element.style.setProperty('--muzen-glow-core', `rgba(${color.r}, ${color.g}, ${color.b}, 0.85)`);
+    this.element.style.setProperty('--muzen-glow-halo', `rgba(${color.r}, ${color.g}, ${color.b}, 0.45)`);
+
+    const shape = state.shape || 'block';
+    const thickness = typeof state.thickness === 'number' ? Math.max(0.5, state.thickness) : 1.5;
+    const blockBgOpacity = typeof adv?.blockBgOpacity === 'number' ? adv.blockBgOpacity : 0.22;
+    const visualBgOpacity = typeof adv?.visualBgOpacity === 'number' ? adv.visualBgOpacity : 0.35;
+    const hollowBgOpacity = typeof adv?.hollowBgOpacity === 'number' ? adv.hollowBgOpacity : 0.05;
+
+    switch (shape) {
+      case 'hollow':
+        this.element.style.background = `rgba(${color.r}, ${color.g}, ${color.b}, ${hollowBgOpacity})`;
+        this.element.style.border = `${thickness}px solid ${color.hex}`;
+        this.element.style.boxShadow = glow > 0
+          ? `0 0 ${glow}px rgba(${color.r}, ${color.g}, ${color.b}, 0.65)`
+          : 'none';
+        break;
+
+      case 'underline':
+        this.element.style.background = color.hex;
+        this.element.style.boxShadow = glow > 0
+          ? `0 0 ${glow}px rgba(${color.r}, ${color.g}, ${color.b}, 0.8)`
+          : 'none';
+        break;
+
+      case 'block':
+      default:
+        this.element.style.background = state.mode === 'VISUAL'
+          ? `rgba(${color.r}, ${color.g}, ${color.b}, ${visualBgOpacity})`
+          : `rgba(${color.r}, ${color.g}, ${color.b}, ${blockBgOpacity})`;
+        this.element.style.outline = `${thickness}px solid ${color.hex}`;
+        this.element.style.boxShadow = glow > 0
+          ? `0 0 ${Math.round(glow * 1.2)}px rgba(${color.r}, ${color.g}, ${color.b}, 0.75)`
+          : 'none';
+        break;
+    }
+  }
+
   private bindStore(): void {
     this.unsubscribe = cursorStore.subscribe((state: CursorState) => {
       this.render(state);
@@ -339,14 +470,40 @@ export class VimCursorOverlay {
     }
 
     this.element.style.display = 'block';
+    this.lastState = state;
 
     const adv = state.advanced || DEFAULT_ADVANCED_CONFIG;
+    const isNewMotion = state.motionSequence !== this.lastRenderedSeq;
+    this.lastRenderedSeq = state.motionSequence;
 
-    // 1. 取得配色票券
+    // 動態蓄力與過載計算 (Kinetic Charge Overdrive)
+    const isChargeEnabled = state.effects?.charge !== false;
+    if (isNewMotion && isChargeEnabled && state.motionDirection !== 'none') {
+      const now = performance.now();
+      const dt = now - this.lastMotionTime;
+      this.lastMotionTime = now;
+      this.isKeyUpReceived = false;
+
+      const impulse = typeof adv?.chargeStepImpulse === 'number' ? adv.chargeStepImpulse : 0.035;
+      const controllerCharge = typeof state.chargeLevel === 'number' ? state.chargeLevel : 0;
+      if (dt <= 240) {
+        // 連按或長按：平緩累積充能（延緩十倍）
+        this.currentCharge = Math.min(1.0, Math.max(this.currentCharge + impulse, controllerCharge));
+      } else {
+        // 單步按鍵：微幅充能 (Warm-up)
+        this.currentCharge = Math.max(0.03, Math.max(Math.min(1.0, this.currentCharge * 0.4 + impulse), controllerCharge));
+      }
+
+      this.startChargeCooldownLoop(adv);
+    }
+
+    // 1. 取得配色票券並疊加動能過載色
     const themeKey = state.theme || 'gruvbox-dark';
     const palette = THEME_PALETTES[themeKey] || THEME_PALETTES['gruvbox-dark'];
     const isVisual = state.mode === 'VISUAL' || state.mode === 'VISUAL_LINE';
-    const color = isVisual ? palette.visual : palette.normal;
+    const baseColor = isVisual ? palette.visual : palette.normal;
+    const threshold = typeof adv?.chargeThreshold === 'number' ? adv.chargeThreshold : 0.70;
+    const color = isChargeEnabled ? this.computeChargedColor(baseColor, this.currentCharge, threshold) : baseColor;
 
     // 同步主題選取透明效果 (自訂 visualBgOpacity，預設 0.35)
     const visualColor = palette.visual;
@@ -377,8 +534,10 @@ export class VimCursorOverlay {
     this.element.style.setProperty('--muzen-glow-halo', `rgba(${color.r}, ${color.g}, ${color.b}, 0.45)`);
     this.element.style.setProperty('--muzen-breathe-peak-opacity', `${typeof adv.breathePeakOpacity === 'number' ? adv.breathePeakOpacity : 0.96}`);
 
-    // 處理光暈 (Glow: 游標核心基本設定，0 為無光暈)
-    const glow = typeof state.glow === 'number' ? Math.max(0, state.glow) : 0;
+    // 處理光暈 (Glow: 基礎光暈 + 蓄力動態激增)
+    const baseGlow = typeof state.glow === 'number' ? Math.max(0, state.glow) : 0;
+    const chargeGlow = isChargeEnabled ? this.currentCharge * (adv.chargeMaxGlow ?? 14) : 0;
+    const glow = Math.round(baseGlow + chargeGlow);
     if (glow <= 0) {
       this.element.style.setProperty('--muzen-breathe-filter-min', 'none');
       this.element.style.setProperty('--muzen-breathe-filter-peak', 'none');
@@ -496,15 +655,13 @@ export class VimCursorOverlay {
     }
 
     // 4. 利用 translate3d 與 3D 透視矩陣走 GPU 合成層渲染
-    const isNewMotion = state.motionSequence !== this.lastRenderedSeq;
-    this.lastRenderedSeq = state.motionSequence;
-
     const persp = typeof adv.perspective === 'number' ? adv.perspective : 320;
     const tiltX = typeof adv.tiltAngleX === 'number' ? adv.tiltAngleX : 18;
     const tiltY = typeof adv.tiltAngleY === 'number' ? adv.tiltAngleY : 18;
-    const stretchX = typeof adv.scaleStretchX === 'number' ? adv.scaleStretchX : 1.15;
+    const stretchBoost = isChargeEnabled ? (1 + this.currentCharge * 0.12) : 1;
+    const stretchX = (typeof adv.scaleStretchX === 'number' ? adv.scaleStretchX : 1.15) * stretchBoost;
     const squishY = typeof adv.scaleSquishY === 'number' ? adv.scaleSquishY : 0.94;
-    const stretchY = typeof adv.scaleStretchY === 'number' ? adv.scaleStretchY : 1.10;
+    const stretchY = (typeof adv.scaleStretchY === 'number' ? adv.scaleStretchY : 1.10) * stretchBoost;
     const squishX = typeof adv.scaleSquishX === 'number' ? adv.scaleSquishX : 0.90;
     const deformSettleMs = typeof adv.deformSettleMs === 'number' ? adv.deformSettleMs : 75;
 
@@ -532,8 +689,12 @@ export class VimCursorOverlay {
 
     const isTrailEnabled = effects.trail !== false;
     const trailMode = (adv.trailMode || 'line') as 'line' | 'direct';
-    const trailDurationMs = typeof adv.trailDurationMs === 'number' ? Math.max(100, adv.trailDurationMs) : 260;
-    const trailMaxOpacity = typeof adv.trailMaxOpacity === 'number' ? Math.min(1, Math.max(0.1, adv.trailMaxOpacity)) : 0.75;
+    const trailDurationMs = typeof adv.trailDurationMs === 'number'
+      ? Math.round(Math.max(100, adv.trailDurationMs) * (1 + (isChargeEnabled ? this.currentCharge * 0.45 : 0)))
+      : 260;
+    const trailMaxOpacity = typeof adv.trailMaxOpacity === 'number'
+      ? Math.min(1, Math.max(0.1, adv.trailMaxOpacity) * (1 + (isChargeEnabled ? this.currentCharge * 0.25 : 0)))
+      : 0.75;
     const ghostDeform = (adv.trailPreserveTrapezoid !== false && deform) ? deform : '';
 
     this.clearTrajectoryTimers();
@@ -858,10 +1019,15 @@ export class VimCursorOverlay {
       glow
     } = params;
 
-    const trailCount = Math.max(2, Math.min(this.MAX_GHOSTS, Math.round(adv.trailCount ?? 4)));
-    const trailDurationMs = typeof adv.trailDurationMs === 'number' ? Math.max(100, adv.trailDurationMs) : 260;
+    const extraGhosts = Math.round(this.currentCharge * (adv.chargeTrailBoost ?? 3));
+    const trailCount = Math.max(2, Math.min(this.MAX_GHOSTS, Math.round((adv.trailCount ?? 4) + extraGhosts)));
+    const trailDurationMs = typeof adv.trailDurationMs === 'number'
+      ? Math.round(Math.max(100, adv.trailDurationMs) * (1 + this.currentCharge * 0.45))
+      : 260;
     const trailDecayExponent = typeof adv.trailDecayExponent === 'number' ? Math.max(0.2, adv.trailDecayExponent) : 1.35;
-    const trailMaxOpacity = typeof adv.trailMaxOpacity === 'number' ? Math.min(1, Math.max(0.1, adv.trailMaxOpacity)) : 0.75;
+    const trailMaxOpacity = typeof adv.trailMaxOpacity === 'number'
+      ? Math.min(1, Math.max(0.1, adv.trailMaxOpacity) * (1 + this.currentCharge * 0.25))
+      : 0.75;
 
     const absDy = Math.abs(dy);
     const lineHeight = Math.max(16, originH || targetH);
@@ -1010,6 +1176,14 @@ export class VimCursorOverlay {
     if (this.settleTimer !== null) {
       clearTimeout(this.settleTimer);
       this.settleTimer = null;
+    }
+    if (this.chargeRafId !== null) {
+      cancelAnimationFrame(this.chargeRafId);
+      this.chargeRafId = null;
+    }
+    if (this.keyupListener) {
+      window.removeEventListener('keyup', this.keyupListener, true);
+      this.keyupListener = null;
     }
     this.clearAllGhosts();
     if (this.unsubscribe) {

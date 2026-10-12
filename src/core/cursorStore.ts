@@ -31,6 +31,7 @@ export interface CursorEffects {
   breathe: boolean;      // 禪意呼吸燈 (Breathing Pulse Glow)
   blink: boolean;        // 經典閃爍 (Terminal Blink)
   trail?: boolean;       // 梯形透視殘影 (Trapezoid Motion Trail)
+  charge?: boolean;      // 動態輸入蓄力與超載特效 (Kinetic Charge Overdrive)
 }
 
 export interface CursorRect {
@@ -83,6 +84,13 @@ export interface AdvancedConfig {
   trailDecayExponent: number; // 距離衰減曲率 (預設 1.35)
   trailMaxOpacity: number;    // 最近端殘影起始透明度 (0.1 ~ 1.0，預設 0.75)
   trailPreserveTrapezoid: boolean; // 是否全程維持梯形透視形變 (預設 true)
+
+  // 7. 動能蓄力與過載超頻物理 (Kinetic Charge & Overdrive)
+  chargeStepImpulse: number;  // 單步充能衝量增量 (預設 0.035，延緩十倍)
+  chargeThreshold: number;    // 白熱超載門檻 (0.3 ~ 0.95，預設 0.70，延後變白)
+  chargeDecayMs: number;      // 蓄力散熱冷卻時長 (ms，預設 800)
+  chargeMaxGlow: number;      // 滿蓄力超載光暈峰值 (px，預設 14)
+  chargeTrailBoost: number;   // 滿蓄力殘影階數增加量 (預設 3)
 }
 
 export const DEFAULT_ADVANCED_CONFIG: AdvancedConfig = {
@@ -119,7 +127,13 @@ export const DEFAULT_ADVANCED_CONFIG: AdvancedConfig = {
   trailDurationMs: 260,
   trailDecayExponent: 1.35,
   trailMaxOpacity: 0.75,
-  trailPreserveTrapezoid: true
+  trailPreserveTrapezoid: true,
+
+  chargeStepImpulse: 0.035,
+  chargeThreshold: 0.70,
+  chargeDecayMs: 800,
+  chargeMaxGlow: 14,
+  chargeTrailBoost: 3
 };
 
 export type KeyActionId =
@@ -297,6 +311,7 @@ export interface CursorState {
   pendingKeys: string; // 按鍵緩衝區 (例如次數前綴 5_ 或雙鍵等待 g-)
   currentSectionTitle?: string; // 當前游標所處之文章章節/標題文字 (例如 § 快速上手)
   estimatedMinutesLeft?: number; // 預估剩餘閱讀時間 (分鐘數)
+  chargeLevel?: number; // 當前動能蓄力等級 (0.0 ~ 1.0)
 }
 
 type Listener = (state: CursorState) => void;
@@ -317,7 +332,8 @@ class CursorStore {
       smoothScroll: true,
       breathe: false,
       blink: true,
-      trail: true
+      trail: true,
+      charge: true
     },
     advanced: { ...DEFAULT_ADVANCED_CONFIG },
     keybindings: { ...DEFAULT_KEYBINDINGS },
@@ -328,6 +344,7 @@ class CursorStore {
     isMoving: false,
     motionDirection: 'none',
     motionSequence: 0,
+    chargeLevel: 0,
     readingProgress: 0,
     charOffset: 0,
     isJumpMenuOpen: false,

@@ -518,6 +518,78 @@
           </div>
         </div>
 
+        <!-- 群組 7: 動能蓄力與過載超頻物理 -->
+        <div class="setting-group">
+          <div class="group-header">
+            <span class="group-icon">⚡</span>
+            <div class="group-title-wrap">
+              <h2 class="group-title" data-i18n="groupChargeTitle">動能蓄力與過載超頻 (Kinetic Charge & Overdrive)</h2>
+              <p class="group-desc" data-i18n="groupChargeDesc">高速連續按鍵或長按時積蓄動能，升溫提升光澤與殘影，放開時平滑阻尼散熱</p>
+            </div>
+          </div>
+
+          <div class="field-grid">
+
+            <div class="field-card">
+              <div class="field-label-row">
+                <label for="adv-chargeStepImpulse" class="field-label" data-i18n="fieldChargeStepImpulse">充能速率/單步衝量 (Step Impulse)</label>
+                <button type="button" class="btn-field-reset" data-key="chargeStepImpulse" title="還原預設值">↺</button>
+              </div>
+              <p class="field-hint" data-i18n="hintChargeStepImpulse">每次有效按鍵注入的動能增量 (0.005 ~ 0.200，預設 0.035 延緩十倍)</p>
+              <div class="input-with-unit">
+                <input type="number" id="adv-chargeStepImpulse" data-key="chargeStepImpulse" min="0.005" max="0.200" step="0.005" value="0.035">
+              </div>
+            </div>
+
+            <div class="field-card">
+              <div class="field-label-row">
+                <label for="adv-chargeThreshold" class="field-label" data-i18n="fieldChargeThreshold">白熱超載門檻 (Overdrive Threshold)</label>
+                <button type="button" class="btn-field-reset" data-key="chargeThreshold" title="還原預設值">↺</button>
+              </div>
+              <p class="field-hint" data-i18n="hintChargeThreshold">開始泛起熾白電光核心的蓄力比例 (0.30 ~ 0.95，預設 0.70 延後變白)</p>
+              <div class="input-with-unit">
+                <input type="number" id="adv-chargeThreshold" data-key="chargeThreshold" min="0.30" max="0.95" step="0.05" value="0.70">
+              </div>
+            </div>
+
+            <div class="field-card">
+              <div class="field-label-row">
+                <label for="adv-chargeDecayMs" class="field-label" data-i18n="fieldChargeDecayMs">散熱冷卻時長 (Cooldown Decay)</label>
+                <button type="button" class="btn-field-reset" data-key="chargeDecayMs" title="還原預設值">↺</button>
+              </div>
+              <p class="field-hint" data-i18n="hintChargeDecayMs">放開按鍵後從過載降溫平滑恢復常態的毫秒數 (ms，預設 800)</p>
+              <div class="input-with-unit">
+                <input type="number" id="adv-chargeDecayMs" data-key="chargeDecayMs" min="100" max="3000" step="50" value="800">
+                <span class="unit-badge">ms</span>
+              </div>
+            </div>
+
+            <div class="field-card">
+              <div class="field-label-row">
+                <label for="adv-chargeMaxGlow" class="field-label" data-i18n="fieldChargeMaxGlow">超載光暈峰值 (Overdrive Glow)</label>
+                <button type="button" class="btn-field-reset" data-key="chargeMaxGlow" title="還原預設值">↺</button>
+              </div>
+              <p class="field-hint" data-i18n="hintChargeMaxGlow">滿蓄力時向外噴發之電光光暈最大擴散半徑 (px，預設 14)</p>
+              <div class="input-with-unit">
+                <input type="number" id="adv-chargeMaxGlow" data-key="chargeMaxGlow" min="0" max="30" step="1" value="14">
+                <span class="unit-badge">px</span>
+              </div>
+            </div>
+
+            <div class="field-card">
+              <div class="field-label-row">
+                <label for="adv-chargeTrailBoost" class="field-label" data-i18n="fieldChargeTrailBoost">滿蓄力殘影增量 (Trail Boost)</label>
+                <button type="button" class="btn-field-reset" data-key="chargeTrailBoost" title="還原預設值">↺</button>
+              </div>
+              <p class="field-hint" data-i18n="hintChargeTrailBoost">高速滿蓄力超載時額外激發的流光殘影階數 (預設 +3 階)</p>
+              <div class="input-with-unit">
+                <input type="number" id="adv-chargeTrailBoost" data-key="chargeTrailBoost" min="0" max="6" step="1" value="3">
+              </div>
+            </div>
+
+          </div>
+        </div>
+
         </div><!-- 結束 tab-physics -->
 
         <!-- 標籤 2: 按鍵自訂與停用名單 -->

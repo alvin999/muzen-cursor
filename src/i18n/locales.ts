@@ -45,6 +45,7 @@ export interface Translations {
   effectBreathe: string;
   effectBlink: string;
   effectTrail: string;
+  effectCharge: string;
   statusBarSectionLabel: string;
   statusBarSectionDesc: string;
   statusBarAdvancedLabel: string;
@@ -177,6 +178,19 @@ export interface Translations {
   hintTrailMaxOpacity: string;
   fieldTrailPreserveTrapezoid: string;
   hintTrailPreserveTrapezoid: string;
+
+  groupChargeTitle: string;
+  groupChargeDesc: string;
+  fieldChargeStepImpulse: string;
+  hintChargeStepImpulse: string;
+  fieldChargeThreshold: string;
+  hintChargeThreshold: string;
+  fieldChargeDecayMs: string;
+  hintChargeDecayMs: string;
+  fieldChargeMaxGlow: string;
+  hintChargeMaxGlow: string;
+  fieldChargeTrailBoost: string;
+  hintChargeTrailBoost: string;
 
   sandboxThemeLabel: string;
   sandboxShapeLabel: string;
@@ -355,6 +369,7 @@ export const LOCALES: Record<Locale, Translations> = {
     effectBreathe: '禪意呼吸',
     effectBlink: '經典閃爍',
     effectTrail: '流光殘影',
+    effectCharge: '動能蓄力',
     statusBarSectionLabel: '顯示底部狀態列',
     statusBarSectionDesc: '畫面右下角呈現目前 Vim 模式與文章進度',
     statusBarAdvancedLabel: '進階長文閱讀輔助 (章節標題與預估時間)',
@@ -480,6 +495,18 @@ export const LOCALES: Record<Locale, Translations> = {
     hintTrailMaxOpacity: '最靠近主游標的殘影起始明亮程度 (0.1 ~ 1.0)',
     fieldTrailPreserveTrapezoid: '保持梯形透視 (Preserve Trapezoid)',
     hintTrailPreserveTrapezoid: '殘影淡出全程鎖定 3D 透視梯形形變角度',
+    groupChargeTitle: '動能蓄力與過載超頻 (Kinetic Charge & Overdrive)',
+    groupChargeDesc: '高速連續按鍵或長按時積蓄動能，升溫提升光澤與殘影，放開時平滑阻尼散熱',
+    fieldChargeStepImpulse: '充能速率/單步衝量 (Step Impulse)',
+    hintChargeStepImpulse: '每次有效按鍵注入的動能增量 (0.005 ~ 0.200，預設 0.035 延緩十倍)',
+    fieldChargeThreshold: '白熱超載門檻 (Overdrive Threshold)',
+    hintChargeThreshold: '開始泛起熾白電光核心的蓄力比例 (0.30 ~ 0.95，預設 0.70 延後變白)',
+    fieldChargeDecayMs: '散熱冷卻時長 (Cooldown Decay)',
+    hintChargeDecayMs: '放開按鍵後從過載降溫平滑恢復常態的毫秒數 (ms，預設 800)',
+    fieldChargeMaxGlow: '超載光暈峰值 (Overdrive Glow)',
+    hintChargeMaxGlow: '滿蓄力時向外噴發之電光光暈最大擴散半徑 (px，預設 14)',
+    fieldChargeTrailBoost: '滿蓄力殘影增量 (Trail Boost)',
+    hintChargeTrailBoost: '高速滿蓄力超載時額外激發的流光殘影階數 (預設 +3 階)',
     sandboxThemeLabel: '色彩主題：',
     sandboxShapeLabel: '游標形態：',
     padUpBtn: '↑ k (上行)',
@@ -652,6 +679,7 @@ export const LOCALES: Record<Locale, Translations> = {
     effectBreathe: 'Zen Pulse',
     effectBlink: 'Classic Blink',
     effectTrail: 'Motion Trail',
+    effectCharge: 'Kinetic Charge',
     statusBarSectionLabel: 'Show Status Bar',
     statusBarSectionDesc: 'Display Vim mode & reading progress at bottom-right',
     statusBarAdvancedLabel: 'Advanced Reading Aids (Section & Time Left)',
@@ -777,6 +805,18 @@ export const LOCALES: Record<Locale, Translations> = {
     hintTrailMaxOpacity: 'Peak initial opacity for the ghost nearest to cursor (0.1 - 1.0)',
     fieldTrailPreserveTrapezoid: 'Preserve 3D Trapezoid',
     hintTrailPreserveTrapezoid: 'Lock 3D perspective trapezoid deformation throughout ghost dissolution',
+    groupChargeTitle: 'Kinetic Charge & Overdrive',
+    groupChargeDesc: 'Accumulate kinetic momentum on rapid keystrokes or long presses, cool down with smooth damping',
+    fieldChargeStepImpulse: 'Step Charge Impulse',
+    hintChargeStepImpulse: 'Kinetic charge gained per navigation keystroke (0.005 - 0.200, default 0.035)',
+    fieldChargeThreshold: 'Overdrive White-hot Threshold',
+    hintChargeThreshold: 'Charge ratio before white-hot core ignites (0.30 - 0.95, default 0.70)',
+    fieldChargeDecayMs: 'Cooldown Decay Duration',
+    hintChargeDecayMs: 'Milliseconds for overdrive heat to smoothly dissipate after key release (ms, default 800)',
+    fieldChargeMaxGlow: 'Peak Overdrive Glow',
+    hintChargeMaxGlow: 'Maximum outer bloom and halo radius at full charge (px, default 14)',
+    fieldChargeTrailBoost: 'Peak Trail Count Boost',
+    hintChargeTrailBoost: 'Extra discrete ghost echoes spawned at peak overdrive (default +3)',
     sandboxThemeLabel: 'Theme:',
     sandboxShapeLabel: 'Cursor Shape:',
     padUpBtn: '↑ k (Up)',
@@ -949,6 +989,7 @@ export const LOCALES: Record<Locale, Translations> = {
     effectBreathe: '禅の呼吸',
     effectBlink: 'クラシック点滅',
     effectTrail: '流光残像',
+    effectCharge: '動能チャージ',
     statusBarSectionLabel: 'ステータスバーを表示',
     statusBarSectionDesc: '画面右下に現在のVimモードと読書進捗を表示',
     statusBarAdvancedLabel: '高度な読書支援 (章見出し・残り時間)',
@@ -1074,6 +1115,18 @@ export const LOCALES: Record<Locale, Translations> = {
     hintTrailMaxOpacity: 'カーソルに最も近い残像の初期不透明度 (0.1 ~ 1.0)',
     fieldTrailPreserveTrapezoid: '3D台形パースを保持 (Preserve Trapezoid)',
     hintTrailPreserveTrapezoid: '残像が消えるまで台形の立体パースペクティブ傾斜角を固定保持',
+    groupChargeTitle: '動能チャージと過負荷オーバードライブ (Kinetic Charge & Overdrive)',
+    groupChargeDesc: '高速連打や長押しでエネルギーを蓄積し、光沢と残像を強化。離すと滑らかに放熱',
+    fieldChargeStepImpulse: 'チャージレート/ステップ衝量 (Step Impulse)',
+    hintChargeStepImpulse: '1回の打鍵で注入されるエネルギー増量 (0.005 ~ 0.200、初期値 0.035)',
+    fieldChargeThreshold: '白熱オーバードライブ閾値 (Overdrive Threshold)',
+    hintChargeThreshold: '白色コア発光が始まるチャージ比率 (0.30 ~ 0.95、初期値 0.70)',
+    fieldChargeDecayMs: '冷却放熱時間 (Cooldown Decay)',
+    hintChargeDecayMs: 'キーを離してから常態に復帰するまでのミリ秒 (ms、初期値 800)',
+    fieldChargeMaxGlow: 'オーバードライブ発光ピーク (Overdrive Glow)',
+    hintChargeMaxGlow: 'フルチャージ時の最大光輪拡散半径 (px、初期値 14)',
+    fieldChargeTrailBoost: 'フルチャージ残像ブースト (Trail Boost)',
+    hintChargeTrailBoost: 'ピーク時に追加生成される流光残像ステップ数 (初期値 +3)',
     sandboxThemeLabel: 'カラースキーム：',
     sandboxShapeLabel: 'カーソル形状：',
     padUpBtn: '↑ k (上行)',

@@ -92,9 +92,29 @@ export class CursorController {
   private selectionManager = new VisualSelectionManager();
 
   private keydownHandler: ((e: KeyboardEvent) => void) | null = null;
+  private keyupHandler: ((e: KeyboardEvent) => void) | null = null;
   private clickHandler: ((e: MouseEvent) => void) | null = null;
   private resizeHandler: (() => void) | null = null;
   private scrollHandler: (() => void) | null = null;
+
+  // 動態輸入蓄力與動能狀態
+  private currentCharge = 0;
+  private lastNavKeyTime = 0;
+
+  private recordNavCharge(isRepeat: boolean = false): void {
+    const now = performance.now();
+    const dt = now - this.lastNavKeyTime;
+    this.lastNavKeyTime = now;
+
+    const adv = cursorStore.getState().advanced;
+    const impulse = typeof adv?.chargeStepImpulse === 'number' ? adv.chargeStepImpulse : 0.035;
+
+    if (dt <= 260 || isRepeat) {
+      this.currentCharge = Math.min(1.0, this.currentCharge + impulse);
+    } else {
+      this.currentCharge = Math.max(0.03, Math.min(1.0, this.currentCharge * 0.4 + impulse));
+    }
+  }
 
   constructor(options?: CursorControllerOptions) {
     this.options = options;
@@ -129,6 +149,7 @@ export class CursorController {
 
   public init(): void {
     this.keydownHandler = (e: KeyboardEvent) => this.handleKeyDown(e);
+    this.keyupHandler = (e: KeyboardEvent) => this.handleKeyUp(e);
     this.clickHandler = (e: MouseEvent) => this.handleClick(e);
 
     // 視窗縮放與滾動時保持游標位置緊密貼合
@@ -151,6 +172,7 @@ export class CursorController {
     this.scrollHandler = requestUpdate;
 
     window.addEventListener('keydown', this.keydownHandler, true);
+    window.addEventListener('keyup', this.keyupHandler, true);
     window.addEventListener('click', this.clickHandler, true);
     window.addEventListener('resize', this.resizeHandler, { passive: true });
     window.addEventListener('scroll', this.scrollHandler, { passive: true, capture: true });
@@ -164,6 +186,10 @@ export class CursorController {
     if (this.keydownHandler) {
       window.removeEventListener('keydown', this.keydownHandler, true);
       this.keydownHandler = null;
+    }
+    if (this.keyupHandler) {
+      window.removeEventListener('keyup', this.keyupHandler, true);
+      this.keyupHandler = null;
     }
     if (this.clickHandler) {
       window.removeEventListener('click', this.clickHandler, true);
@@ -550,6 +576,7 @@ export class CursorController {
 
     if (matchesKeybinding(e, bindings.moveLeft)) {
       intercept();
+      this.recordNavCharge(e.repeat);
       const count = this.consumeCount();
       for (let i = 0; i < count; i++) this.moveHorizontal(-1);
       return;
@@ -557,6 +584,7 @@ export class CursorController {
 
     if (matchesKeybinding(e, bindings.moveRight)) {
       intercept();
+      this.recordNavCharge(e.repeat);
       const count = this.consumeCount();
       for (let i = 0; i < count; i++) this.moveHorizontal(1);
       return;
@@ -564,6 +592,7 @@ export class CursorController {
 
     if (matchesKeybinding(e, bindings.moveUp)) {
       intercept();
+      this.recordNavCharge(e.repeat);
       const count = this.consumeCount();
       this.moveVertical(-1 * count);
       return;
@@ -571,6 +600,7 @@ export class CursorController {
 
     if (matchesKeybinding(e, bindings.moveDown)) {
       intercept();
+      this.recordNavCharge(e.repeat);
       const count = this.consumeCount();
       this.moveVertical(1 * count);
       return;
@@ -578,6 +608,7 @@ export class CursorController {
 
     if (matchesKeybinding(e, bindings.wordForward)) {
       intercept();
+      this.recordNavCharge(e.repeat);
       const count = this.consumeCount();
       for (let i = 0; i < count; i++) this.moveWordForward();
       return;
@@ -585,6 +616,7 @@ export class CursorController {
 
     if (matchesKeybinding(e, bindings.wordBackward)) {
       intercept();
+      this.recordNavCharge(e.repeat);
       const count = this.consumeCount();
       for (let i = 0; i < count; i++) this.moveWordBackward();
       return;
@@ -592,6 +624,7 @@ export class CursorController {
 
     if (matchesKeybinding(e, bindings.wordEnd)) {
       intercept();
+      this.recordNavCharge(e.repeat);
       const count = this.consumeCount();
       for (let i = 0; i < count; i++) this.moveWordEnd();
       return;
@@ -599,6 +632,7 @@ export class CursorController {
 
     if (matchesKeybinding(e, bindings.lineStart)) {
       intercept();
+      this.recordNavCharge(e.repeat);
       this.clearPendingKeys();
       this.jumpToLineBoundary(true);
       return;
@@ -606,6 +640,7 @@ export class CursorController {
 
     if (matchesKeybinding(e, bindings.lineEnd)) {
       intercept();
+      this.recordNavCharge(e.repeat);
       this.clearPendingKeys();
       this.jumpToLineBoundary(false);
       return;
@@ -613,6 +648,7 @@ export class CursorController {
 
     if (matchesKeybinding(e, bindings.halfPageDown)) {
       intercept();
+      this.recordNavCharge(e.repeat);
       this.clearPendingKeys();
       this.moveHalfPage(true);
       return;
@@ -620,6 +656,7 @@ export class CursorController {
 
     if (matchesKeybinding(e, bindings.halfPageUp)) {
       intercept();
+      this.recordNavCharge(e.repeat);
       this.clearPendingKeys();
       this.moveHalfPage(false);
       return;
@@ -627,6 +664,7 @@ export class CursorController {
 
     if (matchesKeybinding(e, bindings.docEnd)) {
       intercept();
+      this.recordNavCharge(e.repeat);
       this.clearPendingKeys();
       this.jumpToDocumentEnd();
       return;
@@ -636,6 +674,13 @@ export class CursorController {
     if (!isPlainNumber && this.countPrefix > 0) {
       this.clearPendingKeys();
     }
+  }
+
+  /**
+   * 鍵盤放開事件 (KeyUp)：通知冷卻衰減
+   */
+  private handleKeyUp(_e: KeyboardEvent): void {
+    // 釋放按鍵時，由 VimCursorOverlay 之 RAF 散熱冷卻引擎平滑衰減
   }
 
   /**
@@ -1409,6 +1454,7 @@ export class CursorController {
         isMoving: true,
         motionDirection: motionDir,
         motionSequence: (prevState.motionSequence || 0) + 1,
+        chargeLevel: this.currentCharge,
         isScrollUpdate: false,
         rect: {
           x: rect.left,

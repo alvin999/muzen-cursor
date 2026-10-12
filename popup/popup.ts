@@ -24,6 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const effectBounce = document.getElementById('effect-bounce') as HTMLInputElement | null;
   const effectSmoothScroll = document.getElementById('effect-smooth-scroll') as HTMLInputElement | null;
   const effectTrail = document.getElementById('effect-trail') as HTMLInputElement | null;
+  const effectCharge = document.getElementById('effect-charge') as HTMLInputElement | null;
   const pulseRadios = document.querySelectorAll<HTMLInputElement>('input[name="muzen-pulse"]');
   const btnResetDefaults = document.getElementById('btn-reset-defaults') as HTMLButtonElement | null;
   const resetConfirmGroup = document.getElementById('reset-confirm-group');
@@ -282,6 +283,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (effectBounce) effectBounce.checked = data.muzen_effects.bounce !== undefined ? !!data.muzen_effects.bounce : true;
         if (effectSmoothScroll) effectSmoothScroll.checked = data.muzen_effects.smoothScroll !== undefined ? !!data.muzen_effects.smoothScroll : true;
         if (effectTrail) effectTrail.checked = data.muzen_effects.trail !== undefined ? !!data.muzen_effects.trail : true;
+        if (effectCharge) effectCharge.checked = data.muzen_effects.charge !== undefined ? !!data.muzen_effects.charge : true;
         const pulseVal = data.muzen_effects.blink ? 'blink' : data.muzen_effects.breathe ? 'breathe' : 'none';
         pulseRadios.forEach((r) => { r.checked = r.value === pulseVal; });
       } else if (data.muzen_animation) {
@@ -290,6 +292,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (effectBounce) effectBounce.checked = true;
         if (effectSmoothScroll) effectSmoothScroll.checked = true;
         if (effectTrail) effectTrail.checked = true;
+        if (effectCharge) effectCharge.checked = true;
         const pulseVal = data.muzen_animation === 'breathe' ? 'breathe' : data.muzen_animation === 'blink' ? 'blink' : 'none';
         pulseRadios.forEach((r) => { r.checked = r.value === pulseVal; });
       } else {
@@ -550,6 +553,7 @@ document.addEventListener('DOMContentLoaded', () => {
       bounce: effectBounce ? effectBounce.checked : true,
       smoothScroll: effectSmoothScroll ? effectSmoothScroll.checked : true,
       trail: effectTrail ? effectTrail.checked : true,
+      charge: effectCharge ? effectCharge.checked : true,
       breathe: activePulse === 'breathe',
       blink: activePulse === 'blink'
     };
@@ -564,6 +568,7 @@ document.addEventListener('DOMContentLoaded', () => {
   effectBounce?.addEventListener('change', onEffectsChanged);
   effectSmoothScroll?.addEventListener('change', onEffectsChanged);
   effectTrail?.addEventListener('change', onEffectsChanged);
+  effectCharge?.addEventListener('change', onEffectsChanged);
   pulseRadios.forEach((r) => r.addEventListener('change', onEffectsChanged));
 
   // 14.4 開啟按鍵與防衝突設定頁面
@@ -656,6 +661,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (effectBounce) effectBounce.checked = true;
     if (effectSmoothScroll) effectSmoothScroll.checked = true;
     if (effectTrail) effectTrail.checked = true;
+    if (effectCharge) effectCharge.checked = true;
     pulseRadios.forEach((r) => { r.checked = r.value === 'blink'; });
     if (toggleStatusBar) toggleStatusBar.checked = defaultShowStatusBar;
     if (toggleAdvancedStatusBar) toggleAdvancedStatusBar.checked = defaultShowAdvancedStatusBar;

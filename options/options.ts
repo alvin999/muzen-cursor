@@ -632,6 +632,22 @@ function startPreview(key: keyof AdvancedConfig): void {
       }, 420);
       break;
 
+    case 'chargeStepImpulse':
+    case 'chargeThreshold':
+    case 'chargeDecayMs':
+    case 'chargeMaxGlow':
+    case 'chargeTrailBoost':
+      cursorStore.setState({
+        effects: { ...cursorStore.getState().effects, charge: true }
+      });
+      controller?.moveHorizontal(1);
+      setTimeout(() => controller?.moveHorizontal(1), 60);
+      setTimeout(() => controller?.moveHorizontal(1), 120);
+      previewTimer = setTimeout(() => {
+        controller?.moveHorizontal(-3);
+      }, 500);
+      break;
+
     default:
       controller?.moveHorizontal(1);
       previewTimer = setTimeout(() => {
