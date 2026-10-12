@@ -66,44 +66,40 @@ export function isHostnameExcluded(hostname: string, list: string[]): boolean {
 
 /**
  * 智慧辨識當前節點所屬的閱讀作用域區塊（Reading Scope）
- * 優先尋找語義主內容/動態饋給區或獨立滾動容器，防禦多欄式版面（如 Facebook、Twitter）游標跨界
+ * 100% 純 CSS 物理排版特徵優先，完全不依賴 article / feed / main 等易失準的單字與標籤枚舉
  */
 export function detectReadingScope(el: HTMLElement | null, fallbackRoot: HTMLElement = document.body): HTMLElement {
   if (!el) return fallbackRoot;
 
-  // 0. 若點擊目標身處於 float / out-of-flow 掛件內部，直接將該掛件作為局部作用域（float 內不跑去外面）
+  // 1. 物理脫離常態排版流 (float / fixed / sticky) -> 自身即為局部作用域沙盒 (避免浮動視窗視窗跑去正文)
   const widgetContainer = getOutOfNormalFlowContainer(el, fallbackRoot);
   if (widgetContainer) {
     return widgetContainer;
   }
 
-  // 1. 優先尋找巨集閱讀容器 (如 Facebook 動態牆 [role="feed"]、主內容區 [role="main"]、<main> 或對話框 [role="dialog"])
-  const macroScope = el.closest<HTMLElement>(
-    '[role="feed"], [role="main"], main, [role="dialog"]'
-  );
-  if (macroScope && macroScope !== document.body && macroScope !== document.documentElement) {
-    return macroScope;
-  }
-
-  // 2. 尋找獨立垂直滾動容器 (例如具有 overflow-y 滾動特徵的欄位)
+  // 2. 向上回溯尋找獨立物理排版容器 (獨立滾動視窗或 CSS 渲染隔離邊界)
   let current: HTMLElement | null = el.parentElement;
-  while (current && current !== document.body && current !== document.documentElement) {
+  while (current && current !== fallbackRoot && current !== document.body && current !== document.documentElement) {
     try {
       const style = window.getComputedStyle(current);
-      const overflowY = style.overflowY;
-      if ((overflowY === 'auto' || overflowY === 'scroll') && current.clientHeight > 120) {
+
+      // 特徵 A: 獨立垂直滾動容器 (有自己的滾動條與排版上下文)
+      const isScrollable = (style.overflowY === 'auto' || style.overflowY === 'scroll') && current.clientHeight > 120;
+      if (isScrollable) {
         return current;
       }
-    } catch {}
+
+      // 特徵 B: W3C 排版隔離邊界 (CSS Containment: 瀏覽器聲明其排版完全與外部隔離)
+      const contain = style.contain || '';
+      if (contain.includes('layout') || contain.includes('content') || contain.includes('strict')) {
+        return current;
+      }
+    } catch { }
+
     current = current.parentElement;
   }
 
-  // 3. 次級尋找獨立文章容器
-  const articleScope = el.closest<HTMLElement>('[role="article"], article');
-  if (articleScope && articleScope !== document.body) {
-    return articleScope;
-  }
-
+  // 3. 一般平鋪單欄式網頁 (無獨立滾動容器，正文隨全頁滾動) -> 預設回退至全域
   return fallbackRoot;
 }
 
@@ -133,7 +129,7 @@ export function getOutOfNormalFlowContainer(node: Node, rootBound?: HTMLElement)
       if (style.position === 'fixed' || style.position === 'sticky') {
         return el;
       }
-    } catch {}
+    } catch { }
 
     el = el.parentElement;
   }

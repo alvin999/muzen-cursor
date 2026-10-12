@@ -38,6 +38,7 @@ export class CursorController {
   private activeScopeElement: HTMLElement | null = null;
   private lastKeyTime = 0;
   private lastKey = '';
+  private lastEscTime = 0;
   private moveTimer: any = null;
 
   // Jump 歷史堆疊 (上限 30 筆) 與 Toggle 恢復點
@@ -235,10 +236,11 @@ export class CursorController {
       e.stopPropagation();
       e.stopImmediatePropagation();
 
-      const isCurrentlyActive = state.enabled && state.visible;
+      const isCurrentlyActive = state.enabled;
       if (isCurrentlyActive) {
-        // 關閉：立即退回休眠狀態
-        cursorStore.setState({ visible: false });
+        // 關閉：立即退回「深層休眠」狀態 (連同狀態列一併隱藏，完全釋放按鍵與點擊)
+        this.closeJumpMenu();
+        cursorStore.setState({ enabled: false, visible: false });
       } else {
         // 開啟：立即強制喚醒接管
         cursorStore.setState({ enabled: true, visible: true });
@@ -260,7 +262,55 @@ export class CursorController {
       return;
     }
 
-    // 3. 落實右下角「按 j 開始」：若游標處於休眠隱藏狀態 (!visible)，按下 j (moveDown) 時直接喚醒
+    // 3. Esc 鍵處理：單按為淺層待機，連按為深層休眠
+    if (matchesKeybinding(e, bindings.escape)) {
+      const now = Date.now();
+      const isDoubleEsc = now - this.lastEscTime < 500;
+      this.lastEscTime = now;
+
+      // 若浮動選單開啟中，優先關閉選單，並重置 Esc 計時器避免誤觸深層休眠
+      if (state.isJumpMenuOpen) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        this.closeJumpMenu();
+        this.lastEscTime = 0;
+        return;
+      }
+
+      if (this.jumpMenuTimer) {
+        clearTimeout(this.jumpMenuTimer);
+        this.jumpMenuTimer = null;
+      }
+
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+
+      if (isDoubleEsc) {
+        // 連按 Esc：深層休眠 (狀態列關閉，100% 釋放按鍵與滑鼠點擊)
+        this.lastEscTime = 0;
+        cursorStore.setState({ enabled: false, visible: false });
+        return;
+      }
+
+      // 單按 Esc：若處於 VISUAL 模式，退出選取回到 NORMAL
+      if (state.mode === 'VISUAL') {
+        this.exitVisualMode();
+        return;
+      }
+
+      // 若原本就已處於淺層待命 (!visible)，維持待命
+      if (!state.visible) {
+        return;
+      }
+
+      // 單按 Esc：由活動狀態轉為淺層待機 (隱藏游標，保留右下角「按 j 開始」，j 鍵與點擊仍可喚醒)
+      cursorStore.setState({ visible: false });
+      return;
+    }
+
+    // 4. 落實右下角「按 j 開始」：若游標處於淺層待機 (!visible)，按下 j (moveDown) 時直接喚醒
     if (!state.visible) {
       if (matchesKeybinding(e, bindings.moveDown)) {
         e.preventDefault();
@@ -278,7 +328,7 @@ export class CursorController {
       return;
     }
 
-    // 4. 游標處於喚醒接管狀態 (visible: true)：所有 Vim 按鍵全面霸道接管
+    // 5. 游標處於喚醒接管狀態 (visible: true)：所有 Vim 按鍵全面霸道接管
     const intercept = () => {
       e.preventDefault();
       e.stopPropagation();
@@ -301,18 +351,6 @@ export class CursorController {
     if (this.jumpMenuTimer && e.key !== "'" && e.key !== '`') {
       clearTimeout(this.jumpMenuTimer);
       this.jumpMenuTimer = null;
-    }
-
-    // Esc: 退出選取或隱藏游標返回休眠
-    if (matchesKeybinding(e, bindings.escape)) {
-      this.closeJumpMenu();
-      intercept();
-      if (state.mode === 'VISUAL') {
-        this.exitVisualMode();
-      } else {
-        cursorStore.setState({ visible: false });
-      }
-      return;
     }
 
     // 連續指令比對 (如 gg 或 '', ``)

@@ -37,8 +37,12 @@ function main(): void {
     chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       if (message.type === 'TOGGLE_CURSOR') {
         const current = cursorStore.getState().enabled;
-        cursorStore.setState({ enabled: !current });
-        sendResponse({ success: true, enabled: !current });
+        const nextEnabled = typeof message.enabled === 'boolean' ? message.enabled : !current;
+        cursorStore.setState({
+          enabled: nextEnabled,
+          visible: nextEnabled
+        });
+        sendResponse({ success: true, enabled: nextEnabled });
       } else if (message.type === 'SET_THEME') {
         cursorStore.setState({ theme: message.theme });
         sendResponse({ success: true });

@@ -41,6 +41,14 @@
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
+  "commands": {
+    "toggle-cursor": {
+      "suggested_key": {
+        "default": "Alt+V"
+      },
+      "description": "切換 Muzen Cursor 開啟 / 深層休眠"
+    }
+  },
   "web_accessible_resources": [
     {
       "resources": [
