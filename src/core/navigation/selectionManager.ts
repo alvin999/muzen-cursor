@@ -1,6 +1,7 @@
 import { TextTarget } from '../wordNavigator';
 import { cursorStore } from '../cursorStore';
 import { findVisualLineBoundary } from './spatialNavigator';
+import { LOCALES } from '../../i18n/locales';
 
 /**
  * Visual 模式與文字選取、剪貼簿管理員
@@ -73,6 +74,8 @@ export class VisualSelectionManager {
         sel.removeAllRanges();
         sel.addRange(range);
       }
+
+      this.updateSelectionStats(sel);
     } catch (err) {
       console.warn('[Muzen Cursor] Selection sync error:', err);
     }
@@ -142,9 +145,62 @@ export class VisualSelectionManager {
         sel.removeAllRanges();
         sel.addRange(range);
       }
+
+      this.updateSelectionStats(sel);
     } catch (err) {
       console.warn('[Muzen Cursor] Visual line selection sync error:', err);
     }
+  }
+
+  /**
+   * 基於 W3C Range.getClientRects() 標準行盒幾何聚類，計算選取範圍內真實的視覺行數
+   * 即使遇到大圖片、大字級標題或自動折行，圖片與大物件在行盒中永遠只佔 1 個行盒，避免高度誤差
+   */
+  private computeVisualLines(sel: Selection | null): number {
+    if (!sel || sel.rangeCount === 0) return 1;
+    try {
+      const range = sel.getRangeAt(0);
+      const rects = Array.from(range.getClientRects()).filter(
+        (r) => r.width > 0.5 && r.height > 0.5
+      );
+      if (rects.length === 0) {
+        const text = sel.toString();
+        return text ? text.split('\n').filter(Boolean).length || 1 : 1;
+      }
+
+      // 由上至下排序並聚類：同一個水平視覺行合併為 1，垂直分開則 +1
+      rects.sort((a, b) => a.top - b.top);
+      let lines = 0;
+      let lastBottom = -999999;
+
+      for (const r of rects) {
+        // 若當前行框頂部已低於上一行底部的一半以上，代表進入新的一行
+        if (r.top > lastBottom - r.height * 0.4) {
+          lines++;
+          lastBottom = r.bottom;
+        } else {
+          lastBottom = Math.max(lastBottom, r.bottom);
+        }
+      }
+      return Math.max(lines, 1);
+    } catch {
+      const text = sel.toString();
+      return text ? text.split('\n').filter(Boolean).length || 1 : 1;
+    }
+  }
+
+  /**
+   * 計算目前反白選取之字元數與行數，同步至全域 Store
+   */
+  private updateSelectionStats(sel: Selection | null): void {
+    if (!sel || sel.rangeCount === 0) {
+      cursorStore.setState({ selectionStats: null });
+      return;
+    }
+    const text = sel.toString();
+    const chars = text.length;
+    const lines = this.computeVisualLines(sel);
+    cursorStore.setState({ selectionStats: { chars, lines } });
   }
 
   /**
@@ -152,7 +208,7 @@ export class VisualSelectionManager {
    */
   public exitVisualMode(): void {
     this.clearAnchor();
-    cursorStore.setState({ mode: 'NORMAL' });
+    cursorStore.setState({ mode: 'NORMAL', selectionStats: null });
     const sel = window.getSelection();
     if (sel) {
       sel.removeAllRanges();
@@ -175,6 +231,13 @@ export class VisualSelectionManager {
 
       try {
         await navigator.clipboard.writeText(text);
+        const state = cursorStore.getState();
+        const dict = LOCALES[state.locale || 'zh-TW'] || LOCALES['zh-TW'];
+        const lineCount = state.selectionStats?.lines || text.split('\n').filter(Boolean).length || 1;
+        const notice = isLineMode
+          ? dict.statusCopiedLines.replace('{count}', String(lineCount))
+          : dict.statusCopiedChars.replace('{count}', String(text.length));
+        cursorStore.showStatusNotice(notice, 1600);
         console.log(`[Muzen Cursor] 已複製 ${text.length} 個字元至剪貼簿 (${isLineMode ? '整行' : '字元'})`);
       } catch (err) {
         console.warn('[Muzen Cursor] 剪貼簿寫入失敗:', err);

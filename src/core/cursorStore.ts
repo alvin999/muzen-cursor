@@ -295,6 +295,8 @@ export interface CursorState {
   charOffset: number;
   isJumpMenuOpen: boolean;
   jumpMenuItems: JumpMenuItem[];
+  statusNotice?: string | null; // 底部狀態列臨時 Toast 提示訊息 (例如 yank 複製反饋)
+  selectionStats?: { chars: number; lines: number } | null; // Visual 模式下即時選取字數與行數統計
 }
 
 type Listener = (state: CursorState) => void;
@@ -328,10 +330,13 @@ class CursorStore {
     readingProgress: 0,
     charOffset: 0,
     isJumpMenuOpen: false,
-    jumpMenuItems: []
+    jumpMenuItems: [],
+    statusNotice: null,
+    selectionStats: null
   };
 
   private listeners: Set<Listener> = new Set();
+  private noticeTimer: any = null;
 
   public getState(): CursorState {
     return { ...this.state };
@@ -340,6 +345,21 @@ class CursorStore {
   public setState(partial: Partial<CursorState>): void {
     this.state = { ...this.state, ...partial };
     this.notify();
+  }
+
+  /**
+   * 觸發狀態列臨時通知 (Toast)，維持指定毫秒後自動清除
+   */
+  public showStatusNotice(message: string, durationMs: number = 1500): void {
+    if (this.noticeTimer) {
+      clearTimeout(this.noticeTimer);
+      this.noticeTimer = null;
+    }
+    this.setState({ statusNotice: message });
+    this.noticeTimer = setTimeout(() => {
+      this.setState({ statusNotice: null });
+      this.noticeTimer = null;
+    }, durationMs);
   }
 
   public subscribe(listener: Listener): () => void {

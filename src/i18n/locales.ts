@@ -69,7 +69,11 @@ export interface Translations {
   shortcutEscape: string;
   shortcutEscapeDouble: string;
   footerTip: string;
-  statusStartPrompt: string;
+    statusStartPrompt: string;
+  statusCopiedChars: string;
+  statusCopiedLines: string;
+  statusCharsCount: string;
+  statusLinesCount: string;
   advancedSettingsBtn: string;
   resetDefaultsBtn: string;
   resetDefaultsConfirm: string;
@@ -373,6 +377,10 @@ export const LOCALES: Record<Locale, Translations> = {
     shortcutToggle: '備用深層休眠開關',
     footerTip: '點擊網頁文字即可立即錨定閱讀焦點',
     statusStartPrompt: '點擊文字或按 j 開始',
+    statusCopiedChars: '✓ 已複製 {count} 個字元',
+    statusCopiedLines: '✓ 已複製 {count} 行',
+    statusCharsCount: '{count} 字',
+    statusLinesCount: '{count} 行',
     advancedSettingsBtn: '⚙️ 進階數值調校 (物理與動態)',
     resetDefaultsBtn: '回復預設值',
     resetDefaultsConfirm: '確定回復預設值？',
@@ -663,6 +671,10 @@ export const LOCALES: Record<Locale, Translations> = {
     shortcutToggle: 'Fallback Deep Sleep Switch',
     footerTip: 'Click any text on the page to anchor cursor',
     statusStartPrompt: 'Click text or press j to begin',
+    statusCopiedChars: '✓ {count} chars yanked',
+    statusCopiedLines: '✓ {count} lines yanked',
+    statusCharsCount: '{count} chars',
+    statusLinesCount: '{count} lines',
     advancedSettingsBtn: '⚙️ Advanced Physics Tuning',
     resetDefaultsBtn: 'Reset to Defaults',
     resetDefaultsConfirm: 'Confirm Reset?',
@@ -953,6 +965,10 @@ export const LOCALES: Record<Locale, Translations> = {
     shortcutToggle: '予備の深いスリープ切替',
     footerTip: 'テキストをクリックして読書アンカーを設定',
     statusStartPrompt: 'クリックまたは j で開始',
+    statusCopiedChars: '✓ {count} 文字をコピーしました',
+    statusCopiedLines: '✓ {count} 行をコピーしました',
+    statusCharsCount: '{count} 文字',
+    statusLinesCount: '{count} 行',
     advancedSettingsBtn: '⚙️ 高度な物理・動態調整',
     resetDefaultsBtn: '初期設定に戻す',
     resetDefaultsConfirm: '初期化しますか？',

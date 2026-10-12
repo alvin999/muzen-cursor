@@ -84,12 +84,39 @@ export class VimStatusBar {
       return;
     }
 
-    if (state.mode === 'VISUAL') {
+    if (state.mode === 'VISUAL_LINE') {
+      this.modeEl.textContent = '-- VISUAL LINE --';
+      this.modeEl.style.color = '#d3869b'; // Gruvbox Purple / Magenta
+    } else if (state.mode === 'VISUAL') {
       this.modeEl.textContent = '-- VISUAL --';
       this.modeEl.style.color = '#fabd2f'; // Gruvbox Yellow
     } else {
       this.modeEl.textContent = '-- NORMAL --';
       this.modeEl.style.color = '#b8bb26'; // Gruvbox Green
+    }
+
+    // 優先顯示臨時操作通知 (如 yank 複製回饋 Toast)
+    if (state.statusNotice) {
+      this.infoEl.textContent = state.statusNotice;
+      this.infoEl.style.opacity = '1';
+      this.infoEl.style.color = '#8ec07c'; // Gruvbox Aqua / Soft Green
+      return;
+    }
+
+    this.infoEl.style.color = '';
+    this.infoEl.style.opacity = '0.7';
+
+    // 若處於選取模式且具備選取統計資訊，顯示選取字數或行數
+    const dict = LOCALES[state.locale || 'zh-TW'] || LOCALES['zh-TW'];
+    if ((state.mode === 'VISUAL' || state.mode === 'VISUAL_LINE') && state.selectionStats) {
+      if (state.mode === 'VISUAL_LINE') {
+        const linesText = dict.statusLinesCount.replace('{count}', String(state.selectionStats.lines));
+        this.infoEl.textContent = `[${linesText}]`;
+      } else {
+        const charsText = dict.statusCharsCount.replace('{count}', String(state.selectionStats.chars));
+        this.infoEl.textContent = `[${charsText}]`;
+      }
+      return;
     }
 
     this.infoEl.textContent = `[${Math.round(state.readingProgress)}%]`;
