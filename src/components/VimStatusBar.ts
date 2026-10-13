@@ -129,6 +129,13 @@ export class VimStatusBar {
   }
 
   private updateVisibility(state: CursorState): void {
+    // 若有臨時操作通知 (如進入休眠或喚醒 Toast)，優先維持可見度展示給使用者
+    if (state.statusNotice && state.showStatusBar !== false && !state.isExcluded) {
+      this.element.style.opacity = '1';
+      this.element.style.transform = 'translateY(0)';
+      return;
+    }
+
     if (!state.enabled || state.showStatusBar === false || state.isExcluded) {
       this.element.style.opacity = '0';
       this.element.style.transform = 'translateY(4px)';
@@ -161,13 +168,25 @@ export class VimStatusBar {
 
   private render(state: CursorState): void {
     this.updateVisibility(state);
-    if (!state.enabled || state.showStatusBar === false || state.isExcluded) {
+    if ((!state.enabled && !state.statusNotice) || state.showStatusBar === false || state.isExcluded) {
       return;
     }
 
     const themeKey = state.theme || 'gruvbox-dark';
     const palette = THEME_PALETTES[themeKey] || THEME_PALETTES['gruvbox-dark'];
     this.applyThemeStyles(themeKey);
+
+    // 優先顯示臨時操作通知 (如 yank 複製回饋、深層休眠 / 喚醒提示 Toast)
+    if (state.statusNotice) {
+      this.pendingEl.style.display = 'none';
+      this.sectionEl.style.display = 'none';
+      this.modeEl.textContent = 'MUZEN';
+      this.modeEl.style.color = palette.normal.hex;
+      this.infoEl.textContent = state.statusNotice;
+      this.infoEl.style.opacity = '1';
+      this.infoEl.style.color = palette.normal.hex;
+      return;
+    }
 
     const progress = Math.max(0, Math.min(100, Math.round(state.readingProgress)));
     const isLight = themeKey === 'gruvbox-light' || themeKey === 'intellij-light';

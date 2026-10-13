@@ -7,6 +7,16 @@ export type Locale = 'zh-TW' | 'en' | 'ja';
 export interface Translations {
   appName: string;
   appSubtitle: string;
+  masterSwitchLabel: string;
+  masterSwitchSub: string;
+  tabStatusActive: string;
+  tabStatusStandby: string;
+  tabStatusDeepSleep: string;
+  tabStatusDisabled: string;
+  tabStatusExcluded: string;
+  tabStatusLocal: string;
+  noticeDeepSleep: string;
+  noticeWakeUp: string;
   languageLabel: string;
   themeLabel: string;
   themeGruvboxDark: string;
@@ -332,6 +342,16 @@ export const LOCALES: Record<Locale, Translations> = {
   'zh-TW': {
     appName: 'Muzen Cursor',
     appSubtitle: '霧前禪夢，見字如初',
+    masterSwitchLabel: '外掛總電源',
+    masterSwitchSub: '控制所有分頁是否啟用',
+    tabStatusActive: '當前分頁：正常運作中',
+    tabStatusStandby: '當前分頁：淺層待命中 (按 j 喚醒)',
+    tabStatusDeepSleep: '當前分頁：單頁休眠中 (按 Esc Esc 喚醒)',
+    tabStatusDisabled: '全域總電源已關閉',
+    tabStatusExcluded: '當前網域：已列入排除清單',
+    tabStatusLocal: '本機分頁：無法注入外掛',
+    noticeDeepSleep: '💤 當前分頁已休眠 (連按兩次 Esc 喚醒)',
+    noticeWakeUp: '⚡ 已喚醒當前分頁游標',
     languageLabel: '介面語言',
     themeLabel: '色彩主題',
     themeGruvboxDark: 'Gruvbox Dark (經典琥珀)',
@@ -393,9 +413,9 @@ export const LOCALES: Record<Locale, Translations> = {
     shortcutLineBoundary: '跳至行首 / 行尾',
     shortcutDocBoundary: '全文開頭 / 結尾',
     shortcutVisual: '字元 / 行選取 / 複製',
-    shortcutEscape: '淺層休眠 / 退出選取',
-    shortcutEscapeDouble: '深層休眠雙向開關',
-    shortcutToggle: '備用深層休眠開關',
+    shortcutEscape: '淺層待命 / 退出選取',
+    shortcutEscapeDouble: '單頁休眠 / 喚醒 (雙向)',
+    shortcutToggle: '備用強制切換 (全域)',
     footerTip: '點擊網頁文字即可立即錨定閱讀焦點',
     statusStartPrompt: '點擊文字或按 j 開始',
     statusCopiedChars: '✓ 已複製 {count} 個字元',
@@ -643,6 +663,16 @@ export const LOCALES: Record<Locale, Translations> = {
   'en': {
     appName: 'Muzen Cursor',
     appSubtitle: 'Zen-like Reading Companion',
+    masterSwitchLabel: 'Master Switch',
+    masterSwitchSub: 'Enable/disable Muzen across all tabs',
+    tabStatusActive: 'Current Tab: Active',
+    tabStatusStandby: 'Current Tab: Standby (Press j to start)',
+    tabStatusDeepSleep: 'Current Tab: Asleep (Double Esc to wake)',
+    tabStatusDisabled: 'Master Switch is OFF',
+    tabStatusExcluded: 'Current Site: Excluded',
+    tabStatusLocal: 'Local Tab: Cannot inject extension',
+    noticeDeepSleep: '💤 Tab Asleep (Double Esc to resume)',
+    noticeWakeUp: '⚡ Muzen Cursor Active',
     languageLabel: 'Language',
     themeLabel: 'Color Theme',
     themeGruvboxDark: 'Gruvbox Dark (Classic Amber)',
@@ -704,9 +734,9 @@ export const LOCALES: Record<Locale, Translations> = {
     shortcutLineBoundary: 'Line Start / End',
     shortcutDocBoundary: 'Document Start / End',
     shortcutVisual: 'Char / Line Visual / Yank',
-    shortcutEscape: 'Light Sleep / Deselect',
-    shortcutEscapeDouble: 'Deep Sleep Toggle',
-    shortcutToggle: 'Fallback Deep Sleep Switch',
+    shortcutEscape: 'Light Standby / Deselect',
+    shortcutEscapeDouble: 'Tab Sleep / Wake Toggle',
+    shortcutToggle: 'Fallback Global Switch',
     footerTip: 'Click any text on the page to anchor cursor',
     statusStartPrompt: 'Click text or press j to begin',
     statusCopiedChars: '✓ {count} chars yanked',
@@ -954,6 +984,16 @@ export const LOCALES: Record<Locale, Translations> = {
   'ja': {
     appName: 'Muzen Cursor',
     appSubtitle: '霧前禅夢、文字の如く初む',
+    masterSwitchLabel: '拡張機能の主電源',
+    masterSwitchSub: '全タブでの有効・無効を制御',
+    tabStatusActive: '現在のタブ：正常に動作中',
+    tabStatusStandby: '現在のタブ：待機中（jキーで開始）',
+    tabStatusDeepSleep: '現在のタブ：スリープ中（Esc 2回で復帰）',
+    tabStatusDisabled: '主電源がオフです',
+    tabStatusExcluded: '現在のサイト：除外リスト内',
+    tabStatusLocal: 'ローカルタブ：拡張機能無効',
+    noticeDeepSleep: '💤 このタブをスリープ（Esc 2回で復帰）',
+    noticeWakeUp: '⚡ カーソルを復帰しました',
     languageLabel: '表示言語',
     themeLabel: 'カラースキーム',
     themeGruvboxDark: 'Gruvbox Dark（琥珀）',
@@ -1015,9 +1055,9 @@ export const LOCALES: Record<Locale, Translations> = {
     shortcutLineBoundary: '行頭 / 行末へジャンプ',
     shortcutDocBoundary: '文書の先頭 / 末尾',
     shortcutVisual: '文字 / 行選択 / コピー',
-    shortcutEscape: '浅いスリープ / 選択解除',
-    shortcutEscapeDouble: '深いスリープ双方向トグル',
-    shortcutToggle: '予備の深いスリープ切替',
+    shortcutEscape: '浅い待機 / 選択解除',
+    shortcutEscapeDouble: 'このタブをスリープ / 復帰',
+    shortcutToggle: '予備の主電源切替',
     footerTip: 'テキストをクリックして読書アンカーを設定',
     statusStartPrompt: 'クリックまたは j で開始',
     statusCopiedChars: '✓ {count} 文字をコピーしました',

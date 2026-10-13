@@ -1,4 +1,5 @@
 import { cursorStore, MotionDirection, CursorRect, matchesKeybinding, DEFAULT_KEYBINDINGS, JumpMenuItem } from './cursorStore';
+import { LOCALES } from '../i18n/locales';
 import { isTypingContext, detectReadingScope, isOutOfNormalFlowWidget, findCurrentSectionHeading, estimateReadingMinutes } from '../utils/domUtils';
 import { WordNavigator, TextTarget } from './wordNavigator';
 import { resolveTextTargetFromPoint, isClickWithinDistanceThreshold, getRawCaretFromPoint } from '../utils/caretUtils';
@@ -288,6 +289,31 @@ export class CursorController {
     this.updateCursorPosition(false);
   }
 
+  /**
+   * 切換游標啟用 / 深層休眠狀態 (供 Alt + V 全域快捷鍵、內部熱鍵或 Popup 通訊調用)
+   */
+  public toggle(forceEnabled?: boolean): boolean {
+    const state = cursorStore.getState();
+    const nextEnabled = typeof forceEnabled === 'boolean' ? forceEnabled : !state.enabled;
+    const dict = LOCALES[state.locale || 'zh-TW'] || LOCALES['zh-TW'];
+
+    if (nextEnabled) {
+      cursorStore.setState({ enabled: true, visible: true });
+      cursorStore.showStatusNotice(dict.noticeWakeUp, 1500);
+      if (!this.currentTarget || !document.contains(this.currentTarget.node)) {
+        this.findInitialTarget();
+      } else {
+        this.updateCursorPosition(true);
+      }
+    } else {
+      this.closeJumpMenu();
+      cursorStore.setState({ enabled: false, visible: false });
+      cursorStore.showStatusNotice(dict.noticeDeepSleep, 1800);
+    }
+
+    return nextEnabled;
+  }
+
   private handleKeyDown(e: KeyboardEvent): void {
     const state = cursorStore.getState();
 
@@ -304,20 +330,7 @@ export class CursorController {
       e.stopPropagation();
       e.stopImmediatePropagation();
 
-      const isCurrentlyActive = state.enabled;
-      if (isCurrentlyActive) {
-        // 關閉：立即退回「深層休眠」狀態 (連同狀態列一併隱藏，完全釋放按鍵與點擊)
-        this.closeJumpMenu();
-        cursorStore.setState({ enabled: false, visible: false });
-      } else {
-        // 開啟：立即強制喚醒接管
-        cursorStore.setState({ enabled: true, visible: true });
-        if (!this.currentTarget || !document.contains(this.currentTarget.node)) {
-          this.findInitialTarget();
-        } else {
-          this.updateCursorPosition(true);
-        }
-      }
+      this.toggle();
       return;
     }
 
@@ -344,6 +357,8 @@ export class CursorController {
           e.stopImmediatePropagation();
           this.lastEscTime = 0;
           cursorStore.setState({ enabled: true, visible: true });
+          const dict = LOCALES[cursorStore.getState().locale || 'zh-TW'] || LOCALES['zh-TW'];
+          cursorStore.showStatusNotice(dict.noticeWakeUp, 1500);
           if (!this.currentTarget || !document.contains(this.currentTarget.node)) {
             this.findInitialTarget();
           } else {
@@ -384,6 +399,8 @@ export class CursorController {
       if (isDoubleEsc && escapeDoubleDef?.enabled !== false) {
         this.lastEscTime = 0;
         cursorStore.setState({ enabled: false, visible: false });
+        const dict = LOCALES[cursorStore.getState().locale || 'zh-TW'] || LOCALES['zh-TW'];
+        cursorStore.showStatusNotice(dict.noticeDeepSleep, 1800);
         return;
       }
 

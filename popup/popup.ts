@@ -8,6 +8,8 @@ import { checkExtensionUpdate, getCurrentVersion, ReleaseInfo } from '../src/uti
 
 document.addEventListener('DOMContentLoaded', () => {
   const toggleEnabled = document.getElementById('toggle-enabled') as HTMLInputElement | null;
+  const tabStatusDot = document.getElementById('tab-status-dot');
+  const tabStatusText = document.getElementById('tab-status-text');
   const toggleStatusBar = document.getElementById('toggle-status-bar') as HTMLInputElement | null;
   const toggleAdvancedStatusBar = document.getElementById('toggle-advanced-status-bar') as HTMLInputElement | null;
   const subStatusBarAdvanced = document.getElementById('sub-status-bar-advanced');
@@ -148,6 +150,80 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 5. 即時同步更新面板多國語言狀態
     renderUpdateUI(currentReleaseInfo);
+
+    // 6. 即時同步更新當前分頁狀態文字
+    updateTabStatusUI(lastKnownTabStatus);
+  };
+
+  // ===== 當前分頁即時狀態管理器 =====
+  type TabStatusType = 'active' | 'standby' | 'sleep' | 'disabled' | 'excluded' | 'local';
+  let lastKnownTabStatus: TabStatusType = 'active';
+
+  const updateTabStatusUI = (statusType: TabStatusType) => {
+    lastKnownTabStatus = statusType;
+    if (!tabStatusDot || !tabStatusText) return;
+    const dict = LOCALES[currentLocale] || LOCALES['zh-TW'];
+
+    tabStatusDot.className = `tab-status-dot ${statusType}`;
+    switch (statusType) {
+      case 'active':
+        tabStatusText.textContent = dict.tabStatusActive;
+        break;
+      case 'standby':
+        tabStatusText.textContent = dict.tabStatusStandby;
+        break;
+      case 'sleep':
+        tabStatusText.textContent = dict.tabStatusDeepSleep;
+        break;
+      case 'disabled':
+        tabStatusText.textContent = dict.tabStatusDisabled;
+        break;
+      case 'excluded':
+        tabStatusText.textContent = dict.tabStatusExcluded;
+        break;
+      case 'local':
+        tabStatusText.textContent = dict.tabStatusLocal;
+        break;
+    }
+  };
+
+  const refreshActiveTabStatus = () => {
+    if (toggleEnabled && !toggleEnabled.checked) {
+      updateTabStatusUI('disabled');
+      return;
+    }
+
+    if (typeof chrome !== 'undefined' && chrome.tabs) {
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        const activeTab = tabs[0];
+        if (!activeTab?.id || !activeTab?.url || !activeTab.url.startsWith('http')) {
+          updateTabStatusUI('local');
+          return;
+        }
+
+        if (isExcluded(currentHostname, excludedSites)) {
+          updateTabStatusUI('excluded');
+          return;
+        }
+
+        chrome.tabs.sendMessage(activeTab.id, { type: 'GET_STATUS' }, (response) => {
+          if (chrome.runtime.lastError || !response?.state) {
+            return;
+          }
+
+          const s = response.state;
+          if (s.isExcluded) {
+            updateTabStatusUI('excluded');
+          } else if (!s.enabled) {
+            updateTabStatusUI('sleep');
+          } else if (!s.visible) {
+            updateTabStatusUI('standby');
+          } else {
+            updateTabStatusUI('active');
+          }
+        });
+      });
+    }
   };
 
   // ===== 版本檢查與一鍵更新模組 =====
@@ -344,6 +420,9 @@ document.addEventListener('DOMContentLoaded', () => {
           if (currentSiteHostEl) currentSiteHostEl.textContent = '本機分頁';
           if (toggleCurrentSite) toggleCurrentSite.disabled = true;
         }
+        refreshActiveTabStatus();
+      } else {
+        updateTabStatusUI('local');
       }
     });
   }
@@ -365,6 +444,11 @@ document.addEventListener('DOMContentLoaded', () => {
       chrome.storage.sync.set({ muzen_enabled: isEnabled });
     }
     broadcastToActiveTab({ type: 'TOGGLE_CURSOR', enabled: isEnabled });
+    if (!isEnabled) {
+      updateTabStatusUI('disabled');
+    } else {
+      setTimeout(() => refreshActiveTabStatus(), 100);
+    }
   });
 
   // 輔助函式：切換狀態列子選項啟用/禁用狀態
@@ -421,6 +505,7 @@ document.addEventListener('DOMContentLoaded', () => {
       chrome.storage.sync.set({ muzen_excluded_sites: excludedSites });
     }
     broadcastToActiveTab({ type: 'UPDATE_EXCLUDED_SITES', excludedSites });
+    refreshActiveTabStatus();
   });
 
   // 5. 展開 / 收合排除名單抽屜
@@ -458,6 +543,7 @@ document.addEventListener('DOMContentLoaded', () => {
       chrome.storage.sync.set({ muzen_excluded_sites: excludedSites });
     }
     broadcastToActiveTab({ type: 'UPDATE_EXCLUDED_SITES', excludedSites });
+    refreshActiveTabStatus();
 
     const originalText = btnSaveBlacklist.textContent;
     btnSaveBlacklist.textContent = (LOCALES[currentLocale] || LOCALES['zh-TW']).blacklistSavedBtn;

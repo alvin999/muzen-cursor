@@ -36,12 +36,7 @@ function main(): void {
   if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
     chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       if (message.type === 'TOGGLE_CURSOR') {
-        const current = cursorStore.getState().enabled;
-        const nextEnabled = typeof message.enabled === 'boolean' ? message.enabled : !current;
-        cursorStore.setState({
-          enabled: nextEnabled,
-          visible: nextEnabled
-        });
+        const nextEnabled = controller.toggle(typeof message.enabled === 'boolean' ? message.enabled : undefined);
         sendResponse({ success: true, enabled: nextEnabled });
       } else if (message.type === 'SET_THEME') {
         cursorStore.setState({ theme: message.theme });
