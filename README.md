@@ -152,12 +152,21 @@
 點擊瀏覽器工具列上的 **Muzen Cursor** 圖示即可開啟設定視窗：
 
 ### 1. 色彩主題 (Themes)
-- **Gruvbox Dark**（經典琥珀暖調）
-- **Gruvbox Light**（淡雅暖白羊皮紙）
+內建 14 款精心調配的沉浸式色彩主題，完美涵蓋深色與淺色閱讀風格：
+- **Gruvbox Dark**（經典琥珀暖調，溫潤護眼）
+- **Gruvbox Light**（淡雅暖白羊皮紙，柔和雅緻）
 - **Tokyo Night**（東京暗夜冷冽藍紫）
-- **Nord**（北歐極光冰霜藍）
-- **Catppuccin Mocha**（摩卡柔粉高雅）
-- **Everforest**（深邃森林雅綠）
+- **Nord**（北歐極光冰霜冷藍）
+- **Catppuccin Mocha**（典雅摩卡柔粉）
+- **Everforest**（森野之境深邃綠意）
+- **IntelliJ Darcula**（極客暗灰經典）
+- **IntelliJ Light**（皓白純粹簡約）
+- **Dracula**（幽冥吸血鬼冷艷紫綠）
+- **Monokai Pro**（經典霓光高對比）
+- **One Dark**（晨星深藍現代風）
+- **Solarized Dark**（晴翠深碧經典護眼）
+- **Rosé Pine**（復古微醺玫瑰粉金）
+- **Cyberpunk**（霓虹幻夜高飽和賽博風）
 
 ### 2. 游標形態 (Shapes)
 - **實心方塊 (Block)**：經典終端高對比實心方塊，字元視覺焦點最強。

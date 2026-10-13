@@ -148,13 +148,21 @@
 ブラウザのツールバーにある **Muzen Cursor** アイコンをクリックして設定パネルを開きます：
 
 ### 1. カラースキーム (Themes)
-- **Gruvbox Dark**（温かみのある琥珀色）
-- **Gruvbox Light**（上品な生成り色）
+ダーク・ライト環境に対応した 14 種類の洗練されたカラースキームを内蔵：
+- **Gruvbox Dark**（温かみのあるクラシック琥珀色）
+- **Gruvbox Light**（上品な生成り色・羊皮紙）
 - **Tokyo Night**（冷涼な夜桜藍紫）
 - **Nord**（極北の氷原ブルー）
 - **Catppuccin Mocha**（淡く優美な薄紅藤）
 - **Everforest**（深遠なる常盤の森）
-- *(ほか、開発者に人気のテーマ 8 種：Dracula、Monokai Pro、One Dark、IntelliJ Darcula 等)*
+- **IntelliJ Darcula**（ギークな定番ダークグレー）
+- **IntelliJ Light**（純白でシンプルなライト）
+- **Dracula**（吸血鬼の妖美なパープル＆グリーン）
+- **Monokai Pro**（高コントラストなネオンカラー）
+- **One Dark**（モダンなアトムネイビー）
+- **Solarized Dark**（目に優しい深緑シアン）
+- **Rosé Pine**（レトロで上品なローズゴールド）
+- **Cyberpunk**（ネオンが輝くサイバーパンク）
 
 ### 2. カーソル形状 (Shapes)
 - **ソリッドブロック (Block)**：ターミナル風のクラシックな塗りつぶしブロック。文字への視覚焦点が最も明瞭。

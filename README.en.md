@@ -152,13 +152,21 @@ During long-form reading, mouse wheel scrolling frequently causes readers to los
 Click the **Muzen Cursor** icon in your browser toolbar to open the options panel:
 
 ### 1. Color Themes
+Includes 14 carefully crafted themes covering dark and light reading environments:
 - **Gruvbox Dark** (Classic Amber Warmth)
 - **Gruvbox Light** (Warm Cream Parchment)
 - **Tokyo Night** (Cold Midnight Blue-Purple)
 - **Nord** (Arctic Frost Blue)
 - **Catppuccin Mocha** (Pastel Mauve Elegance)
 - **Everforest** (Deep Forest Green)
-- *(And 8 more developer-favorite themes: Dracula, Monokai Pro, One Dark, IntelliJ Darcula / Light, etc.)*
+- **IntelliJ Darcula** (Geek Dark Gray)
+- **IntelliJ Light** (Clean Pure White)
+- **Dracula** (Vampire Cold Purple & Green)
+- **Monokai Pro** (Neon High Contrast)
+- **One Dark** (Modern Atom Navy)
+- **Solarized Dark** (Solar Cyan Eye-care)
+- **Rosé Pine** (Vintage Bloom Rose Gold)
+- **Cyberpunk** (Neon Mirage High-contrast)
 
 ### 2. Cursor Shapes
 - **Solid Block**: Classic terminal high-contrast block; strongest character visual focus.
