@@ -1009,6 +1009,8 @@ export class CursorController {
   }
 
   private restoreJumpPoint(point: JumpPoint, exact: boolean = false): void {
+    const currentScroll = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
+    this.triggerRearviewNotice(point.scrollY < currentScroll ? 'up' : 'down');
     const duration = cursorStore.getState().advanced?.scrollDurationMs ?? 380;
 
     if (point.node && point.node.isConnected) {
@@ -1088,9 +1090,57 @@ export class CursorController {
   }
 
   /**
+   * 觸發翻頁回溯後照鏡 (Rearview Mirror HUD)
+   * 擷取剛才出發點的句子上下文，供後照鏡 HUD 即時對齊閱讀記憶
+   */
+  private triggerRearviewNotice(direction: 'up' | 'down'): void {
+    if (!this.currentTarget) return;
+    const { node, offset } = this.currentTarget;
+    const len = node.textContent?.length || 0;
+    if (len === 0) return;
+
+    try {
+      const snippet = this.extractSentenceSnippet(node, offset);
+      if (snippet && snippet.length > 0) {
+        cursorStore.setState({
+          rearviewNotice: {
+            text: snippet,
+            direction,
+            sectionTitle: this.cachedHeadingTitle,
+            timestamp: performance.now()
+          }
+        });
+      }
+    } catch {
+      // 容錯防禦
+    }
+  }
+
+  /**
+   * 擷取游標所在位置之句子文字摘要 (前後各截取 25~32 字元)
+   */
+  private extractSentenceSnippet(node: Text, offset: number): string {
+    const raw = node.textContent || '';
+    if (!raw.trim()) return '';
+
+    const textLen = raw.length;
+    const safeOffset = Math.min(offset, Math.max(0, textLen - 1));
+
+    const start = Math.max(0, safeOffset - 22);
+    const end = Math.min(textLen, safeOffset + 32);
+
+    let snippet = raw.slice(start, end).replace(/\s+/g, ' ').trim();
+    if (start > 0) snippet = '…' + snippet;
+    if (end < textLen) snippet = snippet + '…';
+
+    return snippet;
+  }
+
+  /**
    * 跳至文章頂部 (gg)
    */
   public jumpToDocumentStart(): void {
+    this.triggerRearviewNotice('up');
     this.pushJumpPoint();
     const firstText = findFirstTextNodeIn(this.rootElement);
     if (firstText) {
@@ -1112,6 +1162,7 @@ export class CursorController {
    * 跳至文章底部 (G)
    */
   public jumpToDocumentEnd(): void {
+    this.triggerRearviewNotice('down');
     this.pushJumpPoint();
     const walker = document.createTreeWalker(this.rootElement, NodeFilter.SHOW_TEXT);
     let lastTextNode: Text | null = null;
@@ -1520,6 +1571,9 @@ export class CursorController {
       this.findInitialTarget();
       return;
     }
+
+    // 0. 記錄原地出發點之文字上下文，觸發翻頁回溯後照鏡 HUD
+    this.triggerRearviewNotice(isDownward ? 'down' : 'up');
 
     const { node, offset } = this.currentTarget;
     const len = node.textContent?.length || 0;

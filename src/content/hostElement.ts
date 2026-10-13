@@ -1,6 +1,7 @@
 import { VimCursorOverlay } from '../components/VimCursorOverlay';
 import { VimStatusBar } from '../components/VimStatusBar';
 import { VimJumpMenu } from '../components/VimJumpMenu';
+import { VimRearviewMirror } from '../components/VimRearviewMirror';
 
 /**
  * 宿主網頁注入容器 (使用原生 div + Shadow DOM，不依賴 customElements)
@@ -12,6 +13,7 @@ export class MuzenCursorHost {
   private overlay: VimCursorOverlay;
   private statusBar: VimStatusBar;
   private jumpMenu: VimJumpMenu;
+  private rearviewMirror: VimRearviewMirror;
 
   constructor() {
     this.hostElement = document.createElement('div');
@@ -29,15 +31,17 @@ export class MuzenCursorHost {
     // 建立 Shadow DOM 隔離外部網頁 CSS
     this.shadow = this.hostElement.attachShadow({ mode: 'open' });
 
-    // 初始化內部游標、狀態列與跳轉選單 UI
+    // 初始化內部游標、狀態列、跳轉選單與翻頁後照鏡 UI
     this.overlay = new VimCursorOverlay();
     this.statusBar = new VimStatusBar();
     this.jumpMenu = new VimJumpMenu();
+    this.rearviewMirror = new VimRearviewMirror();
 
     this.shadow.appendChild(this.overlay.getStyleSheet());
     this.shadow.appendChild(this.overlay.getElement());
     this.shadow.appendChild(this.statusBar.getElement());
     this.shadow.appendChild(this.jumpMenu.getElement());
+    this.shadow.appendChild(this.rearviewMirror.getElement());
   }
 
   public getHostElement(): HTMLElement {
@@ -48,6 +52,7 @@ export class MuzenCursorHost {
     this.overlay.destroy();
     this.statusBar.destroy();
     this.jumpMenu.destroy();
+    this.rearviewMirror.destroy();
     this.hostElement.remove();
   }
 }

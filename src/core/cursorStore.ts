@@ -32,6 +32,7 @@ export interface CursorEffects {
   blink: boolean;        // 經典閃爍 (Terminal Blink)
   trail?: boolean;       // 梯形透視殘影 (Trapezoid Motion Trail)
   charge?: boolean;      // 動態輸入蓄力與超載特效 (Kinetic Charge Overdrive)
+  rearviewMirror?: boolean; // 翻頁回溯後照鏡 HUD (Rearview Mirror HUD)
 }
 
 export interface CursorRect {
@@ -312,6 +313,12 @@ export interface CursorState {
   currentSectionTitle?: string; // 當前游標所處之文章章節/標題文字 (例如 § 快速上手)
   estimatedMinutesLeft?: number; // 預估剩餘閱讀時間 (分鐘數)
   chargeLevel?: number; // 當前動能蓄力等級 (0.0 ~ 1.0)
+  rearviewNotice?: {
+    text: string;
+    direction: 'up' | 'down';
+    sectionTitle?: string;
+    timestamp: number;
+  } | null; // 翻頁回溯後照鏡之剛才出發段落摘要與方向
 }
 
 type Listener = (state: CursorState) => void;
@@ -333,7 +340,8 @@ class CursorStore {
       breathe: false,
       blink: true,
       trail: true,
-      charge: true
+      charge: true,
+      rearviewMirror: true
     },
     advanced: { ...DEFAULT_ADVANCED_CONFIG },
     keybindings: { ...DEFAULT_KEYBINDINGS },
@@ -353,7 +361,8 @@ class CursorStore {
     selectionStats: null,
     pendingKeys: '',
     currentSectionTitle: '',
-    estimatedMinutesLeft: undefined
+    estimatedMinutesLeft: undefined,
+    rearviewNotice: null
   };
 
   private listeners: Set<Listener> = new Set();

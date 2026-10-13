@@ -25,6 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const effectSmoothScroll = document.getElementById('effect-smooth-scroll') as HTMLInputElement | null;
   const effectTrail = document.getElementById('effect-trail') as HTMLInputElement | null;
   const effectCharge = document.getElementById('effect-charge') as HTMLInputElement | null;
+  const effectRearviewMirror = document.getElementById('effect-rearview-mirror') as HTMLInputElement | null;
   const pulseRadios = document.querySelectorAll<HTMLInputElement>('input[name="muzen-pulse"]');
   const btnResetDefaults = document.getElementById('btn-reset-defaults') as HTMLButtonElement | null;
   const resetConfirmGroup = document.getElementById('reset-confirm-group');
@@ -284,6 +285,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (effectSmoothScroll) effectSmoothScroll.checked = data.muzen_effects.smoothScroll !== undefined ? !!data.muzen_effects.smoothScroll : true;
         if (effectTrail) effectTrail.checked = data.muzen_effects.trail !== undefined ? !!data.muzen_effects.trail : true;
         if (effectCharge) effectCharge.checked = data.muzen_effects.charge !== undefined ? !!data.muzen_effects.charge : true;
+        if (effectRearviewMirror) effectRearviewMirror.checked = data.muzen_effects.rearviewMirror !== undefined ? !!data.muzen_effects.rearviewMirror : true;
         const pulseVal = data.muzen_effects.blink ? 'blink' : data.muzen_effects.breathe ? 'breathe' : 'none';
         pulseRadios.forEach((r) => { r.checked = r.value === pulseVal; });
       } else if (data.muzen_animation) {
@@ -293,6 +295,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (effectSmoothScroll) effectSmoothScroll.checked = true;
         if (effectTrail) effectTrail.checked = true;
         if (effectCharge) effectCharge.checked = true;
+        if (effectRearviewMirror) effectRearviewMirror.checked = true;
         const pulseVal = data.muzen_animation === 'breathe' ? 'breathe' : data.muzen_animation === 'blink' ? 'blink' : 'none';
         pulseRadios.forEach((r) => { r.checked = r.value === pulseVal; });
       } else {
@@ -554,6 +557,7 @@ document.addEventListener('DOMContentLoaded', () => {
       smoothScroll: effectSmoothScroll ? effectSmoothScroll.checked : true,
       trail: effectTrail ? effectTrail.checked : true,
       charge: effectCharge ? effectCharge.checked : true,
+      rearviewMirror: effectRearviewMirror ? effectRearviewMirror.checked : true,
       breathe: activePulse === 'breathe',
       blink: activePulse === 'blink'
     };
@@ -569,6 +573,7 @@ document.addEventListener('DOMContentLoaded', () => {
   effectSmoothScroll?.addEventListener('change', onEffectsChanged);
   effectTrail?.addEventListener('change', onEffectsChanged);
   effectCharge?.addEventListener('change', onEffectsChanged);
+  effectRearviewMirror?.addEventListener('change', onEffectsChanged);
   pulseRadios.forEach((r) => r.addEventListener('change', onEffectsChanged));
 
   // 14.4 開啟按鍵與防衝突設定頁面
@@ -642,6 +647,8 @@ document.addEventListener('DOMContentLoaded', () => {
       bounce: true,
       smoothScroll: true,
       trail: true,
+      charge: true,
+      rearviewMirror: true,
       breathe: false,
       blink: true
     };
@@ -662,6 +669,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (effectSmoothScroll) effectSmoothScroll.checked = true;
     if (effectTrail) effectTrail.checked = true;
     if (effectCharge) effectCharge.checked = true;
+    if (effectRearviewMirror) effectRearviewMirror.checked = true;
     pulseRadios.forEach((r) => { r.checked = r.value === 'blink'; });
     if (toggleStatusBar) toggleStatusBar.checked = defaultShowStatusBar;
     if (toggleAdvancedStatusBar) toggleAdvancedStatusBar.checked = defaultShowAdvancedStatusBar;

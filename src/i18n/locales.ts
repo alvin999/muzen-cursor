@@ -46,6 +46,7 @@ export interface Translations {
   effectBlink: string;
   effectTrail: string;
   effectCharge: string;
+  effectRearviewMirror: string;
   statusBarSectionLabel: string;
   statusBarSectionDesc: string;
   statusBarAdvancedLabel: string;
@@ -370,6 +371,7 @@ export const LOCALES: Record<Locale, Translations> = {
     effectBlink: '經典閃爍',
     effectTrail: '流光殘影',
     effectCharge: '動能蓄力',
+    effectRearviewMirror: '捲動回顧',
     statusBarSectionLabel: '顯示底部狀態列',
     statusBarSectionDesc: '畫面右下角呈現目前 Vim 模式與文章進度',
     statusBarAdvancedLabel: '進階長文閱讀輔助 (章節標題與預估時間)',
@@ -680,6 +682,7 @@ export const LOCALES: Record<Locale, Translations> = {
     effectBlink: 'Classic Blink',
     effectTrail: 'Motion Trail',
     effectCharge: 'Kinetic Charge',
+    effectRearviewMirror: 'Scroll Peek',
     statusBarSectionLabel: 'Show Status Bar',
     statusBarSectionDesc: 'Display Vim mode & reading progress at bottom-right',
     statusBarAdvancedLabel: 'Advanced Reading Aids (Section & Time Left)',
@@ -990,6 +993,7 @@ export const LOCALES: Record<Locale, Translations> = {
     effectBlink: 'クラシック点滅',
     effectTrail: '流光残像',
     effectCharge: '動能チャージ',
+    effectRearviewMirror: 'スクロール回顧',
     statusBarSectionLabel: 'ステータスバーを表示',
     statusBarSectionDesc: '画面右下に現在のVimモードと読書進捗を表示',
     statusBarAdvancedLabel: '高度な読書支援 (章見出し・残り時間)',
