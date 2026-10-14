@@ -15,6 +15,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const subStatusBarAdvanced = document.getElementById('sub-status-bar-advanced');
   const togglePdf = document.getElementById('toggle-pdf') as HTMLInputElement | null;
   const localeSelect = document.getElementById('locale-select') as HTMLSelectElement | null;
+  const toggleAutoTheme = document.getElementById('toggle-auto-theme') as HTMLInputElement | null;
+  const singleThemeWrapper = document.getElementById('single-theme-wrapper');
+  const autoThemePanel = document.getElementById('auto-theme-panel');
+  const autoThemeDot = document.getElementById('auto-theme-dot');
+  const autoThemeDetectedText = document.getElementById('auto-theme-detected-text');
+  const autoDotNormal = document.getElementById('auto-dot-normal');
+  const autoHexNormal = document.getElementById('auto-hex-normal');
+  const autoDotVisual = document.getElementById('auto-dot-visual');
+  const autoHexVisual = document.getElementById('auto-hex-visual');
   const themeSelect = document.getElementById('theme-select') as HTMLSelectElement | null;
   const shapeSelect = document.getElementById('shape-select') as HTMLSelectElement | null;
   const thicknessSlider = document.getElementById('thickness-slider') as HTMLInputElement | null;
@@ -121,6 +130,44 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.setAttribute('data-theme', theme || 'gruvbox-dark');
   };
 
+  // 更新自動主題 UI 面板狀態
+  const updateAutoThemeUI = (isAuto: boolean) => {
+    if (toggleAutoTheme) toggleAutoTheme.checked = isAuto;
+    if (singleThemeWrapper) singleThemeWrapper.style.display = isAuto ? 'none' : 'block';
+    if (autoThemePanel) autoThemePanel.style.display = isAuto ? 'flex' : 'none';
+  };
+
+  // 更新當前網頁探測明暗結果與智慧最適色彩預覽 UI
+  const updateDetectedThemeUI = (detected: 'dark' | 'light', dynamicPalette?: any) => {
+    const dict = LOCALES[currentLocale] || LOCALES['zh-TW'];
+    if (autoThemeDetectedText) {
+      autoThemeDetectedText.textContent = detected === 'dark' ? dict.detectedDarkLabel : dict.detectedLightLabel;
+    }
+    if (autoThemeDot) {
+      if (detected === 'light') {
+        autoThemeDot.classList.add('light-mode');
+      } else {
+        autoThemeDot.classList.remove('light-mode');
+      }
+    }
+    if (dynamicPalette) {
+      if (autoDotNormal && dynamicPalette.normal) {
+        autoDotNormal.style.backgroundColor = dynamicPalette.normal.hex;
+        autoDotNormal.style.boxShadow = `0 0 6px ${dynamicPalette.normal.hex}`;
+      }
+      if (autoHexNormal && dynamicPalette.normal) {
+        autoHexNormal.textContent = dynamicPalette.normal.hex;
+      }
+      if (autoDotVisual && dynamicPalette.visual) {
+        autoDotVisual.style.backgroundColor = dynamicPalette.visual.hex;
+        autoDotVisual.style.boxShadow = `0 0 6px ${dynamicPalette.visual.hex}`;
+      }
+      if (autoHexVisual && dynamicPalette.visual) {
+        autoHexVisual.textContent = dynamicPalette.visual.hex;
+      }
+    }
+  };
+
   // 套用語言字典至 Popup 視窗
   const applyLocale = (locale: Locale) => {
     currentLocale = locale;
@@ -212,6 +259,9 @@ document.addEventListener('DOMContentLoaded', () => {
           }
 
           const s = response.state;
+          if (s.detectedPageTheme) {
+            updateDetectedThemeUI(s.detectedPageTheme, s.dynamicPalette);
+          }
           if (s.isExcluded) {
             updateTabStatusUI('excluded');
           } else if (!s.enabled) {
@@ -314,7 +364,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 1. 初始化讀取設定
   if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
-    chrome.storage.sync.get(['muzen_enabled', 'muzen_locale', 'muzen_theme', 'muzen_intercept_pdf', 'muzen_shape', 'muzen_thickness', 'muzen_glow', 'muzen_effects', 'muzen_show_status_bar', 'muzen_excluded_sites', 'muzen_animation', 'muzen_keybindings'], (data) => {
+    chrome.storage.sync.get(['muzen_enabled', 'muzen_locale', 'muzen_theme', 'muzen_auto_theme', 'muzen_dark_theme', 'muzen_light_theme', 'muzen_intercept_pdf', 'muzen_shape', 'muzen_thickness', 'muzen_glow', 'muzen_effects', 'muzen_show_status_bar', 'muzen_excluded_sites', 'muzen_animation', 'muzen_keybindings'], (data) => {
       // 載入語言設定
       const savedLocale = (data.muzen_locale as Locale) || detectDefaultLocale();
       if (localeSelect) {
@@ -336,6 +386,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (togglePdf && typeof data.muzen_intercept_pdf === 'boolean') {
         togglePdf.checked = data.muzen_intercept_pdf;
       }
+
+      // 智慧感應主題載入 (預設 false)
+      const isAutoTheme = Boolean(data.muzen_auto_theme);
+      updateAutoThemeUI(isAutoTheme);
+
       if (themeSelect && data.muzen_theme) {
         themeSelect.value = data.muzen_theme;
         applyTheme(data.muzen_theme);
@@ -589,6 +644,17 @@ document.addEventListener('DOMContentLoaded', () => {
     broadcastToActiveTab({ type: 'SET_THEME', theme });
   });
 
+  // 9.1 智慧感應主題開關事件 (預設關閉)
+  toggleAutoTheme?.addEventListener('change', () => {
+    const isAuto = toggleAutoTheme.checked;
+    updateAutoThemeUI(isAuto);
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
+      chrome.storage.sync.set({ muzen_auto_theme: isAuto });
+    }
+    broadcastToActiveTab({ type: 'SET_AUTO_THEME', autoTheme: isAuto });
+    setTimeout(() => refreshActiveTabStatus(), 100);
+  });
+
   // 10. 游標形態變更事件 (Block / Hollow / Underline)
   shapeSelect?.addEventListener('change', () => {
     const shape = shapeSelect.value;
@@ -725,6 +791,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 預設參數對齊經典體驗
     const defaultTheme = 'gruvbox-dark';
+    const defaultDarkTheme = 'gruvbox-dark';
+    const defaultLightTheme = 'gruvbox-light';
     const defaultShape = 'block';
     const defaultThickness = 1.5;
     const defaultGlow = 0;
@@ -747,6 +815,7 @@ document.addEventListener('DOMContentLoaded', () => {
       themeSelect.value = defaultTheme;
       applyTheme(defaultTheme);
     }
+    updateAutoThemeUI(false);
     if (shapeSelect) shapeSelect.value = defaultShape;
     updateThicknessUI(defaultThickness);
     updateGlowUI(defaultGlow);
@@ -766,6 +835,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
       chrome.storage.sync.set({
         muzen_theme: defaultTheme,
+        muzen_auto_theme: false,
+        muzen_dark_theme: defaultDarkTheme,
+        muzen_light_theme: defaultLightTheme,
         muzen_shape: defaultShape,
         muzen_thickness: defaultThickness,
         muzen_glow: defaultGlow,
@@ -777,7 +849,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 3. 廣播所有更新至作用中分頁
+    broadcastToActiveTab({ type: 'SET_AUTO_THEME', autoTheme: false });
     broadcastToActiveTab({ type: 'SET_THEME', theme: defaultTheme });
+    broadcastToActiveTab({ type: 'SET_DARK_THEME', theme: defaultDarkTheme });
+    broadcastToActiveTab({ type: 'SET_LIGHT_THEME', theme: defaultLightTheme });
     broadcastToActiveTab({ type: 'SET_SHAPE', shape: defaultShape });
     broadcastToActiveTab({ type: 'SET_THICKNESS', thickness: defaultThickness });
     broadcastToActiveTab({ type: 'SET_GLOW', glow: defaultGlow });

@@ -327,7 +327,7 @@ export class VimCursorOverlay {
     this.element.style.boxSizing = 'border-box';
     this.element.style.borderRadius = '2px';
     this.element.style.willChange = 'transform, width, height, opacity, box-shadow';
-    this.element.style.transition = 'transform 0.08s cubic-bezier(0.2, 0, 0, 1), width 0.08s ease, height 0.08s ease';
+    this.element.style.transition = 'transform 0.08s cubic-bezier(0.2, 0, 0, 1), width 0.08s ease, height 0.08s ease, background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease';
     this.element.style.opacity = '0';
     this.element.style.display = 'none';
   }
@@ -397,11 +397,21 @@ export class VimCursorOverlay {
   }
 
   /**
+   * 取得有效主題配色 (支援智慧感應主題之動態最適調色盤)
+   */
+  private getEffectivePalette(state: CursorState): ThemeColorSet {
+    if (state.autoTheme && state.dynamicPalette) {
+      return state.dynamicPalette;
+    }
+    const themeKey = state.theme || 'gruvbox-dark';
+    return THEME_PALETTES[themeKey] || THEME_PALETTES['gruvbox-dark'];
+  }
+
+  /**
    * RAF 平滑降溫時，即時更新主游標之色彩、邊框與光暈
    */
   private applyActiveChargeStyles(state: CursorState, charge: number, adv: any): void {
-    const themeKey = state.theme || 'gruvbox-dark';
-    const palette = THEME_PALETTES[themeKey] || THEME_PALETTES['gruvbox-dark'];
+    const palette = this.getEffectivePalette(state);
     const isVisual = state.mode === 'VISUAL' || state.mode === 'VISUAL_LINE';
     const baseColor = isVisual ? palette.visual : palette.normal;
     const threshold = typeof adv?.chargeThreshold === 'number' ? adv.chargeThreshold : 0.70;
@@ -497,9 +507,8 @@ export class VimCursorOverlay {
       this.startChargeCooldownLoop(adv);
     }
 
-    // 1. 取得配色票券並疊加動能過載色
-    const themeKey = state.theme || 'gruvbox-dark';
-    const palette = THEME_PALETTES[themeKey] || THEME_PALETTES['gruvbox-dark'];
+    // 1. 取得配色票券 (支援智慧感應主題之最佳調色盤) 並疊加動能過載色
+    const palette = this.getEffectivePalette(state);
     const isVisual = state.mode === 'VISUAL' || state.mode === 'VISUAL_LINE';
     const baseColor = isVisual ? palette.visual : palette.normal;
     const threshold = typeof adv?.chargeThreshold === 'number' ? adv.chargeThreshold : 0.70;

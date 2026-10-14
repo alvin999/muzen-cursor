@@ -1,4 +1,4 @@
-import { cursorStore, CursorState, CursorTheme } from '../core/cursorStore';
+import { cursorStore, CursorState } from '../core/cursorStore';
 import { LOCALES } from '../i18n/locales';
 import { THEME_PALETTES } from './VimCursorOverlay';
 
@@ -112,8 +112,10 @@ export class VimStatusBar {
     window.addEventListener('mousemove', this.mouseMoveHandler, { passive: true });
   }
 
-  private applyThemeStyles(theme: CursorTheme): void {
-    const isLight = theme === 'gruvbox-light' || theme === 'intellij-light';
+  private applyThemeStyles(state: CursorState): void {
+    const isLight = state.autoTheme
+      ? state.detectedPageTheme === 'light'
+      : (state.theme === 'gruvbox-light' || state.theme === 'intellij-light');
 
     if (isLight) {
       this.element.style.background = 'rgba(248, 246, 242, 0.92)';
@@ -173,8 +175,10 @@ export class VimStatusBar {
     }
 
     const themeKey = state.theme || 'gruvbox-dark';
-    const palette = THEME_PALETTES[themeKey] || THEME_PALETTES['gruvbox-dark'];
-    this.applyThemeStyles(themeKey);
+    const palette = (state.autoTheme && state.dynamicPalette)
+      ? state.dynamicPalette
+      : (THEME_PALETTES[themeKey] || THEME_PALETTES['gruvbox-dark']);
+    this.applyThemeStyles(state);
 
     // 優先顯示臨時操作通知 (如 yank 複製回饋、深層休眠 / 喚醒提示 Toast)
     if (state.statusNotice) {
@@ -189,7 +193,9 @@ export class VimStatusBar {
     }
 
     const progress = Math.max(0, Math.min(100, Math.round(state.readingProgress)));
-    const isLight = themeKey === 'gruvbox-light' || themeKey === 'intellij-light';
+    const isLight = state.autoTheme
+      ? state.detectedPageTheme === 'light'
+      : (themeKey === 'gruvbox-light' || themeKey === 'intellij-light');
     const isAdvanced = state.showAdvancedStatusBar !== false;
 
     if (!state.visible) {

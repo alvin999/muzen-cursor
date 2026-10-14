@@ -486,6 +486,16 @@ body {
   user-select: none;
   overflow-y: auto;
   overflow-x: hidden;
+  transition: background 0.25s ease, border-color 0.25s ease;
+}
+
+.sandbox-article-container.sandbox-light-mode {
+  background: #fbf1c7;
+  border-color: rgba(0, 0, 0, 0.15);
+}
+
+.sandbox-article-container.sandbox-light-mode .sandbox-para {
+  color: #3c3836;
 }
 
 .sandbox-article-container::-webkit-scrollbar {

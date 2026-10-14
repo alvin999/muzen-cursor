@@ -18,6 +18,13 @@ export interface Translations {
   noticeDeepSleep: string;
   noticeWakeUp: string;
   languageLabel: string;
+  autoThemeLabel: string;
+  autoThemeDesc: string;
+  autoThemeActiveColor: string;
+  darkThemeLabel: string;
+  lightThemeLabel: string;
+  detectedDarkLabel: string;
+  detectedLightLabel: string;
   themeLabel: string;
   themeGruvboxDark: string;
   themeGruvboxLight: string;
@@ -203,6 +210,9 @@ export interface Translations {
   fieldChargeTrailBoost: string;
   hintChargeTrailBoost: string;
 
+  sandboxBgLabel: string;
+  sandboxBgDark: string;
+  sandboxBgLight: string;
   sandboxThemeLabel: string;
   sandboxShapeLabel: string;
   padUpBtn: string;
@@ -353,6 +363,13 @@ export const LOCALES: Record<Locale, Translations> = {
     noticeDeepSleep: '💤 當前分頁已休眠 (連按兩次 Esc 喚醒)',
     noticeWakeUp: '⚡ 已喚醒當前分頁游標',
     languageLabel: '介面語言',
+    autoThemeLabel: '智慧感應主題',
+    autoThemeDesc: '智慧感應網頁深淺背景，自動演算最佳對比游標色彩',
+    autoThemeActiveColor: '已演算最佳色彩',
+    darkThemeLabel: '深色網頁主題',
+    lightThemeLabel: '淺色網頁主題',
+    detectedDarkLabel: '當前網頁：深色模式',
+    detectedLightLabel: '當前網頁：淺色模式',
     themeLabel: '色彩主題',
     themeGruvboxDark: 'Gruvbox Dark (經典琥珀)',
     themeGruvboxLight: 'Gruvbox Light (淡雅暖白)',
@@ -529,6 +546,9 @@ export const LOCALES: Record<Locale, Translations> = {
     hintChargeMaxGlow: '滿蓄力時向外噴發之電光光暈最大擴散半徑 (px，預設 14)',
     fieldChargeTrailBoost: '滿蓄力殘影增量 (Trail Boost)',
     hintChargeTrailBoost: '高速滿蓄力超載時額外激發的流光殘影階數 (預設 +3 階)',
+    sandboxBgLabel: '網頁底色：',
+    sandboxBgDark: '🌙 模擬深色',
+    sandboxBgLight: '☀️ 模擬淺色',
     sandboxThemeLabel: '色彩主題：',
     sandboxShapeLabel: '游標形態：',
     padUpBtn: '↑ k (上行)',
@@ -674,6 +694,13 @@ export const LOCALES: Record<Locale, Translations> = {
     noticeDeepSleep: '💤 Tab Asleep (Double Esc to resume)',
     noticeWakeUp: '⚡ Muzen Cursor Active',
     languageLabel: 'Language',
+    autoThemeLabel: 'Smart Adaptive Theme',
+    autoThemeDesc: 'Automatically detect web background and calculate optimal cursor contrast palette',
+    autoThemeActiveColor: 'Optimal Color Generated',
+    darkThemeLabel: 'Dark Page Theme',
+    lightThemeLabel: 'Light Page Theme',
+    detectedDarkLabel: 'Current Page: Dark Mode',
+    detectedLightLabel: 'Current Page: Light Mode',
     themeLabel: 'Color Theme',
     themeGruvboxDark: 'Gruvbox Dark (Classic Amber)',
     themeGruvboxLight: 'Gruvbox Light (Warm Cream)',
@@ -850,6 +877,9 @@ export const LOCALES: Record<Locale, Translations> = {
     hintChargeMaxGlow: 'Maximum outer bloom and halo radius at full charge (px, default 14)',
     fieldChargeTrailBoost: 'Peak Trail Count Boost',
     hintChargeTrailBoost: 'Extra discrete ghost echoes spawned at peak overdrive (default +3)',
+    sandboxBgLabel: 'Page BG:',
+    sandboxBgDark: '🌙 Dark BG',
+    sandboxBgLight: '☀️ Light BG',
     sandboxThemeLabel: 'Theme:',
     sandboxShapeLabel: 'Cursor Shape:',
     padUpBtn: '↑ k (Up)',
@@ -995,6 +1025,13 @@ export const LOCALES: Record<Locale, Translations> = {
     noticeDeepSleep: '💤 このタブをスリープ（Esc 2回で復帰）',
     noticeWakeUp: '⚡ カーソルを復帰しました',
     languageLabel: '表示言語',
+    autoThemeLabel: 'スマート感知テーマ',
+    autoThemeDesc: 'ページの明暗背景を自動感知し、最適なコントラスト配色を演算します',
+    autoThemeActiveColor: '最適カラー自動生成',
+    darkThemeLabel: 'ダークページ用テーマ',
+    lightThemeLabel: 'ライトページ用テーマ',
+    detectedDarkLabel: '現在のページ：ダークモード',
+    detectedLightLabel: '現在のページ：ライトモード',
     themeLabel: 'カラースキーム',
     themeGruvboxDark: 'Gruvbox Dark（琥珀）',
     themeGruvboxLight: 'Gruvbox Light（生成り）',
@@ -1171,6 +1208,9 @@ export const LOCALES: Record<Locale, Translations> = {
     hintChargeMaxGlow: 'フルチャージ時の最大光輪拡散半径 (px、初期値 14)',
     fieldChargeTrailBoost: 'フルチャージ残像ブースト (Trail Boost)',
     hintChargeTrailBoost: 'ピーク時に追加生成される流光残像ステップ数 (初期値 +3)',
+    sandboxBgLabel: 'ページ背景：',
+    sandboxBgDark: '🌙 ダーク背景',
+    sandboxBgLight: '☀️ ライト背景',
     sandboxThemeLabel: 'カラースキーム：',
     sandboxShapeLabel: 'カーソル形状：',
     padUpBtn: '↑ k (上行)',

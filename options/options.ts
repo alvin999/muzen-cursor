@@ -13,6 +13,7 @@ import {
 import { initCursorHost } from '../src/content/hostElement';
 import { CursorController } from '../src/core/cursorController';
 import { LOCALES, Locale, Translations, detectDefaultLocale } from '../src/i18n/locales';
+import { generateSmartCursorPalette, SmartThemePalette } from '../src/utils/themeDetector';
 
 /**
  * Muzen Cursor 進階設定頁面互動邏輯 (全面接入真實 VimCursorOverlay 與 CursorController)
@@ -31,6 +32,10 @@ let sandboxShape: CursorShape = 'block';
 let controller: CursorController | null = null;
 let currentThickness: number = 1.5;
 let currentGlow: number = 0;
+let isAutoTheme: boolean = false;
+let darkThemeConfig: CursorTheme = 'gruvbox-dark';
+let lightThemeConfig: CursorTheme = 'gruvbox-light';
+let isSandboxLightBg: boolean = false;
 
 interface KeyGroupDef {
   groupTitleKey: keyof Translations;
@@ -110,6 +115,11 @@ function applyLocale(locale: Locale): void {
   const localeSel = document.getElementById('options-locale-select') as HTMLSelectElement | null;
   if (localeSel) {
     localeSel.value = locale;
+  }
+
+  const sandboxBgBtn = document.getElementById('sandbox-bg-toggle') as HTMLButtonElement | null;
+  if (sandboxBgBtn) {
+    sandboxBgBtn.textContent = isSandboxLightBg ? dict.sandboxBgLight : dict.sandboxBgDark;
   }
 
   renderKeybindingsList();
@@ -216,11 +226,21 @@ function showCustomAlert(opts: Omit<CustomModalOptions, 'singleButton' | 'cancel
   return showCustomModal({ ...opts, singleButton: true }).then(() => {});
 }
 
+function computeSandboxDynamicPalette(): SmartThemePalette {
+  const theme = isSandboxLightBg ? 'light' : 'dark';
+  const bg = isSandboxLightBg ? { r: 248, g: 249, b: 250 } : { r: 24, g: 26, b: 32 };
+  return generateSmartCursorPalette(theme, bg);
+}
+
 function syncCursorStore(): void {
+  const dynamicPalette = isAutoTheme ? computeSandboxDynamicPalette() : undefined;
   cursorStore.setState({
     enabled: true,
     visible: true,
     theme: sandboxTheme,
+    autoTheme: isAutoTheme,
+    detectedPageTheme: isSandboxLightBg ? 'light' : 'dark',
+    dynamicPalette,
     shape: sandboxShape,
     thickness: currentThickness,
     glow: currentGlow,
@@ -733,7 +753,7 @@ function saveConfig(silent = false): void {
 
 function loadConfig(): void {
   if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
-    chrome.storage.sync.get(['muzen_advanced', 'muzen_thickness', 'muzen_glow', 'muzen_theme', 'muzen_shape', 'muzen_locale', 'muzen_keybindings', 'muzen_excluded_sites'], (res) => {
+    chrome.storage.sync.get(['muzen_advanced', 'muzen_thickness', 'muzen_glow', 'muzen_theme', 'muzen_auto_theme', 'muzen_dark_theme', 'muzen_light_theme', 'muzen_shape', 'muzen_locale', 'muzen_keybindings', 'muzen_excluded_sites'], (res) => {
       const savedLocale = (res.muzen_locale as Locale) || detectDefaultLocale();
       applyLocale(savedLocale);
 
@@ -745,6 +765,9 @@ function loadConfig(): void {
       } else {
         currentConfig = { ...DEFAULT_ADVANCED_CONFIG };
       }
+      if (typeof res.muzen_auto_theme === 'boolean') isAutoTheme = res.muzen_auto_theme;
+      if (res.muzen_dark_theme) darkThemeConfig = res.muzen_dark_theme;
+      if (res.muzen_light_theme) lightThemeConfig = res.muzen_light_theme;
       if (res.muzen_theme) sandboxTheme = res.muzen_theme;
       if (res.muzen_shape) sandboxShape = res.muzen_shape;
 
@@ -765,7 +788,9 @@ function loadConfig(): void {
       }
 
       const themeSel = document.getElementById('sandbox-theme') as HTMLSelectElement | null;
-      if (themeSel && res.muzen_theme) themeSel.value = res.muzen_theme;
+      if (themeSel) {
+        themeSel.value = isAutoTheme ? 'auto' : (res.muzen_theme || sandboxTheme);
+      }
 
       const shapeSel = document.getElementById('sandbox-shape') as HTMLSelectElement | null;
       if (shapeSel && res.muzen_shape) shapeSel.value = res.muzen_shape;
@@ -857,8 +882,34 @@ function initEvents(): void {
       if (changes.muzen_theme && changes.muzen_theme.newValue) {
         sandboxTheme = changes.muzen_theme.newValue;
         const themeSel = document.getElementById('sandbox-theme') as HTMLSelectElement | null;
-        if (themeSel) themeSel.value = sandboxTheme;
+        if (themeSel && !isAutoTheme) themeSel.value = sandboxTheme;
         syncCursorStore();
+      }
+      if (changes.muzen_auto_theme) {
+        isAutoTheme = Boolean(changes.muzen_auto_theme.newValue);
+        const themeSel = document.getElementById('sandbox-theme') as HTMLSelectElement | null;
+        if (themeSel) {
+          themeSel.value = isAutoTheme ? 'auto' : sandboxTheme;
+        }
+        syncCursorStore();
+      }
+      if (changes.muzen_dark_theme) {
+        darkThemeConfig = changes.muzen_dark_theme.newValue;
+        if (isAutoTheme && !isSandboxLightBg) {
+          sandboxTheme = darkThemeConfig;
+          const themeSel = document.getElementById('sandbox-theme') as HTMLSelectElement | null;
+          if (themeSel) themeSel.value = sandboxTheme;
+          syncCursorStore();
+        }
+      }
+      if (changes.muzen_light_theme) {
+        lightThemeConfig = changes.muzen_light_theme.newValue;
+        if (isAutoTheme && isSandboxLightBg) {
+          sandboxTheme = lightThemeConfig;
+          const themeSel = document.getElementById('sandbox-theme') as HTMLSelectElement | null;
+          if (themeSel) themeSel.value = sandboxTheme;
+          syncCursorStore();
+        }
       }
       if (changes.muzen_shape && changes.muzen_shape.newValue) {
         sandboxShape = changes.muzen_shape.newValue;
@@ -1059,7 +1110,38 @@ function initEvents(): void {
   const themeSel = document.getElementById('sandbox-theme') as HTMLSelectElement | null;
   if (themeSel) {
     themeSel.addEventListener('change', () => {
-      sandboxTheme = themeSel.value as CursorTheme;
+      if (themeSel.value === 'auto') {
+        isAutoTheme = true;
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
+          chrome.storage.sync.set({ muzen_auto_theme: true });
+        }
+      } else {
+        isAutoTheme = false;
+        sandboxTheme = themeSel.value as CursorTheme;
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
+          chrome.storage.sync.set({
+            muzen_auto_theme: false,
+            muzen_theme: sandboxTheme
+          });
+        }
+      }
+      syncCursorStore();
+    });
+  }
+
+  const sandboxBgBtn = document.getElementById('sandbox-bg-toggle') as HTMLButtonElement | null;
+  const sandboxContainer = document.getElementById('sandbox-article-container');
+  if (sandboxBgBtn && sandboxContainer) {
+    sandboxBgBtn.addEventListener('click', () => {
+      isSandboxLightBg = !isSandboxLightBg;
+      const dict = LOCALES[currentLocale] || LOCALES['zh-TW'];
+      if (isSandboxLightBg) {
+        sandboxContainer.classList.add('sandbox-light-mode');
+        sandboxBgBtn.textContent = dict.sandboxBgLight;
+      } else {
+        sandboxContainer.classList.remove('sandbox-light-mode');
+        sandboxBgBtn.textContent = dict.sandboxBgDark;
+      }
       syncCursorStore();
     });
   }

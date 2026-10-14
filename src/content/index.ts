@@ -1,6 +1,7 @@
 import { initCursorHost } from './hostElement';
 import { CursorController } from '../core/cursorController';
 import { cursorStore, DEFAULT_ADVANCED_CONFIG, DEFAULT_KEYBINDINGS } from '../core/cursorStore';
+import { detectPageSmartInfo, observeThemeChange, SmartThemeInfo } from '../utils/themeDetector';
 
 /**
  * 判斷當前網域名稱是否命中排除名單 (支援子網域比對)
@@ -41,6 +42,30 @@ function main(): void {
       } else if (message.type === 'SET_THEME') {
         cursorStore.setState({ theme: message.theme });
         sendResponse({ success: true });
+      } else if (message.type === 'SET_AUTO_THEME') {
+        const autoTheme = !!message.autoTheme;
+        const smartInfo = detectPageSmartInfo();
+        cursorStore.setState({
+          autoTheme,
+          detectedPageTheme: smartInfo.theme,
+          dynamicPalette: smartInfo.palette
+        });
+        sendResponse({
+          success: true,
+          autoTheme,
+          detectedPageTheme: smartInfo.theme,
+          dynamicPalette: smartInfo.palette
+        });
+      } else if (message.type === 'SET_DARK_THEME') {
+        const state = cursorStore.getState();
+        const nextTheme = state.autoTheme && state.detectedPageTheme === 'dark' ? message.theme : state.theme;
+        cursorStore.setState({ darkTheme: message.theme, theme: nextTheme });
+        sendResponse({ success: true, theme: nextTheme });
+      } else if (message.type === 'SET_LIGHT_THEME') {
+        const state = cursorStore.getState();
+        const nextTheme = state.autoTheme && state.detectedPageTheme === 'light' ? message.theme : state.theme;
+        cursorStore.setState({ lightTheme: message.theme, theme: nextTheme });
+        sendResponse({ success: true, theme: nextTheme });
       } else if (message.type === 'SET_SHAPE') {
         cursorStore.setState({ shape: message.shape });
         sendResponse({ success: true });
@@ -49,7 +74,6 @@ function main(): void {
         sendResponse({ success: true });
       } else if (message.type === 'SET_GLOW') {
         cursorStore.setState({ glow: typeof message.glow === 'number' ? message.glow : 0 });
-        sendResponse({ success: true });
         sendResponse({ success: true });
       } else if (message.type === 'SET_EFFECTS') {
         const currentEffects = cursorStore.getState().effects;
@@ -121,7 +145,7 @@ function main(): void {
 
   // 4. 讀取持久化設定
   if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
-    chrome.storage.sync.get(['muzen_enabled', 'muzen_locale', 'muzen_theme', 'muzen_shape', 'muzen_thickness', 'muzen_glow', 'muzen_effects', 'muzen_show_status_bar', 'muzen_excluded_sites', 'muzen_animation', 'muzen_advanced', 'muzen_keybindings'], (result) => {
+    chrome.storage.sync.get(['muzen_enabled', 'muzen_locale', 'muzen_theme', 'muzen_auto_theme', 'muzen_dark_theme', 'muzen_light_theme', 'muzen_shape', 'muzen_thickness', 'muzen_glow', 'muzen_effects', 'muzen_show_status_bar', 'muzen_excluded_sites', 'muzen_animation', 'muzen_advanced', 'muzen_keybindings'], (result) => {
       if (typeof result.muzen_enabled === 'boolean') {
         cursorStore.setState({ enabled: result.muzen_enabled });
       }
@@ -136,6 +160,25 @@ function main(): void {
       }
       if (result.muzen_theme) {
         cursorStore.setState({ theme: result.muzen_theme });
+      }
+      if (typeof result.muzen_auto_theme === 'boolean') {
+        cursorStore.setState({ autoTheme: result.muzen_auto_theme });
+      }
+      if (result.muzen_dark_theme) {
+        cursorStore.setState({ darkTheme: result.muzen_dark_theme });
+      }
+      if (result.muzen_light_theme) {
+        cursorStore.setState({ lightTheme: result.muzen_light_theme });
+      }
+
+      // 感應當前網頁主題並在 autoTheme 啟用時套用智慧最適配色
+      const smartInfo = detectPageSmartInfo();
+      cursorStore.setState({
+        detectedPageTheme: smartInfo.theme,
+        dynamicPalette: smartInfo.palette
+      });
+      if (result.muzen_auto_theme) {
+        cursorStore.setState({ autoTheme: true });
       }
       if (result.muzen_shape) {
         cursorStore.setState({ shape: result.muzen_shape });
@@ -229,6 +272,21 @@ function main(): void {
       if (changes.muzen_theme) {
         cursorStore.setState({ theme: changes.muzen_theme.newValue });
       }
+      if (changes.muzen_auto_theme) {
+        const isAuto = Boolean(changes.muzen_auto_theme.newValue);
+        const smartInfo = detectPageSmartInfo();
+        cursorStore.setState({
+          autoTheme: isAuto,
+          detectedPageTheme: smartInfo.theme,
+          dynamicPalette: smartInfo.palette
+        });
+      }
+      if (changes.muzen_dark_theme) {
+        cursorStore.setState({ darkTheme: changes.muzen_dark_theme.newValue });
+      }
+      if (changes.muzen_light_theme) {
+        cursorStore.setState({ lightTheme: changes.muzen_light_theme.newValue });
+      }
       if (changes.muzen_shape) {
         cursorStore.setState({ shape: changes.muzen_shape.newValue });
       }
@@ -237,6 +295,14 @@ function main(): void {
       }
     });
   }
+
+  // 5. 監聽網頁深淺色主題動態變化 (SPA 免重整即時換膚支援)
+  observeThemeChange((info: SmartThemeInfo) => {
+    cursorStore.setState({
+      detectedPageTheme: info.theme,
+      dynamicPalette: info.palette
+    });
+  });
 
   console.log('[Muzen Cursor] 霧前禪夢，見字如初。Vim 閱讀游標已成功就緒。');
 }

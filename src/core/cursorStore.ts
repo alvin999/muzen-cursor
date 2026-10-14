@@ -292,6 +292,14 @@ export interface CursorState {
   thickness: number;     // 游標粗細/線寬 (1 - 8 px，預設 2)
   glow: number;          // 游標光暈強度 (0 - 12 px，0 為無光暈，預設 6)
   effects: CursorEffects;
+  autoTheme: boolean;    // 是否啟用智慧感應主題 (預設 false)
+  darkTheme: CursorTheme; // 深色網頁使用之主題 (向後相容 fallback，預設 gruvbox-dark)
+  lightTheme: CursorTheme; // 淺色網頁使用之主題 (向後相容 fallback，預設 gruvbox-light)
+  detectedPageTheme?: 'dark' | 'light'; // 當前網頁偵測之明暗狀態
+  dynamicPalette?: {
+    normal: { r: number; g: number; b: number; hex: string };
+    visual: { r: number; g: number; b: number; hex: string };
+  }; // 智慧感應當前網頁所演算之最佳對比游標調色盤
   advanced: AdvancedConfig; // 進階數值調校配置
   keybindings: KeybindingsConfig; // 自訂按鍵與防衝突配置
   showStatusBar: boolean;
@@ -330,6 +338,9 @@ class CursorStore {
     locale: 'zh-TW',
     mode: 'NORMAL',
     theme: 'gruvbox-dark',
+    autoTheme: false,
+    darkTheme: 'gruvbox-dark',
+    lightTheme: 'gruvbox-light',
     shape: 'block',
     thickness: 1.5,
     glow: 0,

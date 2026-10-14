@@ -47,23 +47,57 @@
     </section>
 
     <section class="section">
-      <label class="section-label" for="theme-select" data-i18n="themeLabel">色彩主題</label>
-      <select id="theme-select" class="select-input">
-        <option value="gruvbox-dark" data-i18n="themeGruvboxDark">Gruvbox Dark (經典琥珀)</option>
-        <option value="gruvbox-light" data-i18n="themeGruvboxLight">Gruvbox Light (淡雅暖白)</option>
-        <option value="tokyo-night" data-i18n="themeTokyoNight">Tokyo Night (東京暗夜)</option>
-        <option value="nord" data-i18n="themeNord">Nord (北歐冰原)</option>
-        <option value="catppuccin" data-i18n="themeCatppuccin">Catppuccin Mocha (典雅摩卡)</option>
-        <option value="everforest" data-i18n="themeEverforest">Everforest (森野之境)</option>
-        <option value="intellij-darcula" data-i18n="themeIntellijDarcula">IntelliJ Darcula (極客暗灰)</option>
-        <option value="intellij-light" data-i18n="themeIntellijLight">IntelliJ Light (皓白純粹)</option>
-        <option value="dracula" data-i18n="themeDracula">Dracula (幽冥吸血鬼)</option>
-        <option value="monokai" data-i18n="themeMonokai">Monokai Pro (經典霓光)</option>
-        <option value="one-dark" data-i18n="themeOneDark">One Dark (晨星深藍)</option>
-        <option value="solarized-dark" data-i18n="themeSolarizedDark">Solarized Dark (晴翠深碧)</option>
-        <option value="rose-pine" data-i18n="themeRosePine">Rosé Pine (復古微醺)</option>
-        <option value="cyberpunk" data-i18n="themeCyberpunk">Cyberpunk (霓虹幻夜)</option>
-      </select>
+      <div class="row-between">
+        <label class="section-label" for="theme-select" data-i18n="themeLabel">色彩主題</label>
+        <div class="switch-inline-label">
+          <span class="sub-label" data-i18n="autoThemeLabel">智慧感應主題</span>
+          <label class="switch switch-sm" title="智慧感應網頁深淺背景，自動演算最佳對比游標色彩 (預設關閉)">
+            <input type="checkbox" id="toggle-auto-theme">
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+      <!-- 固定單一主題模式（預設） -->
+      <div id="single-theme-wrapper">
+        <select id="theme-select" class="select-input">
+          <option value="gruvbox-dark" data-i18n="themeGruvboxDark">Gruvbox Dark (經典琥珀)</option>
+          <option value="gruvbox-light" data-i18n="themeGruvboxLight">Gruvbox Light (淡雅暖白)</option>
+          <option value="tokyo-night" data-i18n="themeTokyoNight">Tokyo Night (東京暗夜)</option>
+          <option value="nord" data-i18n="themeNord">Nord (北歐冰原)</option>
+          <option value="catppuccin" data-i18n="themeCatppuccin">Catppuccin Mocha (典雅摩卡)</option>
+          <option value="everforest" data-i18n="themeEverforest">Everforest (森野之境)</option>
+          <option value="intellij-darcula" data-i18n="themeIntellijDarcula">IntelliJ Darcula (極客暗灰)</option>
+          <option value="intellij-light" data-i18n="themeIntellijLight">IntelliJ Light (皓白純粹)</option>
+          <option value="dracula" data-i18n="themeDracula">Dracula (幽冥吸血鬼)</option>
+          <option value="monokai" data-i18n="themeMonokai">Monokai Pro (經典霓光)</option>
+          <option value="one-dark" data-i18n="themeOneDark">One Dark (晨星深藍)</option>
+          <option value="solarized-dark" data-i18n="themeSolarizedDark">Solarized Dark (晴翠深碧)</option>
+          <option value="rose-pine" data-i18n="themeRosePine">Rosé Pine (復古微醺)</option>
+          <option value="cyberpunk" data-i18n="themeCyberpunk">Cyberpunk (霓虹幻夜)</option>
+        </select>
+      </div>
+      <!-- 智慧感應主題模式（開啟時展開） -->
+      <div id="auto-theme-panel" class="auto-theme-panel" style="display: none;">
+        <div class="auto-theme-status-tag" id="auto-theme-status-tag">
+          <span class="status-indicator-dot" id="auto-theme-dot"></span>
+          <span id="auto-theme-detected-text" data-i18n="detectedDarkLabel">當前網頁：深色模式</span>
+        </div>
+        <div class="auto-theme-palette-preview">
+          <span class="preview-title" data-i18n="autoThemeActiveColor">已演算最佳色彩</span>
+          <div class="preview-dots-group">
+            <span class="color-preview-badge" id="auto-color-normal" title="Normal 游標主色">
+              <span class="preview-dot" id="auto-dot-normal"></span>
+              <span class="preview-dot-name">Normal</span>
+              <span class="preview-dot-hex" id="auto-hex-normal">#fe8a22</span>
+            </span>
+            <span class="color-preview-badge" id="auto-color-visual" title="Visual 選取色">
+              <span class="preview-dot" id="auto-dot-visual"></span>
+              <span class="preview-dot-name">Visual</span>
+              <span class="preview-dot-hex" id="auto-hex-visual">#fac632</span>
+            </span>
+          </div>
+        </div>
+      </div>
     </section>
 
     <section class="section">
@@ -274,7 +308,7 @@
       <div class="update-header">
         <div class="version-badge-container">
           <span class="version-label" data-i18n="versionLabel">版本</span>
-          <span class="current-version-badge" id="current-version-tag">v0.1.4</span>
+          <span class="current-version-badge" id="current-version-tag">v0.1.5</span>
           <span class="update-status-dot" id="update-status-dot" title="狀態"></span>
         </div>
         <button type="button" id="btn-check-update" class="btn-check-update" data-i18n="checkUpdateBtn">
