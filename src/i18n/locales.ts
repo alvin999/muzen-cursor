@@ -89,7 +89,7 @@ export interface Translations {
   shortcutEscape: string;
   shortcutEscapeDouble: string;
   footerTip: string;
-    statusStartPrompt: string;
+  statusStartPrompt: string;
   statusCopiedChars: string;
   statusCopiedLines: string;
   statusCharsCount: string;
@@ -352,7 +352,7 @@ export const LOCALES: Record<Locale, Translations> = {
   'zh-TW': {
     appName: 'Muzen Cursor',
     appSubtitle: '霧前禪夢，見字如初',
-    masterSwitchLabel: '外掛總電源',
+    masterSwitchLabel: '總電源',
     masterSwitchSub: '控制所有分頁是否啟用',
     tabStatusActive: '當前分頁：正常運作中',
     tabStatusStandby: '當前分頁：淺層待命中 (按 j 喚醒)',
@@ -1014,7 +1014,7 @@ export const LOCALES: Record<Locale, Translations> = {
   'ja': {
     appName: 'Muzen Cursor',
     appSubtitle: '霧前禅夢、文字の如く初む',
-    masterSwitchLabel: '拡張機能の主電源',
+    masterSwitchLabel: '主電源',
     masterSwitchSub: '全タブでの有効・無効を制御',
     tabStatusActive: '現在のタブ：正常に動作中',
     tabStatusStandby: '現在のタブ：待機中（jキーで開始）',
