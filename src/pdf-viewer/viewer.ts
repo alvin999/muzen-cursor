@@ -54,6 +54,36 @@ function init(): void {
   if (fileParam) {
     loadPdfFromUrl(fileParam);
   }
+
+  // 檢查是否由第三方 PDF 擴充功能（如 Adobe Acrobat）衝突解包而來
+  checkAndShowConflictNotice();
+}
+
+/**
+ * 檢查並顯示擴充功能衝突提示
+ */
+function checkAndShowConflictNotice(): void {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('conflict') === 'adobe') {
+    const notice = document.createElement('div');
+    notice.className = 'conflict-notice';
+    notice.innerHTML = `
+      <span>💡 偵測到您已啟用 Adobe Acrobat。Muzen 已自動接管此 PDF；若想使用 Adobe，可至擴充功能管理員停用其一。</span>
+      <button class="conflict-notice-close" title="關閉提示">✕</button>
+    `;
+    const closeBtn = notice.querySelector('.conflict-notice-close');
+    closeBtn?.addEventListener('click', () => notice.remove());
+    document.body.appendChild(notice);
+
+    // 8 秒後自動優雅淡出
+    setTimeout(() => {
+      if (notice.parentNode) {
+        notice.style.transition = 'opacity 0.5s ease';
+        notice.style.opacity = '0';
+        setTimeout(() => notice.remove(), 500);
+      }
+    }, 8000);
+  }
 }
 
 /**
@@ -125,13 +155,46 @@ function loadPdfFromFile(file: File): void {
  */
 async function loadPdfFromUrl(url: string): Promise<void> {
   try {
+    console.log('[Muzen PDF] 開始載入線上 PDF:', url);
     const name = url.split('/').pop() || 'document.pdf';
     state.fileName = decodeURIComponent(name.split('?')[0]);
     docTitle.textContent = state.fileName;
-    await renderPdfDocument({ url });
+
+    // 檢查是否為本機檔案路徑 (Chrome 安全政策禁止擴充功能直接讀取 file://)
+    if (url.startsWith('file://')) {
+      throw new Error('Chrome 瀏覽器安全限制不允許擴充功能直接讀取 file:// 網址。請使用右上角「📂 開啟檔案」或直接將本機 PDF 拖曳至此處。');
+    }
+
+    // 透過 Background Service Worker 代理下載，避開 Brave Shields 前端攔截與 CORS 限制
+    const result = await chrome.runtime.sendMessage({
+      type: 'FETCH_PDF_DATA',
+      url: url
+    });
+
+    if (!result || !result.success) {
+      throw new Error(result?.error || '無法從背景下載該檔案');
+    }
+
+    console.log('[Muzen PDF] 收到背景傳回的 PDF 資料，正在轉換並渲染...');
+    // 將 Base64 字串還原為 ArrayBuffer
+    const binaryString = atob(result.base64);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+
+    await renderPdfDocument({ data: bytes.buffer });
   } catch (err) {
-    console.error('[Muzen PDF] 載入線上 PDF 失敗:', err);
-    alert('無法載入指定的 PDF 檔案，可能受到跨來源 (CORS) 限制。');
+    console.error('[Muzen PDF] 載入線上 PDF 失敗:', err, '目標網址:', url);
+    const retryNative = confirm(`無法載入此線上 PDF 檔案。\n目標：${url}\n原因：${err instanceof Error ? err.message : '連線失敗'}\n\n是否改用瀏覽器原生檢視器開啟此檔案？`);
+    if (retryNative) {
+      if (typeof chrome !== 'undefined' && chrome.tabs?.update) {
+        chrome.tabs.update({ url: url });
+      } else {
+        window.open(url, '_self');
+      }
+    }
   }
 }
 

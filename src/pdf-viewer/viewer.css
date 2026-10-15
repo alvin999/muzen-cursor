@@ -260,3 +260,41 @@ body {
 .textLayer ::selection {
   background: rgba(254, 128, 25, 0.35);
 }
+
+/* 衝突提醒橫幅 (Gruvbox 琥珀提示風格) */
+.conflict-notice {
+  position: fixed;
+  top: 54px;
+  right: 20px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background-color: #32302f;
+  color: #ebdbb2;
+  border: 1px solid #d79921;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  animation: noticeSlideDown 0.3s ease;
+}
+
+.conflict-notice-close {
+  background: none;
+  border: none;
+  color: #a89984;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.conflict-notice-close:hover {
+  color: #fe8019;
+}
+
+@keyframes noticeSlideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}

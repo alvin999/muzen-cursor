@@ -77,6 +77,7 @@ export interface Translations {
   blacklistSavedBtn: string;
   pdfSectionLabel: string;
   pdfSectionDesc: string;
+  pdfConflictHint: string;
   pdfOpenBtn: string;
   shortcutsTitle: string;
   shortcutHjkl: string;
@@ -422,6 +423,7 @@ export const LOCALES: Record<Locale, Translations> = {
     blacklistLocalTab: '本機分頁',
     pdfSectionLabel: 'PDF 閱讀接管 (PDF.js)',
     pdfSectionDesc: '開啟後，點擊 .pdf 網址將自動進入禪意閱讀器',
+    pdfConflictHint: '提示：若安裝了 Adobe Acrobat 等 PDF 擴充功能，可能會發生接管衝突，建議停用衝突擴充功能以獲得最佳體驗。',
     pdfOpenBtn: '📄 開啟 PDF 閱讀器',
     shortcutsTitle: '快捷鍵指引',
     shortcutHjkl: '字元 / 行 移動',
@@ -753,6 +755,7 @@ export const LOCALES: Record<Locale, Translations> = {
     blacklistLocalTab: 'Local Page',
     pdfSectionLabel: 'PDF Interception (PDF.js)',
     pdfSectionDesc: 'Automatically open .pdf files inside Zen Reader',
+    pdfConflictHint: 'Note: Conflicts may occur if Adobe Acrobat or another PDF extension is active. Please disable conflicting extensions for the best experience.',
     pdfOpenBtn: '📄 Open PDF Viewer',
     shortcutsTitle: 'Keyboard Shortcuts',
     shortcutHjkl: 'Char / Line Navigation',
@@ -1084,6 +1087,7 @@ export const LOCALES: Record<Locale, Translations> = {
     blacklistLocalTab: 'ローカルページ',
     pdfSectionLabel: 'PDFリーダー統合 (PDF.js)',
     pdfSectionDesc: '有効時、.pdfファイルを開くと禅リーダーで起動します',
+    pdfConflictHint: 'ヒント：Adobe Acrobat などの PDF 拡張機能と競合する可能性があります。最適な体験のために競合する拡張機能を無効にすることをお勧めします。',
     pdfOpenBtn: '📄 PDFリーダーを開く',
     shortcutsTitle: 'ショートカット案内',
     shortcutHjkl: '文字 / 行 移動',

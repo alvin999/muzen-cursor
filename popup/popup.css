@@ -1224,4 +1224,31 @@ input:checked + .slider-small:before {
   transform: scale(0.97);
 }
 
+/* PDF 衝突說明標註 */
+.pdf-conflict-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: color-mix(in srgb, var(--accent-orange) 8%, var(--bg-card));
+  border: 1px solid color-mix(in srgb, var(--accent-orange) 30%, transparent);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin: 8px 0 10px 0;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--fg-color);
+  transition: all 0.2s ease;
+}
+
+.pdf-conflict-hint .hint-icon {
+  font-size: 13px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.pdf-conflict-hint .hint-text {
+  flex: 1;
+  color: var(--fg-muted);
+}
+
 

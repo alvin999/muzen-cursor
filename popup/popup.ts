@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const toggleAdvancedStatusBar = document.getElementById('toggle-advanced-status-bar') as HTMLInputElement | null;
   const subStatusBarAdvanced = document.getElementById('sub-status-bar-advanced');
   const togglePdf = document.getElementById('toggle-pdf') as HTMLInputElement | null;
+  const pdfConflictHint = document.getElementById('pdf-conflict-hint');
   const localeSelect = document.getElementById('locale-select') as HTMLSelectElement | null;
   const toggleAutoTheme = document.getElementById('toggle-auto-theme') as HTMLInputElement | null;
   const singleThemeWrapper = document.getElementById('single-theme-wrapper');
@@ -386,6 +387,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (togglePdf && typeof data.muzen_intercept_pdf === 'boolean') {
         togglePdf.checked = data.muzen_intercept_pdf;
       }
+      if (pdfConflictHint && togglePdf) {
+        pdfConflictHint.style.display = togglePdf.checked ? 'flex' : 'none';
+      }
 
       // 智慧感應主題載入 (預設 false)
       const isAutoTheme = Boolean(data.muzen_auto_theme);
@@ -620,6 +624,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // 8. PDF 接管設定變更
   togglePdf?.addEventListener('change', () => {
     const isPdfIntercept = togglePdf.checked;
+    if (pdfConflictHint) {
+      pdfConflictHint.style.display = isPdfIntercept ? 'flex' : 'none';
+    }
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
       chrome.storage.sync.set({ muzen_intercept_pdf: isPdfIntercept });
       console.log('[Muzen Cursor] PDF 接管設定已更新:', isPdfIntercept);
