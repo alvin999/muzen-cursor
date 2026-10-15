@@ -203,87 +203,195 @@ export function getEffectivePageBg(): { r: number; g: number; b: number } | null
 }
 
 /**
+ * RGB 轉 HSL
+ */
+export function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
+  r /= 255;
+  g /= 255;
+  b /= 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h = 0;
+  let s = 0;
+  const l = (max + min) / 2;
+
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r:
+        h = (g - b) / d + (g < b ? 6 : 0);
+        break;
+      case g:
+        h = (b - r) / d + 2;
+        break;
+      case b:
+        h = (r - g) / d + 4;
+        break;
+    }
+    h /= 6;
+  }
+  return [Math.round(h * 360), Math.round(s * 100), Math.round(l * 100)];
+}
+
+/**
+ * HSL 轉 RGB 及 16 進位 Hex 色碼
+ */
+export function hslToRgb(h: number, s: number, l: number): { r: number; g: number; b: number; hex: string } {
+  l /= 100;
+  const a = (s * Math.min(l, 1 - l)) / 100;
+  const f = (n: number) => {
+    const k = (n + h / 30) % 12;
+    const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+    return Math.max(0, Math.min(255, Math.round(255 * color)));
+  };
+  const r = f(0);
+  const g = f(8);
+  const b = f(4);
+  const toHex = (n: number) => n.toString(16).padStart(2, '0');
+  return { r, g, b, hex: `#${toHex(r)}${toHex(g)}${toHex(b)}` };
+}
+
+/**
+ * 探測網頁主要品牌色 / 強調色 (Accent Color)
+ */
+export function getEffectivePageAccent(): { r: number; g: number; b: number } | null {
+  if (typeof document === 'undefined') return null;
+
+  // 1. meta theme-color
+  const metaThemeColor = document.querySelector('meta[name="theme-color"]')?.getAttribute('content');
+  if (metaThemeColor) {
+    const parsed = parseCssColor(metaThemeColor);
+    if (parsed && parsed.a > 0.3) {
+      const max = Math.max(parsed.r, parsed.g, parsed.b);
+      const min = Math.min(parsed.r, parsed.g, parsed.b);
+      if (max - min > 25) {
+        return { r: parsed.r, g: parsed.g, b: parsed.b };
+      }
+    }
+  }
+
+  // 2. 探測主要連結或按鈕顏色
+  try {
+    const primaryEl = document.querySelector('main a, article a, a, .btn-primary, [role="button"]');
+    if (primaryEl) {
+      const style = window.getComputedStyle(primaryEl);
+      const color = style.color;
+      const parsed = parseCssColor(color);
+      if (parsed && parsed.a > 0.5) {
+        const max = Math.max(parsed.r, parsed.g, parsed.b);
+        const min = Math.min(parsed.r, parsed.g, parsed.b);
+        if (max - min > 35) {
+          return { r: parsed.r, g: parsed.g, b: parsed.b };
+        }
+      }
+    }
+  } catch {
+    // 安全略過
+  }
+
+  return null;
+}
+
+/**
  * 智慧演算當前網頁最適游標配色 (Smart Dynamic Cursor Palette)
- * 根據採樣到的背景色彩特徵、感知亮度與色彩心理學，自動產生最高辨識度與舒適感的色彩組合
+ * 多彩化演算引擎：依網頁底色色相 (Hue)、對比互補與品牌色，動態生成高對比、不眩光的專屬色彩 (青/藍/紫/綠/珊瑚金)
  */
 export function generateSmartCursorPalette(
   theme: PageTheme,
-  bg: { r: number; g: number; b: number }
+  bg: { r: number; g: number; b: number },
+  accent: { r: number; g: number; b: number } | null = null
 ): SmartThemePalette {
+  const [h, s] = rgbToHsl(bg.r, bg.g, bg.b);
+
+  // 1. 若網頁有顯著的品牌強調色，調校亮度後直接化為專屬游標主色
+  if (accent) {
+    const [accH, accS] = rgbToHsl(accent.r, accent.g, accent.b);
+    if (accS > 25) {
+      const targetL = theme === 'dark' ? 62 : 38;
+      const normalColor = hslToRgb(accH, Math.min(95, accS + 10), targetL);
+      const visualColor = hslToRgb((accH + 40) % 360, 90, theme === 'dark' ? 68 : 42);
+      return { normal: normalColor, visual: visualColor };
+    }
+  }
+
+  // 2. 依網頁底色之色相區間與感知特性，衍生高對比之多彩游標
   if (theme === 'dark') {
-    // 深色網頁：人眼在暗處對黃橙色波長最敏感，且具備最佳夜間對比與無眩光特性
-    const isColdTint = bg.b > bg.r + 15; // 偏深冷色調 (如 GitHub Dark, VSCode)
-    const isGreenTint = bg.g > bg.r + 15 && bg.g > bg.b + 10; // 偏暗綠
-
-    let normalR = 254;
-    let normalG = 138;
-    let normalB = 24;
-
-    if (isColdTint) {
-      // 冷色背景中，加強琥珀暖光的鮮明度
-      normalR = 255;
-      normalG = 145;
-      normalB = 30;
-    } else if (isGreenTint) {
-      // 墨綠色背景中，稍微偏向珊瑚暖赤橙以提升補色反差
-      normalR = 255;
-      normalG = 115;
-      normalB = 60;
-    }
-
-    return {
-      normal: {
-        r: normalR,
-        g: normalG,
-        b: normalB,
-        hex: rgbToHex(normalR, normalG, normalB)
-      },
-      visual: {
-        r: 250,
-        g: 198,
-        b: 50,
-        hex: '#fac632' // 明亮金黃
+    // ===== 深色網頁 =====
+    if (s >= 12) {
+      // 具備顯著底色色相
+      if (h >= 190 && h < 265) {
+        // 冷藍黑 / 靛青底 (如 GitHub Dark, VSCode): 活力極光科技青
+        return {
+          normal: hslToRgb(185, 88, 64), // #38bdf8 風格高亮青藍
+          visual: hslToRgb(42, 95, 62)   // 金琥珀
+        };
+      } else if (h >= 265 && h < 330) {
+        // 紫夜 / 洋紅底 (如 Discord, Twitch, Dracula): 螢光薄荷亮綠
+        return {
+          normal: hslToRgb(152, 92, 64), // 鮮明螢光薄荷綠
+          visual: hslToRgb(315, 88, 68)  // 霓光粉紫
+        };
+      } else if (h >= 75 && h < 190) {
+        // 森林墨綠底 (如 Everforest, 護眼綠): 珊瑚暖赤金
+        return {
+          normal: hslToRgb(25, 92, 64),  // 珊瑚暖金赤
+          visual: hslToRgb(75, 85, 60)   // 嫩芽金綠
+        };
+      } else {
+        // 暖赭棕紅底: 澄澈冰原霜藍
+        return {
+          normal: hslToRgb(210, 88, 66), // 冰原霜藍
+          visual: hslToRgb(45, 95, 62)   // 暖日金
+        };
       }
-    };
+    } else {
+      // 中性深黑 / 深灰 (如 Twitter Pure Black, YouTube): 冰原極光天藍
+      return {
+        normal: { r: 56, g: 189, b: 248, hex: '#38bdf8' }, // 澄澈極光青藍
+        visual: { r: 250, g: 204, b: 21, hex: '#facc15' }  // 明亮金黃
+      };
+    }
   } else {
-    // 淺色網頁 (白底、米黃、淺灰)：游標必須有充足的濃度避免融入背景，同時保留品牌標誌性
-    const isWarmBg = bg.r > bg.b + 15; // 暖米色 / 護眼底色
-    
-    let normalR = 175;
-    let normalG = 58;
-    let normalB = 3;
-
-    if (isWarmBg) {
-      // 暖色米白底：加重暗赭赤紅對比
-      normalR = 168;
-      normalG = 42;
-      normalB = 2;
-    }
-
-    return {
-      normal: {
-        r: normalR,
-        g: normalG,
-        b: normalB,
-        hex: rgbToHex(normalR, normalG, normalB)
-      },
-      visual: {
-        r: 181,
-        g: 118,
-        b: 20,
-        hex: '#b57614' // 雅致深金琥珀
+    // ===== 淺色網頁 =====
+    if (s >= 12) {
+      if (h >= 75 && h < 170) {
+        // 護眼綠 / 豆沙綠底: 深絳赤紅，絕佳對比
+        return {
+          normal: hslToRgb(355, 85, 38), // 深絳赤紅
+          visual: hslToRgb(42, 90, 32)   // 深琥珀金
+        };
+      } else if (h >= 30 && h < 75) {
+        // 暖米黃 / 紙張底: 深邃皇家寶石藍
+        return {
+          normal: hslToRgb(220, 88, 36), // 深寶石湛藍
+          visual: hslToRgb(15, 85, 35)   // 深赤赭
+        };
+      } else {
+        // 淺冷粉 / 淺藍底: 典雅墨寶石翠綠
+        return {
+          normal: hslToRgb(165, 88, 32), // 深翡翠綠
+          visual: hslToRgb(220, 80, 36)  // 深湛藍
+        };
       }
-    };
+    } else {
+      // 純白 / 淺灰底 (如 Wikipedia, Medium): 高辨識度皇家深湛藍
+      return {
+        normal: { r: 37, g: 99, b: 235, hex: '#2563eb' },  // 深湛藍 (人眼最清晰且不眩光)
+        visual: { r: 217, g: 119, b: 6, hex: '#d97706' }   // 典雅深金
+      };
+    }
   }
 }
 
 /**
- * 完整偵測網頁主題明暗及智慧演算最適調色盤
+ * 完整偵測網頁主題明暗及智慧演算最適調色盤 (dynamicPalette)
  */
 export function detectPageSmartInfo(luminanceThreshold = 128): SmartThemeInfo {
   const theme = detectPageTheme(luminanceThreshold);
   const effectiveBg = getEffectivePageBg() || (theme === 'dark' ? { r: 24, g: 24, b: 24 } : { r: 255, g: 255, b: 255 });
-  const palette = generateSmartCursorPalette(theme, effectiveBg);
+  const accent = getEffectivePageAccent();
+  const palette = generateSmartCursorPalette(theme, effectiveBg, accent);
   return {
     theme,
     palette,

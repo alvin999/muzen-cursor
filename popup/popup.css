@@ -153,6 +153,29 @@ body[data-theme='cyberpunk'] {
   --kbd-bg: #0a0715;
 }
 
+/* ✨ 智慧感應主題 (Smart Adaptive Theme) - 依網頁真實底色與 dynamicPalette 即時全動態渲染 */
+body[data-theme='smart-adaptive'] {
+  --bg-color: #14171d;
+  --bg-card: #1e222b;
+  --fg-color: #f3f4f6;
+  --fg-muted: #9ca3af;
+  --accent-orange: #fe8019;
+  --accent-green: #fac632;
+  --border-color: rgba(255, 255, 255, 0.1);
+  --kbd-bg: #0f1115;
+}
+
+body[data-theme='smart-adaptive'].theme-light {
+  --bg-color: #f8fafc;
+  --bg-card: #ffffff;
+  --fg-color: #0f172a;
+  --fg-muted: #64748b;
+  --accent-orange: #af3a03;
+  --accent-green: #b57614;
+  --border-color: rgba(0, 0, 0, 0.08);
+  --kbd-bg: #e2e8f0;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;

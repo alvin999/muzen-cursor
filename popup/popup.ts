@@ -1,6 +1,7 @@
 import { LOCALES, Locale, Translations, detectDefaultLocale } from '../src/i18n/locales';
 import { formatKeyCombo, DEFAULT_KEYBINDINGS, KeybindingsConfig } from '../src/core/cursorStore';
 import { checkExtensionUpdate, getCurrentVersion, ReleaseInfo } from '../src/utils/updater';
+import { SmartThemePalette } from '../src/utils/themeDetector';
 
 /**
  * Popup 設定邏輯 (Vanilla TS)
@@ -70,6 +71,12 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentLocale: Locale = 'zh-TW';
   let currentGlow = 6;
 
+  // 主題狀態管理
+  let savedManualTheme = 'gruvbox-dark';
+  let isAutoThemeActive = false;
+  let lastDetectedPageTheme: 'dark' | 'light' = 'dark';
+  let lastDynamicPalette: SmartThemePalette | null = null;
+
   // 更新粗細 UI
   const updateThicknessUI = (val: number) => {
     if (thicknessSlider) thicknessSlider.value = String(val);
@@ -131,11 +138,80 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.setAttribute('data-theme', theme || 'gruvbox-dark');
   };
 
+  // 套用 dynamicPalette 至 Popup 核心強調色 (注入 --accent-orange 與 --accent-green)
+  const applyDynamicPalette = (palette?: SmartThemePalette | null) => {
+    const root = document.body;
+    if (palette?.normal?.hex) {
+      root.style.setProperty('--accent-orange', palette.normal.hex);
+    }
+    if (palette?.visual?.hex) {
+      root.style.setProperty('--accent-green', palette.visual.hex);
+    }
+  };
+
+  // 清除 dynamicPalette 的 inline 覆寫，還原靜態主題本色
+  const clearDynamicPalette = () => {
+    const root = document.body;
+    root.style.removeProperty('--accent-orange');
+    root.style.removeProperty('--accent-green');
+  };
+
   // 更新自動主題 UI 面板狀態
   const updateAutoThemeUI = (isAuto: boolean) => {
     if (toggleAutoTheme) toggleAutoTheme.checked = isAuto;
     if (singleThemeWrapper) singleThemeWrapper.style.display = isAuto ? 'none' : 'block';
     if (autoThemePanel) autoThemePanel.style.display = isAuto ? 'flex' : 'none';
+  };
+
+  // 統一更新 Popup 智慧感應主題狀態 (專屬 smart-adaptive 動態主題)
+  const updatePopupThemeState = (
+    isAuto: boolean,
+    detectedTheme: 'dark' | 'light' = lastDetectedPageTheme,
+    palette: SmartThemePalette | null = lastDynamicPalette,
+    bgRgb?: { r: number; g: number; b: number } | null
+  ) => {
+    isAutoThemeActive = isAuto;
+    lastDetectedPageTheme = detectedTheme;
+    lastDynamicPalette = palette;
+    updateAutoThemeUI(isAuto);
+
+    const root = document.body;
+
+    if (isAuto) {
+      // 1. 切換至專屬的「✨ 智慧感應主題 (smart-adaptive)」
+      root.setAttribute('data-theme', 'smart-adaptive');
+      root.classList.toggle('theme-light', detectedTheme === 'light');
+
+      // 2. 若有感應到網頁真實底色，讓 Popup 背景與網頁底色融為一體
+      if (bgRgb) {
+        root.style.setProperty('--bg-color', `rgb(${bgRgb.r}, ${bgRgb.g}, ${bgRgb.b})`);
+        if (detectedTheme === 'dark') {
+          // 深色網頁：卡片使用通透浮起層次
+          const cardR = Math.min(255, bgRgb.r + 14);
+          const cardG = Math.min(255, bgRgb.g + 14);
+          const cardB = Math.min(255, bgRgb.b + 18);
+          root.style.setProperty('--bg-card', `rgb(${cardR}, ${cardG}, ${cardB})`);
+        } else {
+          // 淺色網頁：卡片使用清爽純白
+          root.style.setProperty('--bg-card', '#ffffff');
+        }
+      } else {
+        root.style.removeProperty('--bg-color');
+        root.style.removeProperty('--bg-card');
+      }
+
+      // 3. 由 dynamicPalette 接管焦點與開關色彩
+      if (palette) {
+        applyDynamicPalette(palette);
+      }
+    } else {
+      // 關閉智慧主題：清除動態變數與 light class，還原至手動選取的靜態主題
+      root.classList.remove('theme-light');
+      root.style.removeProperty('--bg-color');
+      root.style.removeProperty('--bg-card');
+      clearDynamicPalette();
+      applyTheme(savedManualTheme);
+    }
   };
 
   // 更新當前網頁探測明暗結果與智慧最適色彩預覽 UI
@@ -256,12 +332,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
         chrome.tabs.sendMessage(activeTab.id, { type: 'GET_STATUS' }, (response) => {
           if (chrome.runtime.lastError || !response?.state) {
+            if (isAutoThemeActive) {
+              const prefersDark = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+              updatePopupThemeState(true, prefersDark ? 'dark' : 'light', null);
+            }
             return;
           }
 
           const s = response.state;
-          if (s.detectedPageTheme) {
-            updateDetectedThemeUI(s.detectedPageTheme, s.dynamicPalette);
+          const detected = s.detectedPageTheme || 'dark';
+          const palette = s.dynamicPalette || null;
+          const bgRgb = s.detectedBgRgb || null;
+          updateDetectedThemeUI(detected, palette);
+
+          // 若開啟智慧感應主題，直接更新專屬 smart-adaptive 主題外觀與 dynamicPalette
+          if (isAutoThemeActive) {
+            updatePopupThemeState(true, detected, palette, bgRgb);
           }
           if (s.isExcluded) {
             updateTabStatusUI('excluded');
@@ -391,16 +477,17 @@ document.addEventListener('DOMContentLoaded', () => {
         pdfConflictHint.style.display = togglePdf.checked ? 'flex' : 'none';
       }
 
-      // 智慧感應主題載入 (預設 false)
-      const isAutoTheme = Boolean(data.muzen_auto_theme);
-      updateAutoThemeUI(isAutoTheme);
+      // 智慧感應主題載入
+      savedManualTheme = (data.muzen_theme as string) || 'gruvbox-dark';
+      isAutoThemeActive = Boolean(data.muzen_auto_theme);
 
       if (themeSelect && data.muzen_theme) {
         themeSelect.value = data.muzen_theme;
-        applyTheme(data.muzen_theme);
-      } else {
-        applyTheme('gruvbox-dark');
       }
+
+      // 預設深淺判斷
+      const initialPrefersDark = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      updatePopupThemeState(isAutoThemeActive, initialPrefersDark ? 'dark' : 'light', null);
       if (shapeSelect && data.muzen_shape) {
         shapeSelect.value = data.muzen_shape;
       }
@@ -644,7 +731,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // 9. 主題變更事件
   themeSelect?.addEventListener('change', () => {
     const theme = themeSelect.value;
-    applyTheme(theme);
+    savedManualTheme = theme;
+    if (!isAutoThemeActive) {
+      applyTheme(theme);
+    }
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
       chrome.storage.sync.set({ muzen_theme: theme });
     }
@@ -654,7 +744,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // 9.1 智慧感應主題開關事件 (預設關閉)
   toggleAutoTheme?.addEventListener('change', () => {
     const isAuto = toggleAutoTheme.checked;
-    updateAutoThemeUI(isAuto);
+    updatePopupThemeState(isAuto);
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
       chrome.storage.sync.set({ muzen_auto_theme: isAuto });
     }

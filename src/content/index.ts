@@ -48,13 +48,15 @@ function main(): void {
         cursorStore.setState({
           autoTheme,
           detectedPageTheme: smartInfo.theme,
-          dynamicPalette: smartInfo.palette
+          dynamicPalette: smartInfo.palette,
+          detectedBgRgb: smartInfo.bgRgb
         });
         sendResponse({
           success: true,
           autoTheme,
           detectedPageTheme: smartInfo.theme,
-          dynamicPalette: smartInfo.palette
+          dynamicPalette: smartInfo.palette,
+          detectedBgRgb: smartInfo.bgRgb
         });
       } else if (message.type === 'SET_DARK_THEME') {
         const state = cursorStore.getState();
@@ -175,7 +177,8 @@ function main(): void {
       const smartInfo = detectPageSmartInfo();
       cursorStore.setState({
         detectedPageTheme: smartInfo.theme,
-        dynamicPalette: smartInfo.palette
+        dynamicPalette: smartInfo.palette,
+        detectedBgRgb: smartInfo.bgRgb
       });
       if (result.muzen_auto_theme) {
         cursorStore.setState({ autoTheme: true });
@@ -300,7 +303,8 @@ function main(): void {
   observeThemeChange((info: SmartThemeInfo) => {
     cursorStore.setState({
       detectedPageTheme: info.theme,
-      dynamicPalette: info.palette
+      dynamicPalette: info.palette,
+      detectedBgRgb: info.bgRgb
     });
   });
 

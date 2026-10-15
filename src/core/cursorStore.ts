@@ -300,6 +300,7 @@ export interface CursorState {
     normal: { r: number; g: number; b: number; hex: string };
     visual: { r: number; g: number; b: number; hex: string };
   }; // 智慧感應當前網頁所演算之最佳對比游標調色盤
+  detectedBgRgb?: { r: number; g: number; b: number }; // 智慧感應當前網頁採樣之背景色數值
   advanced: AdvancedConfig; // 進階數值調校配置
   keybindings: KeybindingsConfig; // 自訂按鍵與防衝突配置
   showStatusBar: boolean;
