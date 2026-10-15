@@ -391,12 +391,11 @@ export class CursorController {
         this.jumpMenuTimer = null;
       }
 
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
-
       // 連按兩次 Esc：若 escapeDouble 啟用，深層關閉功能 (狀態列一併關閉隱藏，100% 釋放按鍵與點擊)
       if (isDoubleEsc && escapeDoubleDef?.enabled !== false) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
         this.lastEscTime = 0;
         cursorStore.setState({ enabled: false, visible: false });
         const dict = LOCALES[cursorStore.getState().locale || 'zh-TW'] || LOCALES['zh-TW'];
@@ -406,14 +405,20 @@ export class CursorController {
 
       // 單按 Esc：若 escape 啟用
       if (escapeDef?.enabled !== false) {
-        // 若有輸入緩衝或次數前綴，按 Esc 優先取消緩衝區
+        // 若有輸入緩衝或次數前綴，按 Esc 優先取消緩衝區 (攔截事件避免誤觸外層)
         if (this.countPrefix > 0 || state.pendingKeys) {
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
           this.clearPendingKeys();
           return;
         }
 
-        // 單按 Esc：若處於 VISUAL 或 VISUAL_LINE 模式，退出選取回到 NORMAL
+        // 單按 Esc：若處於 VISUAL 或 VISUAL_LINE 模式，退出選取回到 NORMAL (攔截事件)
         if (state.mode === 'VISUAL' || state.mode === 'VISUAL_LINE') {
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
           this.exitVisualMode();
           return;
         }
@@ -424,6 +429,7 @@ export class CursorController {
         }
 
         // 單按 Esc：由活動狀態轉為淺層休眠待機 (隱藏游標，保留右下角狀態列「按 j 開始」，隨時可喚醒)
+        // 注意：此處不呼叫 preventDefault / stopPropagation，允許事件穿透冒泡給網頁原生 Modal、全螢幕或彈窗響應
         cursorStore.setState({ visible: false });
         return;
       }
