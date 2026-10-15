@@ -24,7 +24,9 @@ const state: ViewerState = {
   fileName: ''
 };
 
-let cursorControllerInitialized = false;
+let cursorController: CursorController | null = null;
+let currentRenderSessionId = 0;
+let isScaleChanging = false;
 
 // DOM 元素快取
 const dropZone = document.getElementById('drop-zone') as HTMLDivElement;
@@ -118,11 +120,11 @@ function setupEventListeners(): void {
   });
 
   // 頁碼導航
-  btnPrev.addEventListener('click', () => jumpToPage(state.currentPage - 1));
-  btnNext.addEventListener('click', () => jumpToPage(state.currentPage + 1));
+  btnPrev.addEventListener('click', () => jumpToPage(state.currentPage - 1, true, true));
+  btnNext.addEventListener('click', () => jumpToPage(state.currentPage + 1, true, true));
   pageNumInput.addEventListener('change', () => {
     const target = parseInt(pageNumInput.value, 10);
-    if (!isNaN(target)) jumpToPage(target);
+    if (!isNaN(target)) jumpToPage(target, true, true);
   });
 
   // 縮放控制
@@ -215,21 +217,41 @@ async function renderPdfDocument(src: { data?: ArrayBuffer; url?: string }): Pro
     pageNumInput.max = state.totalPages.toString();
     pageNumInput.value = '1';
     updateZoomDisplay();
+    viewerContainer.style.setProperty('--scale-factor', state.scale.toString());
+    viewerContainer.style.setProperty('--total-scale-factor', state.scale.toString());
 
-    // 清空舊頁面並渲染新文件
-    viewerContainer.innerHTML = '';
+    // 啟動渲染會話並鎖定滾動偵測
+    const sessionId = ++currentRenderSessionId;
+    isScaleChanging = true;
 
-    for (let pageNum = 1; pageNum <= state.totalPages; pageNum++) {
-      await renderPage(pageNum);
-    }
+    try {
+      // 清空舊頁面並渲染新文件
+      viewerContainer.innerHTML = '';
 
-    // 啟動 Muzen Cursor 核心控制器
-    if (!cursorControllerInitialized) {
-      initCursorHost();
-      const controller = new CursorController();
-      controller.init();
-      cursorControllerInitialized = true;
-      console.log('[Muzen PDF] Muzen Cursor 閱讀游標已成功在 PDF 檢視器上啟動。');
+      for (let pageNum = 1; pageNum <= state.totalPages; pageNum++) {
+        if (sessionId !== currentRenderSessionId) return;
+        await renderPage(pageNum);
+      }
+
+      if (sessionId !== currentRenderSessionId) return;
+
+      // 啟動 Muzen Cursor 核心控制器
+      if (!cursorController) {
+        initCursorHost();
+        cursorController = new CursorController({ containerRoot: viewerContainer });
+        cursorController.init();
+        console.log('[Muzen PDF] Muzen Cursor 閱讀游標已成功在 PDF 檢視器上啟動。');
+      }
+
+      // 將游標綁定至第一頁文字層
+      const firstTextLayer = document.querySelector('#pdf-page-1 .textLayer') as HTMLElement | null;
+      if (firstTextLayer) {
+        cursorController.rebindToContainer(firstTextLayer);
+      }
+    } finally {
+      if (sessionId === currentRenderSessionId) {
+        isScaleChanging = false;
+      }
     }
   } catch (err) {
     console.error('[Muzen PDF] 解析或渲染 PDF 失敗:', err);
@@ -255,6 +277,12 @@ async function renderPage(pageNum: number): Promise<void> {
   pageWrapper.style.height = `${viewport.height}px`;
   pageWrapper.style.flexShrink = '0';
 
+  const userUnit = (page as any).userUnit || 1;
+  const totalScale = state.scale * userUnit;
+  pageWrapper.style.setProperty('--user-unit', userUnit.toString());
+  pageWrapper.style.setProperty('--scale-factor', state.scale.toString());
+  pageWrapper.style.setProperty('--total-scale-factor', totalScale.toString());
+
   // 2. 底層 Canvas (像素渲染)
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
@@ -267,6 +295,9 @@ async function renderPage(pageNum: number): Promise<void> {
   textLayerDiv.className = 'textLayer';
   textLayerDiv.style.width = `${viewport.width}px`;
   textLayerDiv.style.height = `${viewport.height}px`;
+  textLayerDiv.style.setProperty('--user-unit', userUnit.toString());
+  textLayerDiv.style.setProperty('--scale-factor', state.scale.toString());
+  textLayerDiv.style.setProperty('--total-scale-factor', totalScale.toString());
   pageWrapper.appendChild(textLayerDiv);
 
   viewerContainer.appendChild(pageWrapper);
@@ -301,15 +332,51 @@ async function changeScale(newScale: number): Promise<void> {
   if (!state.pdfDoc || Math.abs(state.scale - newScale) < 0.01) return;
   state.scale = Math.round(newScale * 100) / 100;
   updateZoomDisplay();
+  viewerContainer.style.setProperty('--scale-factor', state.scale.toString());
+  viewerContainer.style.setProperty('--total-scale-factor', state.scale.toString());
 
-  // 重新渲染全部頁面
-  viewerContainer.innerHTML = '';
-  for (let pageNum = 1; pageNum <= state.totalPages; pageNum++) {
-    await renderPage(pageNum);
+  // 記錄縮放前游標所在頁面
+  let targetPage = state.currentPage;
+  if (cursorController) {
+    const curTarget = cursorController.getCurrentTarget();
+    const pageWrapper = curTarget?.node.parentElement?.closest('.pdf-page-wrapper') as HTMLElement | null;
+    if (pageWrapper && pageWrapper.dataset.pageNumber) {
+      const p = parseInt(pageWrapper.dataset.pageNumber, 10);
+      if (!isNaN(p) && p >= 1 && p <= state.totalPages) {
+        targetPage = p;
+      }
+    }
   }
 
-  // 保持跳轉至當前頁面
-  jumpToPage(state.currentPage, false);
+  // 啟用工作序號與縮放保護旗標，防止連點與滾動偵測干擾
+  const sessionId = ++currentRenderSessionId;
+  isScaleChanging = true;
+
+  try {
+    // 重新渲染全部頁面
+    viewerContainer.innerHTML = '';
+    for (let pageNum = 1; pageNum <= state.totalPages; pageNum++) {
+      if (sessionId !== currentRenderSessionId) return;
+      await renderPage(pageNum);
+    }
+
+    if (sessionId !== currentRenderSessionId) return;
+
+    // 保持跳轉至當前頁面
+    jumpToPage(targetPage, false);
+
+    // 重新將游標綁定至新渲染的該頁文字層，讓游標寬高即時適應縮放後的字體尺寸
+    if (cursorController) {
+      requestAnimationFrame(() => {
+        const textLayer = document.querySelector(`#pdf-page-${targetPage} .textLayer`) as HTMLElement | null;
+        cursorController?.rebindToContainer(textLayer);
+      });
+    }
+  } finally {
+    if (sessionId === currentRenderSessionId) {
+      isScaleChanging = false;
+    }
+  }
 }
 
 /**
@@ -332,14 +399,27 @@ function updateZoomDisplay(): void {
 /**
  * 跳轉至指定頁碼
  */
-function jumpToPage(pageNum: number, smooth: boolean = true): void {
+function jumpToPage(pageNum: number, smooth: boolean = true, rebindCursor: boolean = false): void {
   if (pageNum < 1 || pageNum > state.totalPages) return;
   state.currentPage = pageNum;
   pageNumInput.value = pageNum.toString();
 
   const targetEl = document.getElementById(`pdf-page-${pageNum}`);
-  if (targetEl) {
-    targetEl.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' });
+  const mainContent = document.getElementById('main-content');
+  if (targetEl && mainContent) {
+    const targetScrollTop = Math.max(0, targetEl.offsetTop - 20);
+    if (smooth) {
+      mainContent.scrollTo({ top: targetScrollTop, behavior: 'smooth' });
+    } else {
+      mainContent.scrollTop = targetScrollTop;
+    }
+
+    if (rebindCursor && cursorController) {
+      const textLayer = targetEl.querySelector('.textLayer') as HTMLElement | null;
+      if (textLayer) {
+        cursorController.rebindToContainer(textLayer);
+      }
+    }
   }
 }
 
@@ -355,6 +435,7 @@ function handleScrollDebounced(): void {
  * 依據滾動位置偵測目前主要可見頁面
  */
 function updateCurrentPageFromScroll(): void {
+  if (isScaleChanging) return;
   const mainContent = document.getElementById('main-content');
   if (!mainContent) return;
 

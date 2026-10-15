@@ -41,6 +41,7 @@ export class CursorController {
   private lastKey = '';
   private lastEscTime = 0;
   private moveTimer: any = null;
+  private isRecoveringTarget = false;
 
   // Jump 歷史堆疊 (上限 30 筆) 與 Toggle 恢復點
   private jumpHistory: JumpPoint[] = [];
@@ -1276,6 +1277,29 @@ export class CursorController {
   }
 
   /**
+   * 取得當前游標鎖定的文字目標
+   */
+  public getCurrentTarget(): TextTarget | null {
+    return this.currentTarget;
+  }
+
+  /**
+   * 重新綁定游標至指定容器或重新探測有效文字節點（適用於 SPA 路由切換、動態 DOM 替換或 PDF 縮放重繪）
+   */
+  public rebindToContainer(container?: HTMLElement | null): boolean {
+    const root = container || this.options?.containerRoot || this.getEffectiveRoot();
+    const firstText = findFirstTextNodeIn(root);
+    if (firstText) {
+      this.currentTarget = { node: firstText, offset: 0 };
+      this.updateActiveScope(firstText);
+      this.updateCursorPosition();
+      return true;
+    }
+    this.findInitialTarget();
+    return false;
+  }
+
+  /**
    * 探測並定位初始游標位置
    */
   public findInitialTarget(): void {
@@ -1349,7 +1373,16 @@ export class CursorController {
    * 計算螢幕座標與微調游標
    */
   private updateCursorPosition(scrollIntoView: boolean = false, waypoints?: CursorRect[], isScrollUpdate: boolean = false): void {
-    if (!this.currentTarget) return;
+    if (!this.currentTarget || !this.currentTarget.node.isConnected) {
+      if (this.isRecoveringTarget) return;
+      this.isRecoveringTarget = true;
+      try {
+        this.findInitialTarget();
+      } finally {
+        this.isRecoveringTarget = false;
+      }
+      if (!this.currentTarget || !this.currentTarget.node.isConnected) return;
+    }
 
     const { node, offset } = this.currentTarget;
     const textLen = node.textContent?.length || 0;
@@ -1471,8 +1504,8 @@ export class CursorController {
           rect: {
             x: rect.left,
             y: rect.top,
-            width: Math.max(rect.width, 8),
-            height: Math.max(rect.height, 16)
+            width: rect.width > 0 ? rect.width : 8,
+            height: rect.height > 0 ? rect.height : 16
           },
           readingProgress: progress,
           charOffset: safeOffset,
@@ -1533,8 +1566,8 @@ export class CursorController {
         rect: {
           x: rect.left,
           y: rect.top,
-          width: Math.max(rect.width, 8),
-          height: Math.max(rect.height, 16)
+          width: rect.width > 0 ? rect.width : 8,
+          height: rect.height > 0 ? rect.height : 16
         },
         trailWaypoints: finalWaypoints && finalWaypoints.length > 0 ? finalWaypoints : undefined,
         readingProgress: progress,
