@@ -436,7 +436,7 @@ export class CursorController {
       }
     }
 
-    // 4. 落實右下角「按 j 開始」：若游標處於淺層待機 (!visible)，按下 j (moveDown) 時直接喚醒
+    // 4. 落實右下角「按 j 開始」：若游標處於淺層待機 (!visible)，按下移動或翻頁鍵時直接喚醒
     if (!state.visible) {
       if (matchesKeybinding(e, bindings.moveDown)) {
         e.preventDefault();
@@ -447,6 +447,42 @@ export class CursorController {
           this.findInitialTarget();
         } else {
           this.moveVertical(1);
+        }
+        return;
+      }
+      if (matchesKeybinding(e, bindings.halfPageDown)) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        cursorStore.setState({ enabled: true, visible: true });
+        if (!this.currentTarget || !document.contains(this.currentTarget.node)) {
+          this.findInitialTarget();
+        } else {
+          this.moveHalfPage(true);
+        }
+        return;
+      }
+      if (matchesKeybinding(e, bindings.halfPageUp)) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        cursorStore.setState({ enabled: true, visible: true });
+        if (!this.currentTarget || !document.contains(this.currentTarget.node)) {
+          this.findInitialTarget();
+        } else {
+          this.moveHalfPage(false);
+        }
+        return;
+      }
+      if (matchesKeybinding(e, bindings.moveUp)) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        cursorStore.setState({ enabled: true, visible: true });
+        if (!this.currentTarget || !document.contains(this.currentTarget.node)) {
+          this.findInitialTarget();
+        } else {
+          this.moveVertical(-1);
         }
         return;
       }
@@ -1372,7 +1408,12 @@ export class CursorController {
   /**
    * 計算螢幕座標與微調游標
    */
-  private updateCursorPosition(scrollIntoView: boolean = false, waypoints?: CursorRect[], isScrollUpdate: boolean = false): void {
+  private updateCursorPosition(
+    scrollIntoView: boolean = false,
+    waypoints?: CursorRect[],
+    isScrollUpdate: boolean = false,
+    forceVisible: boolean = false
+  ): void {
     if (!this.currentTarget || !this.currentTarget.node.isConnected) {
       if (this.isRecoveringTarget) return;
       this.isRecoveringTarget = true;
@@ -1490,14 +1531,18 @@ export class CursorController {
 
       // 容許適度邊界緩衝，避免邊界滾動時游標閃現閃退；若座標暫未就緒，安全維持當前可見狀態
       const hasValidCoords = typeof rect.top === 'number' && typeof rect.bottom === 'number' && !isNaN(rect.top) && !isNaN(rect.bottom);
-      const isVisibleInViewport = hasValidCoords
+      const isVisibleInViewport = forceVisible || (hasValidCoords
         ? (rect.bottom >= -80 && rect.top <= viewportH + 80)
-        : (cursorStore.getState().visible ?? true);
+        : (cursorStore.getState().visible ?? true));
+
+      const isMoving = cursorStore.getState().isMoving ?? false;
 
       // 視窗純捲動/縮放更新：僅靜默貼齊游標位置，嚴格抑制殘影與運動序列遞增
       if (isScrollUpdate) {
+        // 若游標正處於平滑運動或翻頁動畫生命週期內 (isMoving)，滾動途中嚴格保持可見，避免目標行未到位前被提前誤熄
+        const shouldKeepVisible = isMoving || isVisibleInViewport;
         cursorStore.setState({
-          visible: isVisibleInViewport,
+          visible: shouldKeepVisible,
           isMoving: false,
           motionDirection: 'none',
           isScrollUpdate: true,
@@ -1557,7 +1602,7 @@ export class CursorController {
       }, settleDelay);
 
       cursorStore.setState({
-        visible: isVisibleInViewport,
+        visible: forceVisible || isVisibleInViewport,
         isMoving: true,
         motionDirection: motionDir,
         motionSequence: (prevState.motionSequence || 0) + 1,
@@ -1728,8 +1773,8 @@ export class CursorController {
       }
     }
 
-    // 5. 強制保持游標可見並同步更新位置
+    // 5. 強制保持游標可見並同步更新位置 (保護翻頁動畫啟動瞬間目標行尚在可見視窗外而不被誤判熄滅)
     cursorStore.setState({ visible: true });
-    this.updateCursorPosition(false, waypoints);
+    this.updateCursorPosition(false, waypoints, false, true);
   }
 }

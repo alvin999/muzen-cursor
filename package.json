@@ -9,6 +9,7 @@
     "build": "tsc --noEmit && vite build",
     "test:motion": "node tests/motion/run.mjs",
     "test:navigation": "node tests/navigation/run.mjs",
+    "test:pdf": "node tests/pdf/run.mjs",
     "generate:mockups": "node scripts/generate-mockup-svg.mjs"
   },
   "keywords": [
