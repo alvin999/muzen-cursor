@@ -31,3 +31,4 @@ Thumbs.db
 
 # Test Artifacts
 tests/**/report.json
+RELEASE_BODY.md
