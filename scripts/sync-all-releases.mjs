@@ -26,6 +26,32 @@ if (!fs.existsSync(changelogPath)) {
 
 const changelogContent = fs.readFileSync(changelogPath, 'utf8');
 
+function getInstallInstructions(zipName) {
+  return [
+    '## 📦 安裝指南 / Installation Guide',
+    '',
+    '### 繁體中文',
+    `1. 下載下方 Assets 中的 **\`${zipName}\`** 壓縮檔並解壓縮至本機資料夾。`,
+    '2. 開啟 Chromium 核心瀏覽器（Google Chrome、Microsoft Edge、Brave 等）：',
+    '   - Chrome：於網址列輸入 `chrome://extensions/`',
+    '   - Edge：於網址列輸入 `edge://extensions/`',
+    '3. 開啟右上角 **「開發人員模式 (Developer mode)」**。',
+    '4. 點選左上角 **「載入未封裝項目 (Load unpacked)」**，選取剛剛解壓縮後的資料夾。',
+    '5. 安裝完成！前往任意網頁點擊文字即可開始沉浸式閱讀體驗（快捷鍵 <kbd>Alt</kbd> + <kbd>v</kbd> 可快速切換啟動／凍結）。',
+    '',
+    '---',
+    '',
+    '### English',
+    `1. Download **\`${zipName}\`** from the Assets section below and extract it to a local folder.`,
+    '2. Open your Chromium-based browser (Chrome, Edge, Brave, etc.):',
+    '   - Chrome: Navigate to `chrome://extensions/`',
+    '   - Edge: Navigate to `edge://extensions/`',
+    '3. Enable **"Developer mode"** in the top-right corner.',
+    '4. Click **"Load unpacked"** in the top-left corner and select the extracted folder.',
+    '5. Ready! Visit any webpage and click on any text to start reading (press <kbd>Alt</kbd> + <kbd>v</kbd> to toggle the cursor).'
+  ].join('\n');
+}
+
 async function syncReleases() {
   console.log('🚀 開始從 GitHub 取得現有 Releases 列表...');
   const authHeader = token.startsWith('ghp_') || token.startsWith('github_pat_') ? `Bearer ${token}` : `token ${token}`;
@@ -66,33 +92,7 @@ async function syncReleases() {
     const versionChangelog = match[0].trim();
 
     // 組合完整的 Release Body
-    const newBody = `
-${versionChangelog}
-
----
-
-## 📦 安裝指南 / Installation Guide
-
-### 繁體中文
-1. 下載下方 Assets 中的 **\`${zipName}\`** 壓縮檔並解壓縮至本機資料夾。
-2. 開啟 Chromium 核心瀏覽器（Google Chrome、Microsoft Edge、Brave 等）：
-   - Chrome：於網址列輸入 \`chrome://extensions/\`
-   - Edge：於網址列輸入 \`edge://extensions/\`
-3. 開啟右上角 **「開發人員模式 (Developer mode)」**。
-4. 點選左上角 **「載入未封裝項目 (Load unpacked)」**，選取剛剛解壓縮後的資料夾。
-5. 安裝完成！前往任意網頁點擊文字即可開始沉浸式閱讀體驗（快捷鍵 <kbd>Alt</kbd> + <kbd>v</kbd> 可快速切換啟動／凍結）。
-
----
-
-### English
-1. Download **\`${zipName}\`** from the Assets section below and extract it to a local folder.
-2. Open your Chromium-based browser (Chrome, Edge, Brave, etc.):
-   - Chrome: Navigate to \`chrome://extensions/\`
-   - Edge: Navigate to \`edge://extensions/`
-3. Enable **"Developer mode"** in the top-right corner.
-4. Click **"Load unpacked"** in the top-left corner and select the extracted folder.
-5. Ready! Visit any webpage and click on any text to start reading (press <kbd>Alt</kbd> + <kbd>v</kbd> to toggle the cursor).
-`.trim();
+    const newBody = `${versionChangelog}\n\n---\n\n${getInstallInstructions(zipName)}`;
 
     console.log(`⏳ 正在更新 [${tagName}] (Release ID: ${rel.id})...`);
 
