@@ -28,9 +28,10 @@ const changelogContent = fs.readFileSync(changelogPath, 'utf8');
 
 async function syncReleases() {
   console.log('🚀 開始從 GitHub 取得現有 Releases 列表...');
+  const authHeader = token.startsWith('ghp_') || token.startsWith('github_pat_') ? `Bearer ${token}` : `token ${token}`;
   const listRes = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/releases?per_page=50`, {
     headers: {
-      'Authorization': `Bearer ${token}`,
+      'Authorization': authHeader,
       'Accept': 'application/vnd.github+json',
       'User-Agent': 'Muzen-Sync-Script'
     }
@@ -38,7 +39,8 @@ async function syncReleases() {
 
   if (!listRes.ok) {
     const errText = await listRes.text();
-    throw new Error(`無法取得 releases: HTTP ${listRes.status} - ${errText}`);
+    console.error(`❌ 無法取得 releases: HTTP ${listRes.status} - ${errText}`);
+    process.exit(1);
   }
 
   const releases = await listRes.json();
@@ -97,7 +99,7 @@ ${versionChangelog}
     const patchRes = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/releases/${rel.id}`, {
       method: 'PATCH',
       headers: {
-        'Authorization': `Bearer ${token}`,
+        'Authorization': authHeader,
         'Accept': 'application/vnd.github+json',
         'User-Agent': 'Muzen-Sync-Script',
         'Content-Type': 'application/json'
