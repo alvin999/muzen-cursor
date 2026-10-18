@@ -1,6 +1,8 @@
 import { cursorStore } from '../core/cursorStore';
 
 let activeScrollRafId: number | null = null;
+let currentTargetTop: number | null = null;
+let lastScrollInvokeTime: number = 0;
 
 /**
  * 取消進行中之平滑滾動動畫
@@ -9,28 +11,39 @@ export function cancelActiveScroll(): void {
   if (activeScrollRafId !== null) {
     cancelAnimationFrame(activeScrollRafId);
     activeScrollRafId = null;
+    currentTargetTop = null;
   }
 }
 
 /**
  * 具有物理阻尼感之 Ease-Out Cubic 平滑捲動引擎
+ * 支援連續導航平滑接續，徹底消除因中斷動畫產生的螢幕抽搐與抖動
  */
 export function animateScrollTo(
   target: HTMLElement | Window,
   targetTop: number,
   duration?: number
 ): void {
+  const now = performance.now();
+  const isContinuous = now - lastScrollInvokeTime < 240;
+  lastScrollInvokeTime = now;
+
+  const defaultDuration = cursorStore.getState().advanced?.scrollDurationMs ?? 320;
+  // 連續按鍵時縮短滾動時間至 160ms，提供更輕盈俐落的響應；單次按鍵維持舒適柔和的 320ms
   const actualDuration =
     typeof duration === 'number'
       ? duration
-      : (cursorStore.getState().advanced?.scrollDurationMs ?? 380);
-
-  cancelActiveScroll();
+      : (isContinuous ? Math.min(180, defaultDuration * 0.6) : defaultDuration);
 
   const isWin = target === window || !(target instanceof HTMLElement);
-  const startTop = isWin
+  const currentPos = isWin
     ? window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0
     : (target as HTMLElement).scrollTop;
+
+  // 連續滾動時，若前一次目標距離當前位置不遠，平滑自前次目標累加；否則以當前位置為準
+  const startTop = (isContinuous && currentTargetTop !== null && Math.abs(currentTargetTop - currentPos) < 120)
+    ? currentTargetTop
+    : currentPos;
 
   const viewportH = window.visualViewport?.height ?? window.innerHeight;
   const maxScroll = isWin
@@ -38,10 +51,12 @@ export function animateScrollTo(
     : Math.max(0, (target as HTMLElement).scrollHeight - (target as HTMLElement).clientHeight);
 
   const clampedTarget = Math.max(0, Math.min(maxScroll, targetTop));
+
   const distance = clampedTarget - startTop;
 
   const isSmooth = cursorStore.getState().effects?.smoothScroll ?? true;
   if (!isSmooth || Math.abs(distance) < 1) {
+    cancelActiveScroll();
     if (isWin) {
       window.scrollTo(0, clampedTarget);
     } else {
@@ -50,6 +65,8 @@ export function animateScrollTo(
     return;
   }
 
+  cancelActiveScroll();
+  currentTargetTop = clampedTarget;
   const startTime = performance.now();
 
   function step(currentTime: number) {
@@ -74,6 +91,7 @@ export function animateScrollTo(
         (target as HTMLElement).scrollTop = clampedTarget;
       }
       activeScrollRafId = null;
+      currentTargetTop = null;
     }
   }
 

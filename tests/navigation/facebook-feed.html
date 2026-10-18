@@ -124,6 +124,35 @@
       color: #1877f2;
       font-weight: 500;
     }
+    article.fb-post .post-media {
+      width: 100%;
+      height: 720px;
+      background: #d8dadf;
+      border-radius: 8px;
+      margin: 12px 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #65676b;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    article.fb-post .comments-section {
+      border-top: 1px solid #ced0d4;
+      padding-top: 8px;
+      margin-top: 8px;
+      font-size: 13px;
+    }
+    article.fb-post .comment-item {
+      background: #f0f2f5;
+      border-radius: 12px;
+      padding: 6px 12px;
+      margin-bottom: 6px;
+    }
+    article.fb-post .comment-reply {
+      margin-left: 24px;
+      background: #e4e6eb;
+    }
   </style>
 </head>
 <body>
@@ -179,12 +208,18 @@
       {
         author: '開源架構隨想',
         time: '5 分鐘前',
-        content: '我們在設計鍵盤游標擴充功能時，發現許多單頁應用在使用者往下閱讀時，會即時卸載視窗上方的舊節點，並在下方動態注入新文章。若沒有作用域邊界鎖定，游標非常容易外溢到左側導覽列。'
+        content: '我們在設計鍵盤游標擴充功能時，發現許多單頁應用在使用者往下閱讀時，會即時卸載視窗上方的舊節點，並在下方動態注入新文章。若沒有作用域邊界鎖定，游標非常容易外溢到左側導覽列。',
+        hasMedia: true,
+        mediaText: '📷 [真實高解析直式攝影作品 - 高度 720px，檢驗游標穿透大空白能力]'
       },
       {
         author: 'TypeScript 核心實踐',
         time: '12 分鐘前',
-        content: '透過語義邊界容器 (如 role="feed" 或 role="main") 進行動態 Reading Scope 鎖定，是徹底解決多欄式版面游標迷航的最優解法，既不需要固定座標，也能完全免疫 React 的頻繁重新渲染。'
+        content: '透過語義邊界容器 (如 role="feed" 或 role="main") 進行動態 Reading Scope 鎖定，是徹底解決多欄式版面游標迷航的最優解法，既不需要固定座標，也能完全免疫 React 的頻繁重新渲染。',
+        comments: [
+          { author: '前端小菜鳥', text: '請問大圖底下按 j 真的不會卡住嗎？' },
+          { author: '架構師回覆', text: '已移除 maxDownwardJump 限制，自然穿透無阻！', isReply: true }
+        ]
       },
       {
         author: '極簡生活筆記',
@@ -220,15 +255,32 @@
       art.className = 'fb-post';
       art.id = 'post-' + index;
       art.setAttribute('role', 'article');
+      
+      const mediaHtml = data.hasMedia
+        ? `<div class="post-media">${data.mediaText || '📷 [超大直式多媒體圖片卡片]'}</div>`
+        : '';
+        
+      const commentsHtml = data.comments && data.comments.length > 0
+        ? `<div class="comments-section">
+            ${data.comments.map(c => `
+              <div class="comment-item ${c.isReply ? 'comment-reply' : ''}">
+                <strong>${c.author}</strong>: ${c.text}
+              </div>
+            `).join('')}
+          </div>`
+        : '';
+
       art.innerHTML = `
         <div class="post-author">${data.author} #${index}</div>
         <div class="post-time">${data.time}</div>
         <div class="post-content">${data.content}</div>
+        ${mediaHtml}
         <div class="post-actions">
           <span>👍 讚 (<span class="live-counter" id="like-${index}">12</span>)</span>
-          <span>💬 留言 (3)</span>
+          <span>💬 留言 (${data.comments ? data.comments.length : 3})</span>
           <span>🔄 分享</span>
         </div>
+        ${commentsHtml}
       `;
       return art;
     }

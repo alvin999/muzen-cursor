@@ -1,6 +1,6 @@
 import { CursorRect } from '../cursorStore';
 import { TextTarget } from '../wordNavigator';
-import { isOutOfNormalFlowWidget } from '../../utils/domUtils';
+import { isOutOfNormalFlowWidget, isVisuallyHiddenElement } from '../../utils/domUtils';
 
 /**
  * 判定文字節點是否為實質可見/可閱讀文字（相容 pre/code 保留空白與換行）
@@ -15,6 +15,24 @@ export function isValidReadableTextNode(node: Text): boolean {
   if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'NOSCRIPT' || parent.closest('#muzen-cursor-host-root')) {
     return false;
   }
+
+  // 徹底排除視覺隱藏 / 螢幕閱讀器專用元素 (sr-only, visually-hidden)
+  if (isVisuallyHiddenElement(parent) || parent.closest('[aria-hidden="true"], .sr-only, .visually-hidden')) {
+    return false;
+  }
+
+  try {
+    const range = document.createRange();
+    range.selectNodeContents(node);
+    const rect = range.getBoundingClientRect();
+    if (rect.width <= 1 && rect.height <= 1) {
+      return false;
+    }
+    // 徹底排除離屏飛地（例如 Facebook 常用的 left: -9999px, top: -9999px）
+    if (rect.left < -500 || rect.top < -5000) {
+      return false;
+    }
+  } catch {}
 
   // 若包含非空白字元，一定有效
   if (content.trim().length > 0) return true;
@@ -73,6 +91,10 @@ export function createFlowTreeWalker(rootElement: HTMLElement, allowOutOfFlow: b
           if (el.hidden) {
             return NodeFilter.FILTER_REJECT;
           }
+          // 視覺隱藏 / 螢幕閱讀器專用無障礙元素 (如 Facebook 頂部 sr-only h1) 直接 REJECT
+          if (isVisuallyHiddenElement(el)) {
+            return NodeFilter.FILTER_REJECT;
+          }
           try {
             const style = window.getComputedStyle(el);
             if (style.display === 'none' || style.visibility === 'hidden') {
@@ -88,6 +110,9 @@ export function createFlowTreeWalker(rootElement: HTMLElement, allowOutOfFlow: b
         }
 
         if (node.nodeType === Node.TEXT_NODE) {
+          if (!allowOutOfFlow && isOutOfNormalFlowWidget(node, rootElement)) {
+            return NodeFilter.FILTER_REJECT;
+          }
           if (isValidReadableTextNode(node as Text)) {
             return NodeFilter.FILTER_ACCEPT;
           }
@@ -182,9 +207,9 @@ export function pickBestCandidate(
     return { node: lastItem.node, offset: lastItem.offset };
   }
 
-  // 3. 若有字元水平涵蓋 targetX（包含 subpixel 浮點數微小容差）
+  // 3. 若有字元水平涵蓋 targetX（左閉右開區間，嚴格避免相鄰字元邊界重疊誤選前一字元）
   for (const item of candidates) {
-    if (targetX >= item.rect.left - 0.5 && targetX <= item.rect.right + 0.5) {
+    if (targetX >= item.rect.left - 0.5 && targetX < item.rect.right - 0.5) {
       return { node: item.node, offset: item.offset };
     }
   }
@@ -319,9 +344,9 @@ export function searchUpwardPrevLine(
       if (rect.width === 0 || rect.height === 0) continue;
 
       if (targetLineTop === null) {
-        // 階段 1：逆向尋找上一視覺行的第一個實體字元
         const diffY = currentCharTop - rect.top;
-        if (diffY > lineThreshold) {
+        const isInFixedHeader = !isStartOutOfFlow && !!currentNode.parentElement?.closest('[role="banner"], header');
+        if (diffY > lineThreshold && !isInFixedHeader) {
           targetLineTop = rect.top;
           targetCharHeight = rect.height > 0 ? rect.height : charHeight;
           lineCandidates.push({ node: currentNode, offset: i, rect });

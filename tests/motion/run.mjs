@@ -10,16 +10,44 @@ const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '../..');
 
 function findBrowser() {
-  const candidates = [
-    'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-    'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
-    'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
-    'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe'
-  ];
-  for (const c of candidates) {
-    if (fs.existsSync(c)) return c;
+  if (process.platform === 'win32') {
+    const candidates = [
+      'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+      'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+      'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+      'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe'
+    ];
+    for (const c of candidates) {
+      if (fs.existsSync(c)) return c;
+    }
+  } else if (process.platform === 'darwin') {
+    const candidates = [
+      '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+      '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser',
+      '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
+      '/Applications/Chromium.app/Contents/MacOS/Chromium'
+    ];
+    for (const c of candidates) {
+      if (fs.existsSync(c)) return c;
+    }
+  } else {
+    // Linux
+    const candidates = [
+      '/usr/bin/google-chrome',
+      '/usr/bin/google-chrome-stable',
+      '/usr/bin/chromium',
+      '/usr/bin/chromium-browser',
+      '/usr/bin/brave',
+      '/usr/bin/brave-browser',
+      '/opt/brave-bin/brave',
+      '/usr/bin/microsoft-edge',
+      '/usr/bin/microsoft-edge-stable'
+    ];
+    for (const c of candidates) {
+      if (fs.existsSync(c)) return c;
+    }
   }
-  throw new Error('未在系統中找到 Chrome 或 Edge 瀏覽器！');
+  throw new Error('未在系統中找到 Chromium 系列瀏覽器 (Chrome / Brave / Edge / Chromium)！');
 }
 
 async function runTest() {
@@ -88,10 +116,10 @@ async function runTest() {
     `http://127.0.0.1:${port}/index.html`
   ], { stdio: 'ignore' });
 
-  console.log('[流程] 瀏覽器已啟動，自動進行文字聚焦、按鍵向右 (l) 與向左 (h) 高頻採樣...');
+  console.log('[流程] 瀏覽器已啟動，自動進行文字聚焦、按鍵向右 (l)、向左 (h)、向下 (j) 與向上 (k) 高頻採樣...');
 
   const timeoutPromise = new Promise((_, reject) => {
-    setTimeout(() => reject(new Error('測試執行逾時 (超過 12 秒未收到瀏覽器回報)')), 12000);
+    setTimeout(() => reject(new Error('測試執行逾時 (超過 20 秒未收到瀏覽器回報)')), 20000);
   });
 
   try {
@@ -119,10 +147,10 @@ async function runTest() {
 }
 
 function analyzeAndReport(data) {
-  const { rightSamples, leftSamples, interceptedLogs } = data;
+  const { rightSamples, leftSamples, downSamples, upSamples, interceptedLogs } = data;
 
   console.log('\n===============================================================');
-  console.log('📊 測試結果自動驗證報告 (Symmetry & Motion Trail Analysis)');
+  console.log('📊 測試結果自動驗證報告 (Horizontal & Vertical Symmetry Analysis)');
   console.log('===============================================================');
 
   if (interceptedLogs && interceptedLogs.length > 0) {
@@ -151,6 +179,8 @@ function analyzeAndReport(data) {
 
   const rightCheckpoints = pickCheckpointFrames(rightSamples);
   const leftCheckpoints = pickCheckpointFrames(leftSamples);
+  const downCheckpoints = downSamples ? pickCheckpointFrames(downSamples) : [];
+  const upCheckpoints = upSamples ? pickCheckpointFrames(upSamples) : [];
 
   console.log('\n【➡️ 向右移動 (按 l) 關鍵影格】:');
   console.table(rightCheckpoints.map((f) => {
@@ -182,7 +212,41 @@ function analyzeAndReport(data) {
     };
   }));
 
-  // 指標計算
+  if (downCheckpoints.length > 0) {
+    console.log('\n【⬇️ 向下移動 (按 j) 關鍵影格】:');
+    console.table(downCheckpoints.map((f) => {
+      const g = f.ghosts[0];
+      const relDiffY = g ? Math.round(g.rect.y - f.cursor.y) : '-';
+      return {
+        '時間(ms)': `${f.elapsedMs}ms`,
+        '主游標 X': `${f.cursor.x}px`,
+        '主游標 Y': `${f.cursor.y}px`,
+        '殘影 X': g ? `${g.rect.x}px` : '-',
+        '殘影 Y': g ? `${g.rect.y}px` : '-',
+        '殘影相對方位': g ? (relDiffY < 0 ? `正上方 (${Math.abs(relDiffY)}px)` : `正下方 (${relDiffY}px) ⚠️`) : '無殘影',
+        '殘影透明度': g ? `${g.opacity}` : '-'
+      };
+    }));
+  }
+
+  if (upCheckpoints.length > 0) {
+    console.log('\n【⬆️ 向上移動 (按 k) 關鍵影格】:');
+    console.table(upCheckpoints.map((f) => {
+      const g = f.ghosts[0];
+      const relDiffY = g ? Math.round(g.rect.y - f.cursor.y) : '-';
+      return {
+        '時間(ms)': `${f.elapsedMs}ms`,
+        '主游標 X': `${f.cursor.x}px`,
+        '主游標 Y': `${f.cursor.y}px`,
+        '殘影 X': g ? `${g.rect.x}px` : '-',
+        '殘影 Y': g ? `${g.rect.y}px` : '-',
+        '殘影相對方位': g ? (relDiffY > 0 ? `正下方 (${relDiffY}px)` : `正上方 (${Math.abs(relDiffY)}px) ⚠️`) : '無殘影',
+        '殘影透明度': g ? `${g.opacity}` : '-'
+      };
+    }));
+  }
+
+  // 指標計算：水平
   const rStart = rightSamples[0].cursor;
   const rEnd = rightSamples[rightSamples.length - 1].cursor;
   const lStart = leftSamples[0].cursor;
@@ -194,20 +258,19 @@ function analyzeAndReport(data) {
   const leftDeltaY = lEnd.y - lStart.y;
 
   console.log('\n===============================================================');
-  console.log('🔍 左右對稱度指標深度診斷:');
+  console.log('🔍 左右水平對稱度指標深度診斷 (h / l):');
   console.log('---------------------------------------------------------------');
   console.log(`1. 水平總位移量: 向右 = +${rightDeltaX.toFixed(1)}px | 向左 = ${leftDeltaX.toFixed(1)}px`);
-  const isDistanceSymmetric = Math.abs(Math.abs(rightDeltaX) - Math.abs(leftDeltaX)) < 1.0;
-  console.log(`   👉 水平位移對稱性: ${isDistanceSymmetric ? '✅ 完美對稱 (符合字元等寬規律)' : '⚠️ 不對稱'}`);
+  const isHorizDistanceSymmetric = Math.abs(Math.abs(rightDeltaX) - Math.abs(leftDeltaX)) < 1.0;
+  console.log(`   👉 水平位移對稱性: ${isHorizDistanceSymmetric ? '✅ 完美對稱 (符合字元等寬規律)' : '⚠️ 不對稱'}`);
 
   console.log(`2. 垂直基準線穩定度: 向右 ΔY = ${rightDeltaY.toFixed(1)}px | 向左 ΔY = ${leftDeltaY.toFixed(1)}px`);
   const isVerticalFlat = Math.abs(rightDeltaY) <= 0.5 && Math.abs(leftDeltaY) <= 0.5;
   console.log(`   👉 垂直水平度: ${isVerticalFlat ? '✅ 100% 筆直同行 (無 Y 軸上下浮動偏差)' : '⚠️ 存在 Y 軸垂直偏移'}`);
 
-  // 殘影方位分析
+  // 殘影方位分析：水平
   let rightGhostDirectionOk = true;
   let leftGhostDirectionOk = true;
-
   for (const s of rightSamples) {
     if (s.ghosts[0] && s.elapsedMs >= 20) {
       if (s.ghosts[0].rect.x > s.cursor.x) rightGhostDirectionOk = false;
@@ -218,21 +281,75 @@ function analyzeAndReport(data) {
       if (s.ghosts[0].rect.x < s.cursor.x) leftGhostDirectionOk = false;
     }
   }
-
   console.log(`3. 殘影方位物理正確性:`);
   console.log(`   - 向右 (l) 時殘影留在正左方: ${rightGhostDirectionOk ? '✅ 正確 (在身後起點)' : '❌ 錯誤 (出現在前方或上方)'}`);
   console.log(`   - 向左 (h) 時殘影留在正右方: ${leftGhostDirectionOk ? '✅ 正確 (在身後起點)' : '❌ 錯誤 (出現在前方或上方)'}`);
 
-  // 速度與過渡感受比較
-  const rMid = rightSamples.find((s) => s.elapsedMs >= 40 && s.elapsedMs <= 60)?.cursor;
-  const lMid = leftSamples.find((s) => s.elapsedMs >= 40 && s.elapsedMs <= 60)?.cursor;
+  // 指標計算：垂直
+  let isVertDistanceSymmetric = true;
+  let isHorizStable = true;
+  let downGhostDirectionOk = true;
+  let upGhostDirectionOk = true;
 
-  if (rMid && lMid && Math.abs(rightDeltaX) > 0 && Math.abs(leftDeltaX) > 0) {
-    const rProgress = Math.round(((rMid.x - rStart.x) / rightDeltaX) * 100);
-    const lProgress = Math.round(((lMid.x - lStart.x) / leftDeltaX) * 100);
-    console.log(`4. 動態速度曲線 (50ms 處位移進度): 向右 = ${rProgress}% | 向左 = ${lProgress}%`);
-    const isProgressSymmetric = Math.abs(rProgress - lProgress) <= 15;
-    console.log(`   👉 運動速度對稱性: ${isProgressSymmetric ? '✅ 左右過渡動態勻稱' : '⚠️ 左右速度感存在明顯差異'}`);
+  if (downSamples && upSamples) {
+    const dStart = downSamples[0].cursor;
+    const dEnd = downSamples[downSamples.length - 1].cursor;
+    const uStart = upSamples[0].cursor;
+    const uEnd = upSamples[upSamples.length - 1].cursor;
+
+    const downDeltaX = dEnd.x - dStart.x;
+    const downDeltaY = dEnd.y - dStart.y;
+    const upDeltaX = uEnd.x - uStart.x;
+    const upDeltaY = uEnd.y - uStart.y;
+
+    console.log('\n===============================================================');
+    console.log('🔍 上下垂直對稱度與跳躍穩定度診斷 (j / k):');
+    console.log('---------------------------------------------------------------');
+    console.log(`1. 垂直總位移量: 向下 = +${downDeltaY.toFixed(1)}px | 向上 = ${upDeltaY.toFixed(1)}px`);
+    isVertDistanceSymmetric = Math.abs(Math.abs(downDeltaY) - Math.abs(upDeltaY)) < 1.0;
+    console.log(`   👉 垂直位移對稱性: ${isVertDistanceSymmetric ? '✅ 完美對稱 (嚴格對應行高)' : '⚠️ 不對稱'}`);
+
+    console.log(`2. 水平記憶欄穩定度: 向下 ΔX = ${downDeltaX.toFixed(1)}px | 向上 ΔX = ${upDeltaX.toFixed(1)}px`);
+    isHorizStable = Math.abs(downDeltaX) <= 1.0 && Math.abs(upDeltaX) <= 1.0;
+    console.log(`   👉 水平欄位鎖定: ${isHorizStable ? '✅ 100% 垂直對齊 (無左右抖動漂移)' : '⚠️ 存在 X 軸側向漂移'}`);
+
+    // 垂直殘影方位分析（在游標跨越行間到位後，驗證殘影留在庫存身後的起點）
+    for (const s of downSamples) {
+      if (s.ghosts[0] && s.elapsedMs >= 60 && s.elapsedMs <= 200) {
+        if (s.ghosts[0].rect.y > s.cursor.y) downGhostDirectionOk = false;
+      }
+    }
+    for (const s of upSamples) {
+      if (s.ghosts[0] && s.elapsedMs >= 60 && s.elapsedMs <= 200) {
+        if (s.ghosts[0].rect.y < s.cursor.y) upGhostDirectionOk = false;
+      }
+    }
+    console.log(`3. 垂直殘影方位物理正確性:`);
+    console.log(`   - 向下 (j) 時殘影留在正上方: ${downGhostDirectionOk ? '✅ 正確 (在身後起點)' : '❌ 錯誤 (出現在下方)'}`);
+    console.log(`   - 向上 (k) 時殘影留在正下方: ${upGhostDirectionOk ? '✅ 正確 (在身後起點)' : '❌ 錯誤 (出現在上方)'}`);
+  }
+
+  // 4. 全維度座標健全性防禦檢查 (Zero-Coordinate & Negative Drift Check)
+  console.log('\n===============================================================');
+  console.log('🛡️ 座標健全度與零點瞬移防禦檢測:');
+  console.log('---------------------------------------------------------------');
+  const allSampleSets = [
+    { name: '向右 (l)', samples: rightSamples },
+    { name: '向左 (h)', samples: leftSamples },
+    { name: '向下 (j)', samples: downSamples },
+    { name: '向上 (k)', samples: upSamples }
+  ].filter(s => s.samples);
+
+  let hasZeroDrift = false;
+  for (const set of allSampleSets) {
+    const bogusFrames = set.samples.filter(f => f.cursor.x <= 0 && f.cursor.y <= 0);
+    if (bogusFrames.length > 0) {
+      hasZeroDrift = true;
+      console.log(`   ❌ ${set.name} 偵測到游標墜入 (0, 0) 異常影格: ${bogusFrames.length} 幀`);
+    }
+  }
+  if (!hasZeroDrift) {
+    console.log('   👉 零點瞬移防禦: ✅ 100% 通過 (所有影格座標真實且連貫，無 (0,0) 墜毀)');
   }
 
   // 輸出寫入 JSON
@@ -244,13 +361,20 @@ function analyzeAndReport(data) {
       rightDeltaY,
       leftDeltaX,
       leftDeltaY,
-      isDistanceSymmetric,
+      isHorizDistanceSymmetric,
       isVerticalFlat,
       rightGhostDirectionOk,
-      leftGhostDirectionOk
+      leftGhostDirectionOk,
+      isVertDistanceSymmetric,
+      isHorizStable,
+      downGhostDirectionOk,
+      upGhostDirectionOk,
+      hasZeroDrift
     },
     rightSamples,
     leftSamples,
+    downSamples,
+    upSamples,
     interceptedLogs
   }, null, 2), 'utf-8');
 

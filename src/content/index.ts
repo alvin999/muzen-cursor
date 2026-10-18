@@ -20,6 +20,13 @@ function isHostnameExcluded(hostname: string, excludedList: string[]): boolean {
  * Muzen Cursor Content Script 入口點
  */
 function main(): void {
+  // 清理既有控制器監聽（若重複注入）
+  if ((window as any).__MUZEN_CONTROLLER__) {
+    try {
+      (window as any).__MUZEN_CONTROLLER__.destroy();
+    } catch {}
+  }
+
   // 避免重複注入
   if ((window as unknown as { __MUZEN_CURSOR_INITIALIZED__?: boolean }).__MUZEN_CURSOR_INITIALIZED__) {
     return;
@@ -32,6 +39,8 @@ function main(): void {
   // 2. 初始化核心 Vim 游標控制器
   const controller = new CursorController();
   controller.init();
+  (window as unknown as { __MUZEN_CONTROLLER__?: CursorController }).__MUZEN_CONTROLLER__ = controller;
+  (window as unknown as { __MUZEN_STORE__?: typeof cursorStore }).__MUZEN_STORE__ = cursorStore;
 
   // 3. 監聽 Background / Popup 訊息通訊
   if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {

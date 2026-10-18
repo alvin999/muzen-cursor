@@ -13,6 +13,11 @@ const pdfFixturePath = path.join(__dirname, 'fixtures', 'book-riscv-rev1.pdf');
 
 function findBrowser() {
   const candidates = [
+    '/usr/bin/brave',
+    '/usr/bin/brave-browser',
+    '/usr/bin/google-chrome',
+    '/usr/bin/chromium',
+    '/usr/bin/chromium-browser',
     'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
     'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
     'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
@@ -21,7 +26,7 @@ function findBrowser() {
   for (const c of candidates) {
     if (fs.existsSync(c)) return c;
   }
-  throw new Error('未在系統中找到 Chrome 或 Edge 瀏覽器！');
+  throw new Error('未在系統中找到 Chrome、Edge 或 Brave 瀏覽器！');
 }
 
 /**

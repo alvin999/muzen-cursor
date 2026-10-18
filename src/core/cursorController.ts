@@ -12,7 +12,8 @@ import {
   searchDownwardNextLine,
   searchUpwardPrevLine,
   computeWaypointsBetween,
-  findVisualLineBoundary
+  findVisualLineBoundary,
+  isValidReadableTextNode
 } from './navigation/spatialNavigator';
 import { VisualSelectionManager } from './navigation/selectionManager';
 
@@ -156,9 +157,8 @@ export class CursorController {
 
     // 視窗縮放與滾動時保持游標位置緊密貼合
     let ticking = false;
-    const requestUpdate = () => {
-      // 視窗縮放或折行改變時，重設水平記憶欄位，避免以縮放前的舊座標定位
-      this.preferredX = null;
+    const requestScrollUpdate = () => {
+      // 純滾動時保持 preferredX 鎖定，絕不清除水平記憶欄，避免換行與抖動
       if (!ticking) {
         window.requestAnimationFrame(() => {
           if (this.currentTarget && cursorStore.getState().enabled && !cursorStore.getState().isExcluded) {
@@ -170,8 +170,14 @@ export class CursorController {
       }
     };
 
-    this.resizeHandler = requestUpdate;
-    this.scrollHandler = requestUpdate;
+    const requestResizeUpdate = () => {
+      // 僅在視窗寬高尺寸真正改變時，才重設水平記憶欄
+      this.preferredX = null;
+      requestScrollUpdate();
+    };
+
+    this.resizeHandler = requestResizeUpdate;
+    this.scrollHandler = requestScrollUpdate;
 
     window.addEventListener('keydown', this.keydownHandler, true);
     window.addEventListener('keyup', this.keyupHandler, true);
@@ -654,7 +660,7 @@ export class CursorController {
       intercept();
       this.recordNavCharge(e.repeat);
       const count = this.consumeCount();
-      this.moveVertical(-1 * count);
+      this.moveVertical(-1 * count, e.repeat);
       return;
     }
 
@@ -662,7 +668,7 @@ export class CursorController {
       intercept();
       this.recordNavCharge(e.repeat);
       const count = this.consumeCount();
-      this.moveVertical(1 * count);
+      this.moveVertical(1 * count, e.repeat);
       return;
     }
 
@@ -748,9 +754,9 @@ export class CursorController {
    */
   public moveHorizontal(delta: number): void {
     this.preferredX = null;
-    if (!this.currentTarget) {
+    if (!this.currentTarget || !this.currentTarget.node.isConnected) {
       this.findInitialTarget();
-      return;
+      if (!this.currentTarget || !this.currentTarget.node.isConnected) return;
     }
 
     const { node, offset } = this.currentTarget;
@@ -797,14 +803,16 @@ export class CursorController {
   /**
    * 垂直移動 (j / k) - 穿透同行 <a>, <span>, <code> 標籤，精準鎖定下一視覺行
    */
-  public moveVertical(deltaRows: number): void {
-    if (!this.currentTarget) {
-      this.findInitialTarget();
-      return;
+  public moveVertical(deltaRows: number, isRepeat: boolean = false): void {
+    const isDownward = deltaRows > 0;
+    const direction = isDownward ? 'down' : 'up';
+
+    if (!this.currentTarget || !this.currentTarget.node.isConnected) {
+      this.findInitialTarget(direction);
+      if (!this.currentTarget || !this.currentTarget.node.isConnected) return;
     }
 
     const steps = Math.abs(deltaRows);
-    const isDownward = deltaRows > 0;
     const waypoints: CursorRect[] = [];
 
     for (let step = 0; step < steps; step++) {
@@ -832,12 +840,14 @@ export class CursorController {
       }
       const targetX = this.preferredX;
 
+      const effRoot = this.getEffectiveRoot();
       const foundTarget: TextTarget | null = isDownward
-        ? searchDownwardNextLine(node, offset, currentCharTop, lineThreshold, charHeight, targetX, this.getEffectiveRoot())
-        : searchUpwardPrevLine(node, offset, currentCharTop, lineThreshold, charHeight, targetX, this.getEffectiveRoot());
+        ? searchDownwardNextLine(node, offset, currentCharTop, lineThreshold, charHeight, targetX, effRoot)
+        : searchUpwardPrevLine(node, offset, currentCharTop, lineThreshold, charHeight, targetX, effRoot);
 
       if (foundTarget) {
         this.currentTarget = foundTarget;
+        this.updateActiveScope(foundTarget.node);
 
         // 若不是最後一步，收集中間經過的視覺行真實路徑點
         if (step < steps - 1) {
@@ -851,7 +861,7 @@ export class CursorController {
       }
     }
 
-    this.updateCursorPosition(true, waypoints);
+    this.updateCursorPosition(true, waypoints, false, true, isDownward ? 'down' : 'up', isRepeat);
   }
 
   /**
@@ -1336,9 +1346,9 @@ export class CursorController {
   }
 
   /**
-   * 探測並定位初始游標位置
+   * 探測並定位初始游標位置（支援方向感知與元素級 Caret 解析）
    */
-  public findInitialTarget(): void {
+  public findInitialTarget(direction?: 'down' | 'up'): void {
     if (this.options?.containerRoot) {
       const firstText = findFirstTextNodeIn(this.options.containerRoot);
       if (firstText) {
@@ -1348,60 +1358,81 @@ export class CursorController {
       }
     }
 
-    const cx = window.innerWidth / 2;
-    const cy = window.innerHeight / 3;
+    const extractTextTarget = (caret: { node: Node; offset: number } | null): TextTarget | null => {
+      if (!caret) return null;
+      let targetNode: Text | null = null;
+      let targetOffset = 0;
 
-    // 優先使用跨瀏覽器標準 Caret 解析器 (消除 caretRangeFromPoint 廢棄警告)
-    const rawCaret = getRawCaretFromPoint(cx, cy);
-    if (rawCaret) {
-      if (rawCaret.node.nodeType === Node.TEXT_NODE) {
-        this.currentTarget = {
-          node: rawCaret.node as Text,
-          offset: rawCaret.offset
-        };
-        this.updateActiveScope(rawCaret.node);
+      if (caret.node.nodeType === Node.TEXT_NODE) {
+        targetNode = caret.node as Text;
+        targetOffset = caret.offset;
+      } else if (caret.node.nodeType === Node.ELEMENT_NODE) {
+        const el = caret.node as Element;
+        if (el.childNodes.length > 0) {
+          const childIndex = Math.min(caret.offset, el.childNodes.length - 1);
+          const child = el.childNodes[childIndex];
+          targetNode = child.nodeType === Node.TEXT_NODE ? (child as Text) : findFirstTextNodeIn(child);
+        }
+        if (!targetNode) {
+          targetNode = findFirstTextNodeIn(el);
+        }
+        targetOffset = 0;
+      }
+
+      if (targetNode && isValidReadableTextNode(targetNode) && !isOutOfNormalFlowWidget(targetNode, this.rootElement)) {
+        return { node: targetNode, offset: targetOffset };
+      }
+      return null;
+    };
+
+    // 0. 原地重錨定防禦 (Local Anchor Recovery)：若最後游標位於目前可見視野中，優先原地就地重錨
+    const prevRect = cursorStore.getState().rect;
+    if (prevRect && prevRect.x > 0 && prevRect.y >= 0 && prevRect.y <= window.innerHeight) {
+      const localTarget = extractTextTarget(getRawCaretFromPoint(prevRect.x, prevRect.y));
+      if (localTarget) {
+        this.currentTarget = localTarget;
+        this.updateActiveScope(localTarget.node);
         this.updateCursorPosition();
         return;
-      } else if (rawCaret.node.nodeType === Node.ELEMENT_NODE) {
-        const textNode = findFirstTextNodeIn(rawCaret.node);
-        if (textNode) {
-          this.currentTarget = { node: textNode, offset: 0 };
-          this.updateActiveScope(textNode);
-          this.updateCursorPosition();
-          return;
-        }
       }
     }
 
-    // 視窗可見文字深度探測：使用 Range 精確測量文字節點在目前視窗中的座標
-    const targetRoot = (this.activeScopeElement && this.activeScopeElement.isConnected)
-      ? this.activeScopeElement
-      : this.rootElement;
-    const walker = document.createTreeWalker(targetRoot, NodeFilter.SHOW_TEXT);
-    let n = walker.nextNode();
-    while (n) {
-      const text = n.textContent?.trim();
-      const parent = n.parentElement;
-      if (
-        text &&
-        text.length > 0 &&
-        parent &&
-        !['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEXTAREA', 'INPUT'].includes(parent.tagName) &&
-        !parent.closest('nav, header, footer, aside, [role="navigation"], [role="banner"]')
-      ) {
-        try {
-          const testRange = document.createRange();
-          testRange.selectNodeContents(n);
-          const rect = testRange.getBoundingClientRect();
-          if (rect.width > 0 && rect.height > 0 && rect.bottom >= 0 && rect.top <= window.innerHeight) {
-            this.currentTarget = { node: n as Text, offset: 0 };
-            this.updateActiveScope(n);
-            this.updateCursorPosition();
-            return;
-          }
-        } catch {}
+    const cx = window.innerWidth / 2;
+    const viewH = window.innerHeight;
+    const cyRatio = direction === 'down' ? 0.45 : (direction === 'up' ? 0.55 : 0.5);
+    const cy = Math.round(viewH * cyRatio);
+
+    // 1. 視窗中央 Caret 解析
+    const centerTarget = extractTextTarget(getRawCaretFromPoint(cx, cy));
+    if (centerTarget) {
+      this.currentTarget = centerTarget;
+      this.updateActiveScope(centerTarget.node);
+      this.updateCursorPosition();
+      return;
+    }
+
+    // 2. 視窗中央元素文字探測
+    const centerElements = document.elementsFromPoint ? document.elementsFromPoint(cx, cy) : [];
+    for (const el of centerElements) {
+      if (el.id === 'muzen-cursor-host-root' || isOutOfNormalFlowWidget(el, this.rootElement)) continue;
+      const elRect = el.getBoundingClientRect();
+      if (elRect.height >= viewH * 0.95) continue; // 排除 body, html 等全頁大容器
+
+      const firstText = findFirstTextNodeIn(el);
+      if (firstText && isValidReadableTextNode(firstText)) {
+        this.currentTarget = { node: firstText, offset: 0 };
+        this.updateActiveScope(firstText);
+        this.updateCursorPosition();
+        return;
       }
-      n = walker.nextNode();
+    }
+
+    // 3. 通用兜底：自有效閱讀容器中尋找第一個可讀文字節點
+    const fallbackText = findFirstTextNodeIn(this.getEffectiveRoot());
+    if (fallbackText && isValidReadableTextNode(fallbackText)) {
+      this.currentTarget = { node: fallbackText, offset: 0 };
+      this.updateActiveScope(fallbackText);
+      this.updateCursorPosition();
     }
   }
 
@@ -1412,7 +1443,9 @@ export class CursorController {
     scrollIntoView: boolean = false,
     waypoints?: CursorRect[],
     isScrollUpdate: boolean = false,
-    forceVisible: boolean = false
+    forceVisible: boolean = false,
+    navDirection?: 'down' | 'up',
+    isRepeat: boolean = false
   ): void {
     if (!this.currentTarget || !this.currentTarget.node.isConnected) {
       if (this.isRecoveringTarget) return;
@@ -1506,6 +1539,25 @@ export class CursorController {
         }
       }
 
+      // 幾何異常防禦：若計算出的座標為 (0,0) 且長寬為 0，嚴格阻絕游標飛向螢幕最左上方
+      const isBogusZeroRect = (rect.width === 0 || rect.height === 0) && rect.left === 0 && rect.top === 0;
+      if (isBogusZeroRect) {
+        const prevRect = cursorStore.getState().rect;
+        if (prevRect && (prevRect.x !== 0 || prevRect.y !== 0)) {
+          const defaultH = 20;
+          rect = {
+            x: prevRect.x,
+            y: prevRect.y,
+            left: prevRect.x,
+            top: prevRect.y,
+            width: prevRect.width > 0 ? prevRect.width : 8,
+            height: prevRect.height > 0 ? prevRect.height : defaultH,
+            right: prevRect.x + (prevRect.width > 0 ? prevRect.width : 8),
+            bottom: prevRect.y + (prevRect.height > 0 ? prevRect.height : defaultH)
+          } as DOMRect;
+        }
+      }
+
       // 計算全頁面閱讀進度（自適應 visualViewport 縮放高度）
       const scrollY = window.scrollY || window.pageYOffset;
       const viewportH = window.visualViewport?.height ?? window.innerHeight;
@@ -1515,18 +1567,20 @@ export class CursorController {
       ) - viewportH;
       const progress = totalHeight > 0 ? Math.min(100, Math.max(0, (scrollY / totalHeight) * 100)) : 100;
 
-      // 輔助閱讀：快取頁面純字元數與當前章節標題
-      const now = performance.now();
-      if (now - this.lastCharCountTime > 5000 || this.cachedTotalChars === 0) {
-        const root = this.getEffectiveRoot();
-        this.cachedTotalChars = root.textContent?.replace(/\s+/g, '').length || 0;
-        this.lastCharCountTime = now;
-      }
+      // 輔助閱讀：長按時跳過純字元數與標題計算，節省主線程 CPU
+      if (!isRepeat) {
+        const now = performance.now();
+        if (now - this.lastCharCountTime > 5000 || this.cachedTotalChars === 0) {
+          const root = this.getEffectiveRoot();
+          this.cachedTotalChars = root.textContent?.replace(/\s+/g, '').length || 0;
+          this.lastCharCountTime = now;
+        }
 
-      if (now - this.lastHeadingCheckTime > 300 || node !== this.previousTarget?.node) {
-        this.cachedHeadingTitle = findCurrentSectionHeading(node, this.getEffectiveRoot()) || '';
-        this.cachedReadingMinutes = estimateReadingMinutes(this.cachedTotalChars, progress);
-        this.lastHeadingCheckTime = now;
+        if (now - this.lastHeadingCheckTime > 300 || node !== this.previousTarget?.node) {
+          this.cachedHeadingTitle = findCurrentSectionHeading(node, this.getEffectiveRoot()) || '';
+          this.cachedReadingMinutes = estimateReadingMinutes(this.cachedTotalChars, progress);
+          this.lastHeadingCheckTime = now;
+        }
       }
 
       // 容許適度邊界緩衝，避免邊界滾動時游標閃現閃退；若座標暫未就緒，安全維持當前可見狀態
@@ -1642,20 +1696,55 @@ export class CursorController {
         const maxPad = Math.floor(viewHeight * 0.28);
         const padBottom = Math.min(maxPad, adv?.viewportPaddingBottom ?? 160);
         const padTop = Math.min(maxPad, adv?.viewportPaddingTop ?? 120);
-        const scrollDuration = adv?.scrollDurationMs ?? 320;
+        const scrollDuration = isRepeat ? 80 : (adv?.scrollDurationMs ?? 320);
 
         // 自適應字元行高緩衝：在任何縮放比例下，維持約半行字高的舒適安全視距
         const lineBuffer = Math.max(12, Math.min(36, Math.round((rect.height || 20) * 0.5)));
 
         if (scrollTarget) {
-          // 向下閱讀超過底部邊界視野時
-          if (curBottom > viewHeight - padBottom) {
-            const targetScroll = currentScroll + (curBottom - (viewHeight - padBottom)) + lineBuffer;
-            animateScrollTo(scrollTarget, targetScroll, scrollDuration);
-          } else if (curTop < padTop) {
-            // 向上閱讀低於頂部邊界視野時
-            const targetScroll = Math.max(0, currentScroll - (padTop - curTop) - lineBuffer);
-            animateScrollTo(scrollTarget, targetScroll, scrollDuration);
+          if (navDirection === 'down') {
+            // 向下閱讀時，只允許因超過底部視野而向下滾動，嚴禁向上反向回捲！
+            if (curBottom > viewHeight - padBottom) {
+              const delta = curBottom - (viewHeight - padBottom) + lineBuffer;
+              if (isRepeat) {
+                // 長按 (Key Repeat) 模式：極速零延遲幀同步推進，游標緊貼黃金舒適線，視窗絲滑滾動絕不脫軌！
+                const isWin = scrollTarget === window || !(scrollTarget instanceof HTMLElement);
+                if (isWin) {
+                  window.scrollBy({ top: delta, behavior: 'instant' as ScrollBehavior });
+                } else {
+                  (scrollTarget as HTMLElement).scrollTop += delta;
+                }
+              } else {
+                // 單次按鍵模式：享受頂級 Ease-Out 物理阻尼平滑滾動
+                const targetScroll = currentScroll + delta;
+                animateScrollTo(scrollTarget, targetScroll, scrollDuration);
+              }
+            }
+          } else if (navDirection === 'up') {
+            // 向上閱讀時，只允許因超過頂部視野而向上滾動，嚴禁向下反向回捲！
+            if (curTop < padTop) {
+              const delta = (padTop - curTop) + lineBuffer;
+              if (isRepeat) {
+                const isWin = scrollTarget === window || !(scrollTarget instanceof HTMLElement);
+                if (isWin) {
+                  window.scrollBy({ top: -delta, behavior: 'instant' as ScrollBehavior });
+                } else {
+                  (scrollTarget as HTMLElement).scrollTop -= delta;
+                }
+              } else {
+                const targetScroll = Math.max(0, currentScroll - delta);
+                animateScrollTo(scrollTarget, targetScroll, scrollDuration);
+              }
+            }
+          } else {
+            // 一般導航 (無明確垂直方向)：僅在字元完全滑出螢幕視野時進行最小安全回拉
+            if (curBottom > viewHeight - 20) {
+              const targetScroll = currentScroll + (curBottom - viewHeight + 60);
+              animateScrollTo(scrollTarget, targetScroll, scrollDuration);
+            } else if (curTop < 56) {
+              const targetScroll = Math.max(0, currentScroll - (60 - curTop));
+              animateScrollTo(scrollTarget, targetScroll, scrollDuration);
+            }
           }
         }
       }

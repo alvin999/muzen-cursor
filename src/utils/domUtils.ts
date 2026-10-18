@@ -65,21 +65,67 @@ export function isHostnameExcluded(hostname: string, list: string[]): boolean {
 }
 
 /**
+ * 判斷元素是否為視覺隱藏 / 螢幕閱讀器專用元素 (sr-only, visually-hidden)
+ * 徹底排除 clip: rect(0,0,0,0)、clipPath: inset(50%)、1px*1px overflow: hidden 等無障礙標籤
+ */
+export function isVisuallyHiddenElement(el: HTMLElement): boolean {
+  if (!el || !(el instanceof Element)) return false;
+
+  // 1. 常見無障礙類名
+  const className = typeof el.className === 'string' ? el.className.toLowerCase() : '';
+  if (className.includes('sr-only') || className.includes('visually-hidden')) {
+    return true;
+  }
+
+  // 2. 樣式特徵判斷
+  try {
+    const style = window.getComputedStyle(el);
+    if (style.clip && (style.clip.includes('rect(0') || style.clip.includes('rect(1px'))) {
+      return true;
+    }
+    if (style.clipPath && (style.clipPath.includes('inset(50%)') || style.clipPath.includes('inset(100%)'))) {
+      return true;
+    }
+    const w = parseFloat(style.width);
+    const h = parseFloat(style.height);
+    if (!isNaN(w) && !isNaN(h) && w <= 1 && h <= 1 && style.overflow === 'hidden') {
+      return true;
+    }
+  } catch {}
+
+  return false;
+}
+
+/**
  * 智慧辨識當前節點所屬的閱讀作用域區塊（Reading Scope）
  * 100% 純 CSS 物理排版特徵優先，完全不依賴 article / feed / main 等易失準的單字與標籤枚舉
  */
 export function detectReadingScope(el: HTMLElement | null, fallbackRoot: HTMLElement = document.body): HTMLElement {
   if (!el) return fallbackRoot;
 
-  // 1. 物理脫離常態排版流 (float / fixed / sticky) -> 自身即為局部作用域沙盒 (避免浮動視窗視窗跑去正文)
+  // 1. 物理脫離常態排版流 (float / fixed / sticky / header / nav / aside) -> 自身即為局部作用域沙盒
   const widgetContainer = getOutOfNormalFlowContainer(el, fallbackRoot);
   if (widgetContainer) {
     return widgetContainer;
   }
 
-  // 2. 向上回溯尋找獨立物理排版容器 (獨立滾動視窗或 CSS 渲染隔離邊界)
+  // 2. 向上回溯尋找標準主閱讀區域（如 Facebook / Bluesky 動態饋給 role="feed" 或 主內容 role="main" / <main>）
+  //    以及獨立垂直滾動視窗或 CSS 渲染隔離邊界
   let current: HTMLElement | null = el.parentElement;
+  let semanticScope: HTMLElement | null = null;
+
   while (current && current !== fallbackRoot && current !== document.body && current !== document.documentElement) {
+    const role = current.getAttribute('role');
+    const tag = current.tagName;
+
+    // 動態饋給（如 Facebook Feed）具有最高優先級沙盒邊界，防止長距離導航外溢至側欄或頂欄
+    if (role === 'feed') {
+      return current;
+    }
+    if ((role === 'main' || tag === 'MAIN') && !semanticScope) {
+      semanticScope = current;
+    }
+
     try {
       const style = window.getComputedStyle(current);
 
@@ -99,24 +145,28 @@ export function detectReadingScope(el: HTMLElement | null, fallbackRoot: HTMLEle
     current = current.parentElement;
   }
 
+  if (semanticScope) {
+    return semanticScope;
+  }
+
   // 3. 一般平鋪單欄式網頁 (無獨立滾動容器，正文隨全頁滾動) -> 預設回退至全域
   return fallbackRoot;
 }
 
 /**
  * 取得節點所屬的脫離正文正常流（Out-of-Flow）的掛件容器
- * 例如 <table class="floatright">, <aside>, position: fixed/sticky 容器
+ * 例如 <table class="floatright">, <aside>, <header>, <nav>, position: fixed/sticky 容器
  */
 export function getOutOfNormalFlowContainer(node: Node, rootBound?: HTMLElement): HTMLElement | null {
   let el = (node instanceof Element ? node : node.parentElement) as HTMLElement | null;
   const bound = rootBound || document.body;
 
   while (el && el !== bound && el !== document.body && el !== document.documentElement) {
-    // 1. 標準語義標籤
+    // 1. 標準語義標籤與無障礙角色
     const tag = el.tagName;
-    if (tag === 'ASIDE') return el;
+    if (tag === 'ASIDE' || tag === 'HEADER' || tag === 'NAV') return el;
     const role = el.getAttribute('role');
-    if (role === 'navigation' || role === 'complementary') return el;
+    if (role === 'navigation' || role === 'complementary' || role === 'banner' || role === 'search') return el;
 
     // 2. 瀏覽器計算樣式物理特徵 (完全不依賴 class 名稱)
     try {
@@ -125,7 +175,7 @@ export function getOutOfNormalFlowContainer(node: Node, rootBound?: HTMLElement)
       if (style.float === 'right' || style.float === 'left') {
         return el;
       }
-      // 固定或黏性側邊欄
+      // 固定或黏性側邊欄/頂欄
       if (style.position === 'fixed' || style.position === 'sticky') {
         return el;
       }

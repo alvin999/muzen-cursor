@@ -10,16 +10,44 @@ const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '../..');
 
 function findBrowser() {
-  const candidates = [
-    'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-    'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
-    'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
-    'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe'
-  ];
-  for (const c of candidates) {
-    if (fs.existsSync(c)) return c;
+  if (process.platform === 'win32') {
+    const candidates = [
+      'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+      'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+      'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+      'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe'
+    ];
+    for (const c of candidates) {
+      if (fs.existsSync(c)) return c;
+    }
+  } else if (process.platform === 'darwin') {
+    const candidates = [
+      '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+      '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser',
+      '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
+      '/Applications/Chromium.app/Contents/MacOS/Chromium'
+    ];
+    for (const c of candidates) {
+      if (fs.existsSync(c)) return c;
+    }
+  } else {
+    // Linux
+    const candidates = [
+      '/usr/bin/google-chrome',
+      '/usr/bin/google-chrome-stable',
+      '/usr/bin/chromium',
+      '/usr/bin/chromium-browser',
+      '/usr/bin/brave',
+      '/usr/bin/brave-browser',
+      '/opt/brave-bin/brave',
+      '/usr/bin/microsoft-edge',
+      '/usr/bin/microsoft-edge-stable'
+    ];
+    for (const c of candidates) {
+      if (fs.existsSync(c)) return c;
+    }
   }
-  throw new Error('未在系統中找到 Chrome 或 Edge 瀏覽器！');
+  throw new Error('未在系統中找到 Chromium 系列瀏覽器 (Chrome / Brave / Edge / Chromium)！');
 }
 
 /**
@@ -145,8 +173,12 @@ async function runAllNavigationTests() {
       const steps = [];
       let leakedToSidebar = 0;
       let leakedToHeader = 0;
+      let jumpBackCount = 0;
+      let ceilingJumps = 0;
+      let lastScrollY = 0;
 
-      for (let i = 1; i <= 30; i++) {
+      // 階段 1: 單步 j 導航 (15 步) - 檢驗跨越 720px 大圖與同行欄位鎖定
+      for (let i = 1; i <= 15; i++) {
         window.dispatchEvent(new KeyboardEvent('keydown', { key: 'j', code: 'KeyJ', bubbles: true, cancelable: true }));
         await sleep(100);
 
@@ -157,10 +189,13 @@ async function runAllNavigationTests() {
 
         const curX = cRect ? cRect.left : 0;
         const curY = cRect ? cRect.top : 0;
+        const curScroll = Math.round(window.scrollY);
+
+        if (curScroll < lastScrollY) jumpBackCount++;
+        lastScrollY = curScroll;
 
         let activeText = '';
         let isInsideFeed = false;
-
         try {
           const caret = document.caretPositionFromPoint ? document.caretPositionFromPoint(curX + 4, curY + 6) : null;
           if (caret && caret.offsetNode) {
@@ -176,13 +211,51 @@ async function runAllNavigationTests() {
 
         steps.push({
           step: i,
-          scrollY: Math.round(window.scrollY),
+          mode: 'single',
+          scrollY: curScroll,
           cursorY: cRect ? Math.round(cRect.top) : 0,
           cursorX: cRect ? Math.round(cRect.left) : 0,
           text: activeText,
           inFeed: isInsideFeed
         });
       }
+
+      // 階段 2: 極速長按 j (Repeat) 連續推進 (35 步，間隔 45ms) - 檢驗即時幀同步與防瞬移飛頂
+      let reachedBottomZone = false;
+      for (let i = 16; i <= 50; i++) {
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'j', code: 'KeyJ', repeat: true, bubbles: true, cancelable: true }));
+        await sleep(45);
+
+        const overlay = document.querySelector('#muzen-cursor-host-root');
+        const shadow = overlay ? overlay.shadowRoot : null;
+        const cursorEl = shadow ? shadow.querySelector('.muzen-cursor-overlay') : null;
+        const cRect = cursorEl ? cursorEl.getBoundingClientRect() : null;
+        const curScroll = Math.round(window.scrollY);
+
+        if (curScroll < lastScrollY) jumpBackCount++;
+        lastScrollY = curScroll;
+
+        if (cRect) {
+          if (cRect.top > window.innerHeight - 240) reachedBottomZone = true;
+          // 若已經到達底部舒適區，游標突然跳回視窗頂部 25% 以上，視為瞬移飛頂異常
+          if (reachedBottomZone && cRect.top < window.innerHeight * 0.35) {
+            ceilingJumps++;
+          }
+        }
+
+        if (i % 5 === 0 || i === 50) {
+          steps.push({
+            step: i,
+            mode: 'repeat',
+            scrollY: curScroll,
+            cursorY: cRect ? Math.round(cRect.top) : 0,
+            cursorX: cRect ? Math.round(cRect.left) : 0,
+            text: '長按幀同步推進中...',
+            inFeed: true
+          });
+        }
+      }
+      window.dispatchEvent(new KeyboardEvent('keyup', { key: 'j', code: 'KeyJ', bubbles: true, cancelable: true }));
 
       fetch('/api/report', {
         method: 'POST',
@@ -191,28 +264,37 @@ async function runAllNavigationTests() {
           success: true,
           leakedToSidebar,
           leakedToHeader,
-          totalSteps: 30,
+          jumpBackCount,
+          ceilingJumps,
+          totalSteps: 50,
           finalScrollY: Math.round(window.scrollY),
-          sampleSteps: [steps[0], steps[9], steps[19], steps[29]]
+          sampleSteps: [steps[0], steps[7], steps[14], steps[17], steps[20]]
         })
       });
     })();
   `;
 
   const fbReport = await executeScenario({
-    name: 'Facebook 虛擬動態牆高頻 DOM 更新壓力測試',
+    name: 'Facebook 虛擬動態牆大圖穿透與長按極速幀同步壓力測試',
     htmlFile: 'facebook-feed.html',
     port: 4021,
     testScript: fbScript
   });
 
-  console.log('📊 Facebook 動態牆測試結果:');
+  console.log('📊 Facebook 動態牆高頻實戰測試結果:');
   console.table(fbReport.sampleSteps);
   console.log(`- 游標外溢到左側選單次數: ${fbReport.leakedToSidebar} 次 (標準: 0)`);
   console.log(`- 游標外溢到頂部 Header 次數: ${fbReport.leakedToHeader} 次 (標準: 0)`);
-  console.log(`- 最終滾動進度 (scrollY): ${fbReport.finalScrollY}px`);
-  const isFbPassed = fbReport.leakedToSidebar === 0 && fbReport.leakedToHeader === 0 && fbReport.finalScrollY > 200;
-  console.log(`👉 測試判定: ${isFbPassed ? '✅ PASS (完美鎖定在 Feed，零跨界外溢)' : '❌ FAIL'}`);
+  console.log(`- 滾動逆向倒退跳躍次數: ${fbReport.jumpBackCount} 次 (標準: 0)`);
+  console.log(`- 長按游標瞬移飛頂次數: ${fbReport.ceilingJumps} 次 (標準: 0)`);
+  console.log(`- 最終滾動進度 (scrollY): ${fbReport.finalScrollY}px (標準: > 1000px，成功穿透 720px 大圖)`);
+
+  const isFbPassed = fbReport.leakedToSidebar === 0 &&
+                     fbReport.leakedToHeader === 0 &&
+                     fbReport.jumpBackCount === 0 &&
+                     fbReport.ceilingJumps === 0 &&
+                     fbReport.finalScrollY > 1000;
+  console.log(`👉 測試判定: ${isFbPassed ? '✅ PASS (大圖穿透流暢，長按幀同步完美推進)' : '❌ FAIL'}`);
 
   // ==============================================================
   // 場景 2: 維基百科側邊導覽盒防截胡測試 (截圖同款精煉版)

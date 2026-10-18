@@ -20,16 +20,23 @@
       border-radius: 8px;
       box-shadow: 0 4px 16px rgba(0,0,0,0.4);
     }
-    #test-text {
+    .test-line {
       letter-spacing: 2px;
       white-space: pre;
+      margin: 0;
+      padding: 4px 0;
     }
   </style>
 </head>
 <body>
   <div class="test-box">
     <h2>Muzen Cursor 游標位移與殘影對稱性自動測試</h2>
-    <p id="test-text">The quick brown fox jumps over the lazy dog. 1234567890</p>
+    <div id="test-content">
+      <p id="line-1" class="test-line">Line 1: The quick brown fox jumps over the lazy dog. 1234567890</p>
+      <p id="line-2" class="test-line">Line 2: Pack my box with five dozen liquor jugs. Vim cursor motion</p>
+      <p id="line-3" class="test-line">Line 3: Jackdaws love my big sphinx of quartz. Spatial navigation</p>
+      <p id="line-4" class="test-line">Line 4: Heavy boxes perform quick waltzes and jigs. Physics engine</p>
+    </div>
   </div>
 
   <script src="/dist/content/index.js"></script>
@@ -75,10 +82,19 @@
         ghosts: []
       });
 
+      const codeMap = {
+        'l': 'KeyL',
+        'h': 'KeyH',
+        'j': 'KeyJ',
+        'k': 'KeyK',
+        'w': 'KeyW',
+        'b': 'KeyB'
+      };
+
       // 發送鍵盤事件
       const keyEvent = new KeyboardEvent('keydown', {
         key: key,
-        code: key === 'l' ? 'KeyL' : 'KeyH',
+        code: codeMap[key] || `Key${key.toUpperCase()}`,
         bubbles: true,
         cancelable: true
       });
@@ -151,12 +167,12 @@
         return;
       }
 
-      // 2. 模擬點擊文字節點聚焦
-      const p = document.getElementById('test-text');
+      // 2. 模擬點擊 Line 1 文字節點聚焦 (偏移至中間位置，方便左右與上下皆有充裕空間)
+      const p = document.getElementById('line-1');
       const textNode = p.firstChild;
       const range = document.createRange();
-      range.setStart(textNode, 10);
-      range.setEnd(textNode, 11);
+      range.setStart(textNode, 15);
+      range.setEnd(textNode, 16);
       const rect = range.getBoundingClientRect();
 
       const clickEvent = new MouseEvent('click', {
@@ -171,17 +187,27 @@
 
       // 3. 測試向右 (按 l)
       const rightSamples = await sampleKeyStroke(els.cursor, els.ghosts, 'l', 280);
-      await new Promise(r => setTimeout(r, 450));
+      await new Promise(r => setTimeout(r, 400));
 
       // 4. 測試向左 (按 h)
       const leftSamples = await sampleKeyStroke(els.cursor, els.ghosts, 'h', 280);
+      await new Promise(r => setTimeout(r, 400));
+
+      // 5. 測試向下 (按 j)
+      const downSamples = await sampleKeyStroke(els.cursor, els.ghosts, 'j', 280);
+      await new Promise(r => setTimeout(r, 400));
+
+      // 6. 測試向上 (按 k)
+      const upSamples = await sampleKeyStroke(els.cursor, els.ghosts, 'k', 280);
       await new Promise(r => setTimeout(r, 350));
 
-      // 5. 回報結果至 Node.js
+      // 7. 回報結果至 Node.js
       await reportResult({
         success: true,
         rightSamples,
         leftSamples,
+        downSamples,
+        upSamples,
         interceptedLogs
       });
     }

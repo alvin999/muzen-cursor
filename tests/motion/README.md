@@ -71,14 +71,18 @@ sequenceDiagram
 
 ## 5. Acceptance Criteria & Evaluation Metrics
 
-Any AI agent modifying motion trail logic or cursor transformations **MUST** ensure all 4 metrics pass:
+Any AI agent modifying motion trail logic or cursor transformations **MUST** ensure all acceptance metrics pass:
 
-| Metric | Target / Formula | Acceptance Threshold | Physical Meaning |
+| Metric | Target / Formula | Acceptance Threshold | Physical Meaning & Real-World Note |
 | :--- | :--- | :--- | :--- |
-| **1. Horizontal Symmetry** | $\|\|\Delta X_{right}\| - \|\Delta X_{left}\|\| < 1.0\text{px}$ | **PASS** | Distance traversed rightward (`l`) equals distance traversed leftward (`h`). |
-| **2. Vertical Baseline Flatness** | $|\Delta Y| \le 0.5\text{px}$ | **PASS** | No upward or downward drift during single-line horizontal navigation. |
-| **3. Rightward Trail Heading** | $X_{ghost} < X_{cursor}$ | **PASS** | Trail ghost remains strictly at the origin to the **LEFT** of the cursor. |
-| **4. Leftward Trail Heading** | $X_{ghost} > X_{cursor}$ | **PASS** | Trail ghost remains strictly at the origin to the **RIGHT** of the cursor. |
+| **1. Horizontal Symmetry** | $\|\|\Delta X_{right}\| - \|\Delta X_{left}\|\| < 1.0\text{px}$ | **PASS** (Benchmark) | Distance traversed rightward (`l`) equals leftward (`h`) in monospace bench. In CJK/mixed text, variable character advance is physically expected; Baseline Flatness takes precedence. |
+| **2. Vertical Baseline Flatness** | $|\Delta Y| \le 0.5\text{px}$ | **PASS** | Strictly no upward or downward drift during horizontal navigation (`h`/`l`). |
+| **3. Horizontal Trail Heading** | Rightward: $X_{ghost} < X_{cursor}$<br>Leftward: $X_{ghost} > X_{cursor}$ | **PASS** | Trail ghost remains strictly at the launch origin behind the moving cursor. |
+| **4. Vertical Symmetry** | $\|\|\Delta Y_{down}\| - \|\Delta Y_{up}\|\| < 1.0\text{px}$ | **PASS** | Vertical step distance traversed downward (`j`) strictly equals upward (`k`). |
+| **5. Vertical Column Stability** | $|\Delta X| \le 1.0\text{px}$ | **PASS** | Cursor stays locked in the same vertical column during line hopping (`j`/`k`). |
+| **6. Vertical Trail Heading** | Downward: $Y_{ghost} < Y_{cursor}$<br>Upward: $Y_{ghost} > Y_{cursor}$ | **PASS** | Trail ghost stays pinned at the launch line behind the cursor. |
+| **7. Zero-Coordinate Immunity** | $X > 0 \land Y > 0$ across all frames | **PASS** | Cursor never collapses into `(0, 0)` or negative boundary traps. |
+| **8. Scroll-Coupled Monotonicity** | $\Delta Y_{scroll} \ge 0$ during `down` navigation | **PASS** | Continuous downward navigation strictly forbids upward scroll pullbacks (zero reverse bounce). |
 
 ---
 
