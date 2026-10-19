@@ -841,9 +841,22 @@ export class CursorController {
       const targetX = this.preferredX;
 
       const effRoot = this.getEffectiveRoot();
-      const foundTarget: TextTarget | null = isDownward
+      let foundTarget: TextTarget | null = isDownward
         ? searchDownwardNextLine(node, offset, currentCharTop, lineThreshold, charHeight, targetX, effRoot)
         : searchUpwardPrevLine(node, offset, currentCharTop, lineThreshold, charHeight, targetX, effRoot);
+
+      // 非對稱邊界自然逃逸 (Conditional Flow Escape)：
+      // 1. 若在當前局部作用域已抵達邊界 (找不到下一行或上一行)，且當前並非全域根節點
+      // 2. 核心守護門檻：只有當前作用域屬於「正文常態流內容器 (In-Flow Container)」時才允許向外逃逸至主閱讀流；
+      //    若屬於「脫離常態流之側欄/浮動掛件 (Out-of-Flow Widget)」，則嚴格封印不逃逸，100% 杜絕側欄無限延展與隨意外溢
+      if (!foundTarget && effRoot !== this.rootElement) {
+        const isSidebarOrWidget = isOutOfNormalFlowWidget(effRoot, this.rootElement);
+        if (!isSidebarOrWidget) {
+          foundTarget = isDownward
+            ? searchDownwardNextLine(node, offset, currentCharTop, lineThreshold, charHeight, targetX, this.rootElement)
+            : searchUpwardPrevLine(node, offset, currentCharTop, lineThreshold, charHeight, targetX, this.rootElement);
+        }
+      }
 
       if (foundTarget) {
         this.currentTarget = foundTarget;

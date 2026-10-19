@@ -6,6 +6,7 @@
  * 判斷當前按鍵事件是否發生在輸入情境（Input Context）
  * 防止 Vim 快捷鍵干擾使用者的正常打字行為
  */
+
 export function isTypingContext(e: KeyboardEvent | MouseEvent): boolean {
   const rawTarget = (e.composedPath ? e.composedPath()[0] : e.target) as Node | null;
   if (!rawTarget) return false;
@@ -65,19 +66,53 @@ export function isHostnameExcluded(hostname: string, list: string[]): boolean {
 }
 
 /**
- * 判斷元素是否為視覺隱藏 / 螢幕閱讀器專用元素 (sr-only, visually-hidden)
- * 徹底排除 clip: rect(0,0,0,0)、clipPath: inset(50%)、1px*1px overflow: hidden 等無障礙標籤
+ * 業界通用之無障礙/螢幕閱讀器專用隱藏類別與屬性選擇器
+ * 涵蓋 W3C WAI-ARIA、Tailwind (.sr-only)、Bootstrap (.visually-hidden)、WordPress (.screen-reader-text) 等業界標準
+ */
+export const A11Y_HIDDEN_SELECTORS = [
+  '[aria-hidden="true"]',
+  '.sr-only',
+  '.visually-hidden',
+  '.screen-reader-text',
+  '.a11y-hidden'
+].join(',');
+
+/**
+ * 離屏極端座標安全閾值（像素）
+ * 現代 Web 常用 off-screen 技術將無障礙螢幕閱讀器專用文字移出視野（如 -9999px 或 -999px）
+ */
+export const OFFSCREEN_COORD_THRESHOLD_PX = 1000;
+
+/**
+ * 檢查元素或文字幾何範圍是否完全脫離正常的視覺渲染可讀空間
+ * 1. 幾何尺寸塌陷至不可讀大小 (width <= 1 && height <= 1)
+ * 2. 幾何座標被推至極端負座標離屏飛地 (如 left/top: -9999px)
+ */
+export function isOffScreenOrZeroSize(rect: DOMRect | { width: number; height: number; left: number; top: number; right: number; bottom: number }): boolean {
+  if (rect.width <= 1 && rect.height <= 1) {
+    return true;
+  }
+  if (rect.right < -OFFSCREEN_COORD_THRESHOLD_PX || rect.bottom < -OFFSCREEN_COORD_THRESHOLD_PX) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * 判斷元素是否為視覺隱藏 / 螢幕閱讀器專用元素
+ * 優先以標準 A11Y 選擇器快速辨識，並結合 W3C 推薦之 CSS 幾何剪裁特徵 (clip: rect(0,0,0,0)、clipPath: inset(50%) 等)
  */
 export function isVisuallyHiddenElement(el: HTMLElement): boolean {
   if (!el || !(el instanceof Element)) return false;
 
-  // 1. 常見無障礙類名
-  const className = typeof el.className === 'string' ? el.className.toLowerCase() : '';
-  if (className.includes('sr-only') || className.includes('visually-hidden')) {
-    return true;
-  }
+  // 1. 標準無障礙隱藏選擇器快速過濾
+  try {
+    if (el.matches?.(A11Y_HIDDEN_SELECTORS) || el.closest?.(A11Y_HIDDEN_SELECTORS)) {
+      return true;
+    }
+  } catch {}
 
-  // 2. 樣式特徵判斷
+  // 2. W3C 標準視覺隱藏剪裁樣式特徵判斷
   try {
     const style = window.getComputedStyle(el);
     if (style.clip && (style.clip.includes('rect(0') || style.clip.includes('rect(1px'))) {
@@ -95,6 +130,7 @@ export function isVisuallyHiddenElement(el: HTMLElement): boolean {
 
   return false;
 }
+
 
 /**
  * 智慧辨識當前節點所屬的閱讀作用域區塊（Reading Scope）
@@ -130,7 +166,10 @@ export function detectReadingScope(el: HTMLElement | null, fallbackRoot: HTMLEle
       const style = window.getComputedStyle(current);
 
       // 特徵 A: 獨立垂直滾動容器 (有自己的滾動條與排版上下文)
-      const isScrollable = (style.overflowY === 'auto' || style.overflowY === 'scroll') && current.clientHeight > 120;
+      // 回歸 W3C CSSOM 物理標準：內容高度實質超出可見高度 (scrollHeight > clientHeight)
+      // 避免僅因宣告 overflow: auto (純水平防溢出) 而被誤判為垂直滾動容器
+      const hasScrollableOverflow = current.scrollHeight > current.clientHeight;
+      const isScrollable = hasScrollableOverflow && (style.overflowY === 'auto' || style.overflowY === 'scroll');
       if (isScrollable) {
         return current;
       }

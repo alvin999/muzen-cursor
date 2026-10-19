@@ -1,6 +1,11 @@
 import { CursorRect } from '../cursorStore';
 import { TextTarget } from '../wordNavigator';
-import { isOutOfNormalFlowWidget, isVisuallyHiddenElement } from '../../utils/domUtils';
+import {
+  isOutOfNormalFlowWidget,
+  isVisuallyHiddenElement,
+  A11Y_HIDDEN_SELECTORS,
+  isOffScreenOrZeroSize
+} from '../../utils/domUtils';
 
 /**
  * 判定文字節點是否為實質可見/可閱讀文字（相容 pre/code 保留空白與換行）
@@ -16,8 +21,8 @@ export function isValidReadableTextNode(node: Text): boolean {
     return false;
   }
 
-  // 徹底排除視覺隱藏 / 螢幕閱讀器專用元素 (sr-only, visually-hidden)
-  if (isVisuallyHiddenElement(parent) || parent.closest('[aria-hidden="true"], .sr-only, .visually-hidden')) {
+  // 徹底排除視覺隱藏 / 螢幕閱讀器專用元素
+  if (isVisuallyHiddenElement(parent) || parent.closest(A11Y_HIDDEN_SELECTORS)) {
     return false;
   }
 
@@ -25,11 +30,7 @@ export function isValidReadableTextNode(node: Text): boolean {
     const range = document.createRange();
     range.selectNodeContents(node);
     const rect = range.getBoundingClientRect();
-    if (rect.width <= 1 && rect.height <= 1) {
-      return false;
-    }
-    // 徹底排除離屏飛地（例如 Facebook 常用的 left: -9999px, top: -9999px）
-    if (rect.left < -500 || rect.top < -5000) {
+    if (isOffScreenOrZeroSize(rect)) {
       return false;
     }
   } catch {}
