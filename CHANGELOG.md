@@ -5,6 +5,60 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [v0.1.9] - 2026-10-19
+
+### 繁體中文 (Traditional Chinese)
+#### 🚀 核心導航與滾動機制優化 (Navigation & Scrolling Improvements)
+- **智慧容器與常態文流穿透 (Conditional In-flow Scope Escape)**：
+  - 重構閱讀區域與滾動容器判定邏輯，以 W3C CSSOM 標準規範（`scrollHeight > clientHeight`）取代過往魔術數字門檻，大幅提升動態容器判斷準確性。
+  - 支援常態文流（In-flow）元素（如嵌入式小工具、留言串）跨容器平順導航穿透，無縫延續閱讀流。
+  - 對離流元件（Out-of-flow，如側邊欄、`fixed`/`sticky` 元素）維持嚴格的作用域隔離保護，徹底根除游標陷入死循環或被側邊資訊盒截胡問題。
+- **瞬時幀同步與極速長按防震 (Instant Frame Sync for Key Repeat)**：
+  - 針對長按（如長按 `j` 鍵重複連發）實作即時幀同步機制，顯著降低滾動延遲感。
+  - 向下導航期間實施單向滾動跟隨保護，杜絕視窗逆向回彈跳躍。
+  - 徹底解耦滾動事件與水平欄位記憶（`preferredX`），消除垂直跨行時的微幅水平抖動。
+  - 移除導航跳躍限制（`maxDownwardJump` / `maxJump`），確保巨幅元素與跨段落跳躍流暢不中斷。
+- **無障礙隱藏節點過濾標準化**：
+  - 引入 `A11Y_HIDDEN_SELECTORS` 與 `isOffScreenOrZeroSize`，全面過濾螢幕報讀專用的不可見 DOM 節點，避免游標停滯於空白或隱藏內容。
+
+#### 🧪 測試套件強化 (Test Suite Refinements)
+- **Facebook 巨幅動態牆實戰基準**：
+  - 擴充 `facebook-feed` 測試夾具，納入 720px 高度巨幅媒體橫幅、即時留言虛擬串流與長按幀同步壓力測試。
+  - 確保高頻導航達到零反向拉回、零吸頂跳躍與完美穿透。
+- 清理冗餘的單次除錯腳本與暫存測試檔案，精簡測試套件架構。
+
+#### 🤖 CI / CD 自動化釋出 (Release Automation)
+- **歷史 Release 更新日誌批次同步**：
+  - 新增 `sync-all-releases.mjs` 工具腳本與 `sync-releases.yml` GitHub Actions 工作流程，支援將 `CHANGELOG.md` 雙語更新日誌自動同步至 GitHub Releases。
+
+---
+
+### English
+#### 🚀 Navigation & Scrolling Improvements
+- **Smart Container Detection & Conditional In-flow Scope Escape**:
+  - Replaced arbitrary magic number heuristics with standard W3C CSSOM compliance (`scrollHeight > clientHeight`) for reading scope and scroll container detection.
+  - Implemented conditional flow escape allowing in-flow elements (embedded widgets, comment sections) to transition across boundaries naturally.
+  - Maintained strict isolation for out-of-flow elements (fixed/sticky sidebars, floating widgets) to prevent cursor trapping or infinite loops.
+- **Instant Frame Sync & Anti-Bounce for Key Repeat**:
+  - Introduced instant frame synchronization during key repeat (e.g. holding down `j`), eliminating motion lag.
+  - Enforced unidirectional scroll tracking during downward navigation to eliminate reverse bounce.
+  - Decoupled scroll events from horizontal column memory (`preferredX`), eliminating horizontal micro-jitter.
+  - Removed restrictive jump caps (`maxDownwardJump` / `maxJump`) for seamless transitions across massive media blocks.
+- **Standardized Accessibility Element Filtering**:
+  - Integrated `A11Y_HIDDEN_SELECTORS` and `isOffScreenOrZeroSize` to cleanly bypass screen-reader-only and zero-sized hidden DOM nodes.
+
+#### 🧪 Test Suite Refinements
+- **Real-World Facebook Feed Benchmarks**:
+  - Upgraded `facebook-feed` fixture with 720px media banners, virtualized comments, and high-frequency key repeat stress tests.
+  - Verified 100% pass rate with zero reverse pullbacks, zero ceiling jumps, and robust media penetration.
+- Pruned obsolete one-off debug scripts and temporary test fixtures.
+
+#### 🤖 CI / CD & Release Automation
+- **Batch Historical Release Changelog Sync**:
+  - Added `sync-all-releases.mjs` and `.github/workflows/sync-releases.yml` to automatically synchronize bilingual changelogs across all GitHub Releases.
+
+---
+
 ## [v0.1.8] - 2026-10-16
 
 ### 繁體中文 (Traditional Chinese)
