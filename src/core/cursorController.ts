@@ -58,6 +58,7 @@ export class CursorController {
   // 長文閱讀輔助與章節快取
   private cachedTotalChars = 0;
   private lastCharCountTime = 0;
+  private lastBoundaryNoticeTime = 0;
   private lastHeadingCheckTime = 0;
   private cachedHeadingTitle = '';
   private cachedReadingMinutes = 0;
@@ -870,6 +871,18 @@ export class CursorController {
           }
         }
       } else {
+        // 邊界防護與提示：若往下移動且當前位置已無法再下移，觸發狀態列 Toast 提示
+        if (isDownward && step === 0) {
+          const now = Date.now();
+          if (now - this.lastBoundaryNoticeTime > 1500) {
+            this.lastBoundaryNoticeTime = now;
+            const state = cursorStore.getState();
+            const dict = LOCALES[state.locale || 'zh-TW'] || LOCALES['zh-TW'];
+            const isSidebarOrWidget = effRoot !== this.rootElement && isOutOfNormalFlowWidget(effRoot, this.rootElement);
+            const notice = isSidebarOrWidget ? dict.noticeWidgetBottom : dict.noticePageBottom;
+            cursorStore.showStatusNotice(notice, 1500);
+          }
+        }
         break;
       }
     }

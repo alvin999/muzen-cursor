@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [v0.1.10] - 2026-10-20
+
+### 繁體中文 (Traditional Chinese)
+#### ✨ 新增功能與體驗優化 (Features & Improvements)
+- **邊界與浮動元件觸底狀態列提示 (Boundary & Float Widget Toast Notices)**：
+  - **頁面全文觸底反饋**：向下移動抵達頁面全文末端無法再前進時，狀態列優雅彈出「已閱卷終 · 抵達底界」提示，清晰感知閱讀進度。
+  - **浮動元件／側欄掛件邊界感知**：當游標處於脫離常態文流之獨立掛件（如維基百科年表、側欄卡片、浮動 Info box）且已抵達底部邊界時，跳出「浮動元件已至邊界」提示，避免使用者因邊界封印機制而產生迷失感。
+  - **高頻防抖節流機制 (Notice Throttling)**：內建 1.5 秒節流門檻，使用者長按 `j` 連發或極速連擊時不產生視覺干擾與閃爍。
+  - **完整多國語系支援**：同步支援繁體中文 (`zh-TW`)、英文 (`en`) 與日文 (`ja`)。
+
+---
+
+### English
+#### ✨ Features & Improvements
+- **Boundary & Float Widget Toast Notifications**:
+  - **End of Passage Feedback**: Displays an elegant status bar notice ("Reached the end of passage") when reaching the bottom of the readable page, providing clear awareness of reading progress.
+  - **Floating Widget Boundary Awareness**: Displays "Reached boundary of widget" when reaching the bottom of out-of-flow widgets (e.g., sidebars, floating info boxes, infobox tables) where navigation is strictly contained.
+  - **High-Frequency Throttle Protection**: Includes a 1.5-second debounce/throttle cooldown to eliminate notification jitter during key repeat.
+  - **Full Trilingual Localization**: Fully translated and synced across Traditional Chinese (`zh-TW`), English (`en`), and Japanese (`ja`).
+
+---
+
 ## [v0.1.9] - 2026-10-19
 
 ### 繁體中文 (Traditional Chinese)

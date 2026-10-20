@@ -17,6 +17,8 @@ export interface Translations {
   tabStatusLocal: string;
   noticeDeepSleep: string;
   noticeWakeUp: string;
+  noticePageBottom: string;
+  noticeWidgetBottom: string;
   languageLabel: string;
   autoThemeLabel: string;
   autoThemeDesc: string;
@@ -363,6 +365,8 @@ export const LOCALES: Record<Locale, Translations> = {
     tabStatusLocal: '本機分頁：無法注入外掛',
     noticeDeepSleep: '💤 當前分頁已休眠 (連按兩次 Esc 喚醒)',
     noticeWakeUp: '⚡ 已喚醒當前分頁游標',
+    noticePageBottom: '已閱卷終 · 抵達底界',
+    noticeWidgetBottom: '浮動元件已至邊界',
     languageLabel: '介面語言',
     autoThemeLabel: '智慧感應主題',
     autoThemeDesc: '智慧感應網頁深淺背景，自動演算最佳對比游標色彩',
@@ -695,6 +699,8 @@ export const LOCALES: Record<Locale, Translations> = {
     tabStatusLocal: 'Local Tab: Cannot inject extension',
     noticeDeepSleep: '💤 Tab Asleep (Double Esc to resume)',
     noticeWakeUp: '⚡ Muzen Cursor Active',
+    noticePageBottom: 'Reached the end of passage',
+    noticeWidgetBottom: 'Reached boundary of widget',
     languageLabel: 'Language',
     autoThemeLabel: 'Smart Adaptive Theme',
     autoThemeDesc: 'Automatically detect web background and calculate optimal cursor contrast palette',
@@ -1027,6 +1033,8 @@ export const LOCALES: Record<Locale, Translations> = {
     tabStatusLocal: 'ローカルタブ：拡張機能無効',
     noticeDeepSleep: '💤 このタブをスリープ（Esc 2回で復帰）',
     noticeWakeUp: '⚡ カーソルを復帰しました',
+    noticePageBottom: '巻末に到達しました',
+    noticeWidgetBottom: 'ウィジェットの境界に到達しました',
     languageLabel: '表示言語',
     autoThemeLabel: 'スマート感知テーマ',
     autoThemeDesc: 'ページの明暗背景を自動感知し、最適なコントラスト配色を演算します',
