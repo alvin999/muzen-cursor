@@ -1821,6 +1821,7 @@ export class CursorController {
     const maxSteps = 80;
 
     const tempWaypoints: CursorRect[] = [];
+    const effRoot = this.getEffectiveRoot();
 
     // 3. 連續向下或向上推進視覺行，尋找垂直位移達約半頁之最佳目標行
     while (accumulatedDistance < jumpDistance && steps < maxSteps) {
@@ -1832,9 +1833,22 @@ export class CursorController {
       r.setEnd(lastFound.node, Math.min(curSafe + 1, curLen));
       const curRect = r.getBoundingClientRect();
 
-      const nextTarget = isDownward
-        ? searchDownwardNextLine(lastFound.node, lastFound.offset, curRect.top, lineThreshold, charHeight, targetX, this.rootElement)
-        : searchUpwardPrevLine(lastFound.node, lastFound.offset, curRect.top, lineThreshold, charHeight, targetX, this.rootElement);
+      let nextTarget = isDownward
+        ? searchDownwardNextLine(lastFound.node, lastFound.offset, curRect.top, lineThreshold, charHeight, targetX, effRoot)
+        : searchUpwardPrevLine(lastFound.node, lastFound.offset, curRect.top, lineThreshold, charHeight, targetX, effRoot);
+
+      // 非對稱邊界自然逃逸 (Conditional Flow Escape)：
+      // 1. 若在當前局部作用域已抵達邊界 (找不到下一行或上一行)，且當前並非全域根節點
+      // 2. 核心守護門檻：只有當前作用域屬於「正文常態流內容器 (In-Flow Container)」時才允許向外逃逸至主閱讀流；
+      //    若屬於「脫離常態流之側欄/浮動掛件 (Out-of-Flow Widget)」，則嚴格封印不逃逸，100% 杜絕側欄無限延展與隨意外溢
+      if (!nextTarget && effRoot !== this.rootElement) {
+        const isSidebarOrWidget = isOutOfNormalFlowWidget(effRoot, this.rootElement);
+        if (!isSidebarOrWidget) {
+          nextTarget = isDownward
+            ? searchDownwardNextLine(lastFound.node, lastFound.offset, curRect.top, lineThreshold, charHeight, targetX, this.rootElement)
+            : searchUpwardPrevLine(lastFound.node, lastFound.offset, curRect.top, lineThreshold, charHeight, targetX, this.rootElement);
+        }
+      }
 
       if (!nextTarget) break;
 
@@ -1859,17 +1873,24 @@ export class CursorController {
       foundTarget = nextTarget;
     }
 
-    // 若已無後續行可跳轉，優雅回退至全文首尾
+    // 若已無後續行可跳轉（原地即為頂端或底端），保持在原位並觸發邊界提示，避免突兀瞬移回全文首尾
     if (!foundTarget) {
       if (isDownward) {
-        this.jumpToDocumentEnd();
-      } else {
-        this.jumpToDocumentStart();
+        const now = Date.now();
+        if (now - this.lastBoundaryNoticeTime > 1500) {
+          this.lastBoundaryNoticeTime = now;
+          const state = cursorStore.getState();
+          const dict = LOCALES[state.locale || 'zh-TW'] || LOCALES['zh-TW'];
+          const isSidebarOrWidget = effRoot !== this.rootElement && isOutOfNormalFlowWidget(effRoot, this.rootElement);
+          const notice = isSidebarOrWidget ? dict.noticeWidgetBottom : dict.noticePageBottom;
+          cursorStore.showStatusNotice(notice, 1500);
+        }
       }
       return;
     }
 
     this.currentTarget = foundTarget;
+    this.updateActiveScope(foundTarget.node);
 
     // 4. 執行保證幅度的 Ease-Out Cubic 物理阻尼平滑滾動
     const targetScrollTop = currentScroll + scrollAmount;
@@ -1890,6 +1911,6 @@ export class CursorController {
 
     // 5. 強制保持游標可見並同步更新位置 (保護翻頁動畫啟動瞬間目標行尚在可見視窗外而不被誤判熄滅)
     cursorStore.setState({ visible: true });
-    this.updateCursorPosition(false, waypoints, false, true);
+    this.updateCursorPosition(false, waypoints, false, true, isDownward ? 'down' : 'up');
   }
 }

@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [v0.1.11] - 2026-10-27
+
+### 繁體中文 (Traditional Chinese)
+#### 🐛 核心修復與導航對齊 (Bug Fixes & Navigation Alignment)
+- **半頁跳轉 (`u` / `d`) 作用域與邊界防護對齊**：
+  - **閱讀作用域隔離 (Scope Containment)**：將 `u` (向上半頁) 與 `d` (向下半頁) 的推進搜尋範圍對齊至當前有效作用域（`getEffectiveRoot()`），並納入與單行移動 (`j` / `k`) 相同的離流元件防護機制（`isOutOfNormalFlowWidget`），徹底解決游標在側邊欄、卡片或獨立容器跳轉時隨意外溢或超出框架的問題。
+  - **根絕瞬移至左上角 (Eliminate Corner Snap)**：移除原先在頂部或邊界找不到足夠行數時強制觸發全頁級 `jumpToDocumentStart()` / `jumpToDocumentEnd()` 的機制，改為平穩原地停留並觸發邊界感知提示，杜絕游標與滾動突然被強制吸回頁面最左上角的問題。
+  - **作用域鎖定維護 (Active Scope Synchronization)**：跳轉後主動同步更新作用域（`updateActiveScope`），確保後續導航操作持續精準錨定在同一閱讀容器內。
+
+---
+
+### English
+#### 🐛 Bug Fixes & Navigation Alignment
+- **Half-Page Navigation (`u` / `d`) Scope & Boundary Alignment**:
+  - **Scope Containment**: Aligned half-page jump searches (`u` / `d`) with the active effective scope (`getEffectiveRoot()`) and integrated out-of-flow widget guards (`isOutOfNormalFlowWidget`), preventing the cursor from unexpectedly escaping containers or overflowing sidebars and card panels.
+  - **Eliminate Corner Snapping**: Replaced the previous fallback behavior that abruptly invoked full-page `jumpToDocumentStart()` / `jumpToDocumentEnd()` at boundaries. The cursor now smoothly remains in place with boundary notifications, completely eliminating erratic jumps back to the top-left corner.
+  - **Active Scope Synchronization**: Added `updateActiveScope` synchronization upon target acquisition to keep subsequent navigation precisely anchored within the target reading container.
+
+---
+
 ## [v0.1.10] - 2026-10-20
 
 ### 繁體中文 (Traditional Chinese)
