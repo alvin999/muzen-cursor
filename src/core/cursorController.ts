@@ -6,6 +6,8 @@ import { resolveTextTargetFromPoint, isClickWithinDistanceThreshold, getRawCaret
 import { animateScrollTo, getScrollParent, getViewportMetrics } from '../utils/smoothScroller';
 import {
   findFirstTextNodeIn,
+  findFirstReadableTextNode,
+  findLastReadableTextNode,
   findNextTextNode,
   findPrevTextNode,
   getCharRectOfTarget,
@@ -777,6 +779,7 @@ export class CursorController {
         const nextNode = findNextTextNode(node, effectiveRoot, isOutOfFlow);
         if (nextNode) {
           this.currentTarget = { node: nextNode, offset: 0 };
+          this.updateActiveScope(nextNode);
           this.updateCursorPosition(true);
         }
       }
@@ -795,6 +798,7 @@ export class CursorController {
             node: prevNode,
             offset: Math.max(0, prevLen - 1)
           };
+          this.updateActiveScope(prevNode);
           this.updateCursorPosition(true);
         }
       }
@@ -919,6 +923,7 @@ export class CursorController {
           node: nextNode,
           offset: initialOffset < nextText.length ? initialOffset : 0
         };
+        this.updateActiveScope(nextNode);
         this.updateCursorPosition(true);
       }
     }
@@ -953,6 +958,7 @@ export class CursorController {
           node: prevNode,
           offset: lastWord
         };
+        this.updateActiveScope(prevNode);
         this.updateCursorPosition(true);
       }
     }
@@ -986,6 +992,7 @@ export class CursorController {
           node: nextNode,
           offset: nextEnd
         };
+        this.updateActiveScope(nextNode);
         this.updateCursorPosition(true);
       }
     }
@@ -1233,14 +1240,22 @@ export class CursorController {
   }
 
   /**
-   * 跳至文章頂部 (gg)
+   * 跳至文章頂部 (gg) - 排除頂部 fixed/sticky 導覽列與螢幕閱讀器隱藏元素，精準鎖定常態閱讀流首字元
    */
   public jumpToDocumentStart(): void {
     this.triggerRearviewNotice('up');
     this.pushJumpPoint();
-    const firstText = findFirstTextNodeIn(this.rootElement);
+
+    // 判斷作用域：若當前處於脫離常態流之側欄/浮動掛件，限定於該掛件內部，避免向外逃逸
+    const effRoot = this.getEffectiveRoot();
+    const isWidget = effRoot !== this.rootElement && isOutOfNormalFlowWidget(effRoot, this.rootElement);
+    const targetRoot = isWidget ? effRoot : this.rootElement;
+
+    // 優先使用感知主閱讀流之 TreeWalker 過濾頂部固定列與隱藏節點
+    const firstText = findFirstReadableTextNode(targetRoot, isWidget) || findFirstTextNodeIn(targetRoot);
     if (firstText) {
       this.currentTarget = { node: firstText, offset: 0 };
+      this.updateActiveScope(firstText);
       this.updateCursorPosition();
       if (this.options?.enableScroll !== false) {
         const scrollParent = getScrollParent(this.currentTarget.node, this.options?.containerRoot);
@@ -1255,19 +1270,29 @@ export class CursorController {
   }
 
   /**
-   * 跳至文章底部 (G)
+   * 跳至文章底部 (G) - 排除底部浮動客服、Cookie 同意橫幅與不可見元素，精準鎖定常態閱讀流尾字元
    */
   public jumpToDocumentEnd(): void {
     this.triggerRearviewNotice('down');
     this.pushJumpPoint();
-    const walker = document.createTreeWalker(this.rootElement, NodeFilter.SHOW_TEXT);
-    let lastTextNode: Text | null = null;
-    let n = walker.nextNode();
-    while (n) {
-      if (n.textContent && n.textContent.trim().length > 0) {
-        lastTextNode = n as Text;
+
+    // 判斷作用域：若當前處於脫離常態流之側欄/浮動掛件，限定於該掛件內部，避免向外逃逸
+    const effRoot = this.getEffectiveRoot();
+    const isWidget = effRoot !== this.rootElement && isOutOfNormalFlowWidget(effRoot, this.rootElement);
+    const targetRoot = isWidget ? effRoot : this.rootElement;
+
+    // 優先使用感知主閱讀流之 TreeWalker 排除底部浮動掛件、固定客服窗、<script> 與不可見元素
+    let lastTextNode = findLastReadableTextNode(targetRoot, isWidget);
+    if (!lastTextNode) {
+      // 容錯 Fallback
+      const walker = document.createTreeWalker(targetRoot, NodeFilter.SHOW_TEXT);
+      let n = walker.nextNode();
+      while (n) {
+        if (n.textContent && n.textContent.trim().length > 0) {
+          lastTextNode = n as Text;
+        }
+        n = walker.nextNode();
       }
-      n = walker.nextNode();
     }
 
     if (lastTextNode) {
@@ -1275,6 +1300,7 @@ export class CursorController {
         node: lastTextNode,
         offset: lastTextNode.textContent?.length || 0
       };
+      this.updateActiveScope(lastTextNode);
       this.updateCursorPosition();
       if (this.options?.enableScroll !== false) {
         const scrollParent = getScrollParent(this.currentTarget.node, this.options?.containerRoot);

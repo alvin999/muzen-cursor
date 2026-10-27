@@ -153,6 +153,34 @@ export function findPrevTextNode(
 }
 
 /**
+ * 尋找指定容器內第一個符合常態閱讀流且實質可見的文字節點（過濾頂部固定導覽列與隱藏節點）
+ */
+export function findFirstReadableTextNode(
+  rootElement: HTMLElement,
+  allowOutOfFlow = false
+): Text | null {
+  const walker = createFlowTreeWalker(rootElement, allowOutOfFlow);
+  return walker.nextNode() as Text | null;
+}
+
+/**
+ * 尋找指定容器內最後一個符合常態閱讀流且實質可見的文字節點（過濾底部浮動客服、Cookie列與不可見元素）
+ */
+export function findLastReadableTextNode(
+  rootElement: HTMLElement,
+  allowOutOfFlow = false
+): Text | null {
+  const walker = createFlowTreeWalker(rootElement, allowOutOfFlow);
+  let lastNode: Text | null = null;
+  let cur = walker.nextNode();
+  while (cur) {
+    lastNode = cur as Text;
+    cur = walker.nextNode();
+  }
+  return lastNode;
+}
+
+/**
  * 取得指定 TextTarget 所對應字元的螢幕幾何矩形
  */
 export function getCharRectOfTarget(target: TextTarget): CursorRect | null {
