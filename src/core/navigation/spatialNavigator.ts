@@ -290,7 +290,43 @@ export function searchDownwardNextLine(
     const text = currentNode.textContent || '';
     const len = text.length;
 
-    for (let i = nodeOffsetStart; i < len; i++) {
+    // 超大純文字節點加速：當尚未鎖定下一視覺行且剩餘字元較多時，先以二分搜尋跳過同一視覺行的前段字元
+    let scanStart = nodeOffsetStart;
+    if (targetLineTop === null && len - scanStart > 64) {
+      let low = scanStart;
+      let high = len - 1;
+      let firstNextLineIdx = -1;
+
+      while (low <= high) {
+        const mid = (low + high) >>> 1;
+        // 若剛好落在換行符號上，微調至鄰近有效字元量測
+        let probe = mid;
+        while (probe < high && (text[probe] === '\r' || text[probe] === '\n')) {
+          probe++;
+        }
+        range.setStart(currentNode, probe);
+        range.setEnd(currentNode, Math.min(len, probe + 1));
+        const midRect = range.getBoundingClientRect();
+
+        if (midRect.width > 0 && midRect.height > 0) {
+          if (midRect.top - currentCharTop > lineThreshold) {
+            firstNextLineIdx = probe;
+            high = mid - 1;
+          } else {
+            low = probe + 1;
+          }
+        } else {
+          break;
+        }
+      }
+
+      if (firstNextLineIdx > scanStart) {
+        // 退回安全緩衝字元數以確保完整收集目標視覺行首字元
+        scanStart = Math.max(scanStart, firstNextLineIdx - 8);
+      }
+    }
+
+    for (let i = scanStart; i < len; i++) {
       const char = text[i];
       if (char === '\r' || char === '\n') continue;
 
@@ -361,7 +397,44 @@ export function searchUpwardPrevLine(
     nodesScanned++;
 
     const text = currentNode.textContent || '';
-    const startFrom = nodeOffsetStart >= 0 ? Math.min(nodeOffsetStart, text.length - 1) : -1;
+    let startFrom = nodeOffsetStart >= 0 ? Math.min(nodeOffsetStart, text.length - 1) : -1;
+
+    // 超大純文字節點加速：當尚未鎖定上一視覺行且前方字元較多時，先以二分搜尋跳過同一視覺行的後段字元
+    if (targetLineTop === null && startFrom > 64) {
+      const isInFixedHeader = !isStartOutOfFlow && !!currentNode.parentElement?.closest('[role="banner"], header');
+      if (!isInFixedHeader) {
+        let low = 0;
+        let high = startFrom;
+        let lastPrevLineIdx = -1;
+
+        while (low <= high) {
+          const mid = (low + high) >>> 1;
+          let probe = mid;
+          while (probe > low && (text[probe] === '\r' || text[probe] === '\n')) {
+            probe--;
+          }
+          range.setStart(currentNode, probe);
+          range.setEnd(currentNode, Math.min(text.length, probe + 1));
+          const midRect = range.getBoundingClientRect();
+
+          if (midRect.width > 0 && midRect.height > 0) {
+            if (currentCharTop - midRect.top > lineThreshold) {
+              lastPrevLineIdx = probe;
+              low = mid + 1;
+            } else {
+              high = probe - 1;
+            }
+          } else {
+            break;
+          }
+        }
+
+        if (lastPrevLineIdx >= 0 && lastPrevLineIdx < startFrom) {
+          // 保留安全緩衝字元數以確保完整收集目標視覺行尾端字元
+          startFrom = Math.min(startFrom, lastPrevLineIdx + 8);
+        }
+      }
+    }
 
     for (let i = startFrom; i >= 0; i--) {
       const char = text[i];

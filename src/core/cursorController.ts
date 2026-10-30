@@ -3,7 +3,7 @@ import { LOCALES } from '../i18n/locales';
 import { isTypingContext, detectReadingScope, isOutOfNormalFlowWidget, findCurrentSectionHeading, estimateReadingMinutes } from '../utils/domUtils';
 import { WordNavigator, TextTarget } from './wordNavigator';
 import { resolveTextTargetFromPoint, isClickWithinDistanceThreshold, getRawCaretFromPoint } from '../utils/caretUtils';
-import { animateScrollTo, getScrollParent, getViewportMetrics } from '../utils/smoothScroller';
+import { animateScrollTo, cancelActiveScroll, getScrollParent, getViewportMetrics } from '../utils/smoothScroller';
 import {
   findFirstTextNodeIn,
   findFirstReadableTextNode,
@@ -467,7 +467,7 @@ export class CursorController {
         if (!this.currentTarget || !document.contains(this.currentTarget.node)) {
           this.findInitialTarget();
         } else {
-          this.moveHalfPage(true);
+          this.moveHalfPage(true, e.repeat);
         }
         return;
       }
@@ -479,7 +479,7 @@ export class CursorController {
         if (!this.currentTarget || !document.contains(this.currentTarget.node)) {
           this.findInitialTarget();
         } else {
-          this.moveHalfPage(false);
+          this.moveHalfPage(false, e.repeat);
         }
         return;
       }
@@ -499,7 +499,7 @@ export class CursorController {
       return;
     }
 
-    // 5. 游標處於喚醒接管狀態 (visible: true)：所有 Vim 按鍵全面霸道接管
+    // 5. 游標處於喚醒接管狀態 (visible: true)：所有 Vim 按鍵全面接管
     const intercept = () => {
       e.preventDefault();
       e.stopPropagation();
@@ -719,7 +719,7 @@ export class CursorController {
       intercept();
       this.recordNavCharge(e.repeat);
       this.clearPendingKeys();
-      this.moveHalfPage(true);
+      this.moveHalfPage(true, e.repeat);
       return;
     }
 
@@ -727,7 +727,7 @@ export class CursorController {
       intercept();
       this.recordNavCharge(e.repeat);
       this.clearPendingKeys();
-      this.moveHalfPage(false);
+      this.moveHalfPage(false, e.repeat);
       return;
     }
 
@@ -1757,9 +1757,14 @@ export class CursorController {
           if (navDirection === 'down') {
             // 向下閱讀時，只允許因超過底部視野而向下滾動，嚴禁向上反向回捲！
             if (curBottom > viewHeight - padBottom) {
-              const delta = curBottom - (viewHeight - padBottom) + lineBuffer;
+              let delta = curBottom - (viewHeight - padBottom) + lineBuffer;
+              // 大跨距防禦：若單步跨越大型圖片或空白區塊導致游標瞬間落於畫面外甚遠，對齊至黃金舒適區中央，消除追趕落差感
+              if (curTop > viewHeight) {
+                delta = curTop - Math.round(viewHeight * 0.65);
+              }
               if (isRepeat) {
                 // 長按 (Key Repeat) 模式：極速零延遲幀同步推進，游標緊貼黃金舒適線，視窗絲滑滾動絕不脫軌！
+                cancelActiveScroll();
                 const isWin = scrollTarget === window || !(scrollTarget instanceof HTMLElement);
                 if (isWin) {
                   window.scrollBy({ top: delta, behavior: 'instant' as ScrollBehavior });
@@ -1775,8 +1780,13 @@ export class CursorController {
           } else if (navDirection === 'up') {
             // 向上閱讀時，只允許因超過頂部視野而向上滾動，嚴禁向下反向回捲！
             if (curTop < padTop) {
-              const delta = (padTop - curTop) + lineBuffer;
+              let delta = (padTop - curTop) + lineBuffer;
+              // 大跨距防禦：若向上跨越大型圖片或區塊導致游標遠超畫面頂部，對齊至黃金舒適區上緣
+              if (curBottom < 0) {
+                delta = Math.round(viewHeight * 0.35) - curTop;
+              }
               if (isRepeat) {
+                cancelActiveScroll();
                 const isWin = scrollTarget === window || !(scrollTarget instanceof HTMLElement);
                 if (isWin) {
                   window.scrollBy({ top: -delta, behavior: 'instant' as ScrollBehavior });
@@ -1808,14 +1818,16 @@ export class CursorController {
   /**
    * 半頁跳轉 (d 向下 / u 向上) - 保證實體翻動 50% 視窗高度並精準重錨定目標行
    */
-  public moveHalfPage(isDownward: boolean): void {
+  public moveHalfPage(isDownward: boolean, isRepeat: boolean = false): void {
     if (!this.currentTarget) {
       this.findInitialTarget();
       return;
     }
 
-    // 0. 記錄原地出發點之文字上下文，觸發翻頁回溯後照鏡 HUD
-    this.triggerRearviewNotice(isDownward ? 'down' : 'up');
+    // 0. 記錄原地出發點之文字上下文，觸發翻頁回溯後照鏡 HUD (長按連發時跳過以維持畫面俐落)
+    if (!isRepeat) {
+      this.triggerRearviewNotice(isDownward ? 'down' : 'up');
+    }
 
     const { node, offset } = this.currentTarget;
     const len = node.textContent?.length || 0;
@@ -1836,11 +1848,12 @@ export class CursorController {
     const targetX = this.preferredX;
 
     // 2. 計算目標跳轉高度 (保證為視窗或滾動容器的 50%，自適應 visualViewport 縮放)
-    const { scrollTarget, viewHeight, currentScroll } = getViewportMetrics(node, this.options?.containerRoot);
+    const { scrollTarget, viewHeight, parentTop, currentScroll } = getViewportMetrics(node, this.options?.containerRoot);
     const jumpDistance = Math.max(viewHeight * 0.5, charHeight * 3);
     const scrollAmount = Math.round(jumpDistance) * (isDownward ? 1 : -1);
 
     let foundTarget: { node: Text; offset: number } | null = null;
+    let finalTargetRect: DOMRect | null = null;
     let accumulatedDistance = 0;
     let lastFound = this.currentTarget;
     let steps = 0;
@@ -1884,7 +1897,7 @@ export class CursorController {
       r.setEnd(nextTarget.node, Math.min(nextSafe + 1, nextLen));
       const nextRect = r.getBoundingClientRect();
 
-      if (nextRect.width > 0 && nextRect.height > 0) {
+      if (!isRepeat && nextRect.width > 0 && nextRect.height > 0) {
         tempWaypoints.push({
           x: nextRect.left,
           y: nextRect.top,
@@ -1897,6 +1910,7 @@ export class CursorController {
       accumulatedDistance += stepDist > 0 ? stepDist : charHeight;
       lastFound = nextTarget;
       foundTarget = nextTarget;
+      finalTargetRect = nextRect;
     }
 
     // 若已無後續行可跳轉（原地即為頂端或底端），保持在原位並觸發邊界提示，避免突兀瞬移回全文首尾
@@ -1918,25 +1932,60 @@ export class CursorController {
     this.currentTarget = foundTarget;
     this.updateActiveScope(foundTarget.node);
 
-    // 4. 執行保證幅度的 Ease-Out Cubic 物理阻尼平滑滾動
-    const targetScrollTop = currentScroll + scrollAmount;
-    if (scrollTarget) {
-      animateScrollTo(scrollTarget, targetScrollTop, 380);
+    // 4. 對齊游標實際位移與視窗捲動量，並加上黃金視野區間夾限 (Viewport Clamping)，徹底防止長按或跨大圖時游標超出畫面
+    const adv = cursorStore.getState().advanced;
+    const maxPad = Math.floor(viewHeight * 0.28);
+    const padBottom = Math.min(maxPad, adv?.viewportPaddingBottom ?? 160);
+    const padTop = Math.min(maxPad, adv?.viewportPaddingTop ?? 120);
+    const actualCursorDelta = finalTargetRect ? (finalTargetRect.top - baseRect.top) : scrollAmount;
+
+    let effectiveDelta = isDownward
+      ? Math.max(scrollAmount, actualCursorDelta)
+      : Math.min(scrollAmount, actualCursorDelta);
+
+    if (finalTargetRect) {
+      const expectedTop = (finalTargetRect.top - parentTop) - effectiveDelta;
+      const expectedBottom = (finalTargetRect.bottom - parentTop) - effectiveDelta;
+      if (expectedBottom > viewHeight - padBottom) {
+        effectiveDelta += expectedBottom - (viewHeight - padBottom);
+      } else if (expectedTop < padTop) {
+        effectiveDelta -= padTop - expectedTop;
+      }
     }
 
-    // 排除最後一個目標行，取中間經過行（最多保留 8 階代表點）
-    const rawWaypoints = tempWaypoints.slice(0, -1);
-    let waypoints = rawWaypoints;
-    if (rawWaypoints.length > 8) {
-      const stepInterval = rawWaypoints.length / 8;
-      waypoints = [];
-      for (let i = 0; i < 8; i++) {
-        waypoints.push(rawWaypoints[Math.floor(i * stepInterval)]);
+    if (scrollTarget) {
+      if (isRepeat) {
+        // 長按連發模式：取消未完動畫，執行零延遲 instant 同步捲動，確保視窗與游標 100% 鎖定不脫軌
+        cancelActiveScroll();
+        const isWin = scrollTarget === window || !(scrollTarget instanceof HTMLElement);
+        if (isWin) {
+          window.scrollBy({ top: effectiveDelta, behavior: 'instant' as ScrollBehavior });
+        } else {
+          (scrollTarget as HTMLElement).scrollTop += effectiveDelta;
+        }
+      } else {
+        // 單次按鍵模式：執行 Ease-Out Cubic 物理阻尼平滑滾動
+        const targetScrollTop = Math.max(0, currentScroll + effectiveDelta);
+        animateScrollTo(scrollTarget, targetScrollTop, 380);
+      }
+    }
+
+    // 排除最後一個目標行，取中間經過行（最多保留 8 階代表點；長按時不產生殘影以維持最佳效能）
+    let waypoints: CursorRect[] | undefined;
+    if (!isRepeat) {
+      const rawWaypoints = tempWaypoints.slice(0, -1);
+      waypoints = rawWaypoints;
+      if (rawWaypoints.length > 8) {
+        const stepInterval = rawWaypoints.length / 8;
+        waypoints = [];
+        for (let i = 0; i < 8; i++) {
+          waypoints.push(rawWaypoints[Math.floor(i * stepInterval)]);
+        }
       }
     }
 
     // 5. 強制保持游標可見並同步更新位置 (保護翻頁動畫啟動瞬間目標行尚在可見視窗外而不被誤判熄滅)
     cursorStore.setState({ visible: true });
-    this.updateCursorPosition(false, waypoints, false, true, isDownward ? 'down' : 'up');
+    this.updateCursorPosition(false, waypoints, false, true, isDownward ? 'down' : 'up', isRepeat);
   }
 }
