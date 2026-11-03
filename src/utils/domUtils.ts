@@ -92,7 +92,9 @@ export function isOffScreenOrZeroSize(rect: DOMRect | { width: number; height: n
   if (rect.width <= 1 && rect.height <= 1) {
     return true;
   }
-  if (rect.right < -OFFSCREEN_COORD_THRESHOLD_PX || rect.bottom < -OFFSCREEN_COORD_THRESHOLD_PX) {
+  // 僅排除水平方向極端負座標離屏飛地 (如 left: -9999px 等 A11Y 螢幕閱讀器專用隱藏文字)
+  // 嚴禁以垂直 rect.bottom 判定，避免長網頁向下捲動時，上方大量正常正文標題因負座標超出視窗頂部而被誤殺
+  if (rect.right < -OFFSCREEN_COORD_THRESHOLD_PX) {
     return true;
   }
   return false;

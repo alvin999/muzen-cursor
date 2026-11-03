@@ -16,6 +16,13 @@ export function cancelActiveScroll(): void {
 }
 
 /**
+ * 檢查當前是否正處於平滑捲動動畫中
+ */
+export function isSmoothScrolling(): boolean {
+  return activeScrollRafId !== null;
+}
+
+/**
  * 具有物理阻尼感之 Ease-Out Cubic 平滑捲動引擎
  * 支援連續導航平滑接續，徹底消除因中斷動畫產生的螢幕抽搐與抖動
  */

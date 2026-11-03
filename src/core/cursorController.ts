@@ -3,7 +3,7 @@ import { LOCALES } from '../i18n/locales';
 import { isTypingContext, detectReadingScope, isOutOfNormalFlowWidget, findCurrentSectionHeading, estimateReadingMinutes } from '../utils/domUtils';
 import { WordNavigator, TextTarget } from './wordNavigator';
 import { resolveTextTargetFromPoint, isClickWithinDistanceThreshold, getRawCaretFromPoint } from '../utils/caretUtils';
-import { animateScrollTo, cancelActiveScroll, getScrollParent, getViewportMetrics } from '../utils/smoothScroller';
+import { animateScrollTo, cancelActiveScroll, isSmoothScrolling, getScrollParent, getViewportMetrics } from '../utils/smoothScroller';
 import {
   findFirstTextNodeIn,
   findFirstReadableTextNode,
@@ -1645,12 +1645,15 @@ export class CursorController {
 
       // 視窗純捲動/縮放更新：僅靜默貼齊游標位置，嚴格抑制殘影與運動序列遞增
       if (isScrollUpdate) {
-        // 若游標正處於平滑運動或翻頁動畫生命週期內 (isMoving)，滾動途中嚴格保持可見，避免目標行未到位前被提前誤熄
-        const shouldKeepVisible = isMoving || isVisibleInViewport;
+        // 若游標正處於平滑運動 (isMoving)、滾動中 (isSmoothScrolling) 或目標在視野內，滾動途中嚴格保持可見
+        const isScrolling = isSmoothScrolling();
+        const shouldKeepVisible = isMoving || isVisibleInViewport || isScrolling;
+        const nextMoving = isScrolling ? true : (isVisibleInViewport ? false : isMoving);
+
         cursorStore.setState({
           visible: shouldKeepVisible,
-          isMoving: false,
-          motionDirection: 'none',
+          isMoving: nextMoving,
+          motionDirection: nextMoving ? cursorStore.getState().motionDirection : 'none',
           isScrollUpdate: true,
           rect: {
             x: rect.left,

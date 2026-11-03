@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [v0.1.12] - 2026-11-03
+
+### 繁體中文 (Traditional Chinese)
+#### 🐛 核心修復與大跨距導航優化 (Bug Fixes & Large Block Navigation)
+- **跨越大型圖表與區塊之向上導航與滾動修復 (Navigation & Scrolling across Large Blocks/Mermaid)**：
+  - **修復長網頁滾動離屏誤殺**：修正 `isOffScreenOrZeroSize` 幾何判斷邏輯，移除垂直坐標 `rect.bottom < -1000px` 的過度過濾規則。頁面向下滾動時，上方大量正常正文與標題絕不因大跨距負坐標被 TreeWalker 誤判為離屏垃圾文字，徹底解決在 GitHub 等頁面向上跨越大型 Mermaid 流程圖或長區塊時卡住無法移動的問題。
+  - **滾動動畫中途防熄火保護 (Prevent Early Visibility Drop during Smooth Scroll)**：引入平滑滾動生命週期感知（`isSmoothScrolling`），修復大跨距向上平滑滾動途中因新目標尚未就位而被 `isScrollUpdate` 提前將游標熄滅為不可見（`visible: false`）的問題，確保平滑滾動與連續按鍵能穩健推進至目標行。
+
+---
+
+### English
+#### 🐛 Bug Fixes & Large Block Navigation
+- **Navigation & Scrolling across Large Blocks / Mermaid Diagrams**:
+  - **Fix False Off-Screen Pruning on Long Pages**: Corrected the `isOffScreenOrZeroSize` geometric filtering by removing the vertical `rect.bottom < -1000px` heuristic. Normal headings and paragraphs above the viewport on scrolled pages are no longer falsely discarded by the TreeWalker as off-screen text, fully resolving navigation lockups when traversing upward across large Mermaid diagrams or tall media containers on GitHub and other documentation sites.
+  - **Prevent Early Visibility Drop during Smooth Scroll**: Introduced smooth scroll lifecycle tracking (`isSmoothScrolling`) to prevent `isScrollUpdate` from prematurely dropping cursor visibility to `false` while an upward scroll animation is still in flight, ensuring uninterrupted navigation across large vertical distances.
+
+---
+
 ## [v0.1.11] - 2026-10-27
 
 ### 繁體中文 (Traditional Chinese)
