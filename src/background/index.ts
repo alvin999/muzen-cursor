@@ -72,6 +72,19 @@ chrome.commands.onCommand.addListener((command) => {
 
 // 監聽前端 Viewer 的 PDF 下載請求，利用 Service Worker 繞過 Brave Shields / 前端限制
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  if (message.type === 'OPEN_TAB') {
+    if (message.url) {
+      chrome.tabs.create({
+        url: message.url,
+        active: message.active ?? false
+      });
+      sendResponse({ success: true });
+    } else {
+      sendResponse({ success: false, error: 'URL is required' });
+    }
+    return true;
+  }
+
   if (message.type === 'FETCH_PDF_DATA') {
     (async () => {
       try {

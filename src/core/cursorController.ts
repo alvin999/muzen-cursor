@@ -374,7 +374,7 @@ export class CursorController {
           } else {
             this.updateCursorPosition(true);
           }
-          return;
+  
         }
       }
       return;
@@ -393,7 +393,7 @@ export class CursorController {
         e.stopImmediatePropagation();
         this.closeJumpMenu();
         this.lastEscTime = 0;
-        return;
+
       }
 
       if (this.jumpMenuTimer) {
@@ -410,7 +410,7 @@ export class CursorController {
         cursorStore.setState({ enabled: false, visible: false });
         const dict = LOCALES[cursorStore.getState().locale || 'zh-TW'] || LOCALES['zh-TW'];
         cursorStore.showStatusNotice(dict.noticeDeepSleep, 1800);
-        return;
+
       }
 
       // 單按 Esc：若 escape 啟用
@@ -421,7 +421,7 @@ export class CursorController {
           e.stopPropagation();
           e.stopImmediatePropagation();
           this.clearPendingKeys();
-          return;
+  
         }
 
         // 單按 Esc：若處於 VISUAL 或 VISUAL_LINE 模式，退出選取回到 NORMAL (攔截事件)
@@ -430,18 +430,18 @@ export class CursorController {
           e.stopPropagation();
           e.stopImmediatePropagation();
           this.exitVisualMode();
-          return;
+  
         }
 
         // 若原本就已處於淺層待命 (!visible)，維持待命
         if (!state.visible) {
-          return;
+  
         }
 
         // 單按 Esc：由活動狀態轉為淺層休眠待機 (隱藏游標，保留右下角狀態列「按 j 開始」，隨時可喚醒)
         // 注意：此處不呼叫 preventDefault / stopPropagation，允許事件穿透冒泡給網頁原生 Modal、全螢幕或彈窗響應
         cursorStore.setState({ visible: false });
-        return;
+
       }
     }
 
@@ -457,7 +457,7 @@ export class CursorController {
         } else {
           this.moveVertical(1);
         }
-        return;
+
       }
       if (matchesKeybinding(e, bindings.halfPageDown)) {
         e.preventDefault();
@@ -469,7 +469,7 @@ export class CursorController {
         } else {
           this.moveHalfPage(true, e.repeat);
         }
-        return;
+
       }
       if (matchesKeybinding(e, bindings.halfPageUp)) {
         e.preventDefault();
@@ -481,7 +481,7 @@ export class CursorController {
         } else {
           this.moveHalfPage(false, e.repeat);
         }
-        return;
+
       }
       if (matchesKeybinding(e, bindings.moveUp)) {
         e.preventDefault();
@@ -493,7 +493,7 @@ export class CursorController {
         } else {
           this.moveVertical(-1);
         }
-        return;
+
       }
       // 其他單鍵與快捷鍵在休眠時 100% 自然放行給網頁原生
       return;
@@ -511,7 +511,7 @@ export class CursorController {
       if (/^[1-9]$/.test(e.key)) {
         intercept();
         this.jumpToMenuItem(Number(e.key));
-        return;
+
       }
       intercept();
       this.closeJumpMenu();
@@ -526,12 +526,12 @@ export class CursorController {
         intercept();
         this.countPrefix = Number(e.key);
         this.setPendingKeys(String(this.countPrefix));
-        return;
+
       } else if (this.countPrefix > 0) {
         intercept();
         this.countPrefix = Math.min(999, this.countPrefix * 10 + Number(e.key));
         this.setPendingKeys(String(this.countPrefix));
-        return;
+
       }
     }
 
@@ -562,7 +562,7 @@ export class CursorController {
         this.lastKey = '';
         this.clearPendingKeys();
         this.jumpBack(false); // false: 同一行行首
-        return;
+
       }
 
       // 單按 ' 鍵：啟動 400ms 計時器，若未按第二下則喚醒 Neovim 浮動選單
@@ -590,7 +590,7 @@ export class CursorController {
         this.lastKey = '';
         this.clearPendingKeys();
         this.jumpBack(true); // true: 同一字元精確位置
-        return;
+
       }
 
       // 單按 ` 鍵：啟動 400ms 計時器，若未按第二下則喚醒 Neovim 浮動選單 (精確字元模式)
@@ -614,7 +614,7 @@ export class CursorController {
         this.lastKey = '';
         this.clearPendingKeys();
         this.jumpToDocumentStart();
-        return;
+
       } else if (isConfiguredKey && docStartDef.isDouble && !isDoubleKey) {
         this.setPendingKeys(e.key, 500);
       }
@@ -639,6 +639,65 @@ export class CursorController {
         intercept();
         this.clearPendingKeys();
         this.yankSelection();
+      }
+      return;
+    }
+
+    // 超連結點選處理：僅在 NORMAL 模式下且游標位於超連結上時響應
+    if (state.mode === 'NORMAL') {
+      const openLinkNewTabDef = bindings.openLinkNewTab;
+      const isCmdOrCtrlEnter = e.key === 'Enter' && (e.ctrlKey || e.metaKey);
+      const matchesNewTab = Boolean(
+        openLinkNewTabDef?.enabled && (
+          matchesKeybinding(e, openLinkNewTabDef) ||
+          (openLinkNewTabDef.key === 'Enter' && isCmdOrCtrlEnter)
+        )
+      );
+
+      if (matchesNewTab && this.getHoveredAnchor(this.currentTarget)) {
+        intercept();
+        this.clearPendingKeys();
+        this.openCurrentLink(true);
+        return;
+      }
+
+      const openLinkDef = bindings.openLink;
+      if (openLinkDef?.enabled && matchesKeybinding(e, openLinkDef) && this.getHoveredAnchor(this.currentTarget)) {
+        intercept();
+        this.clearPendingKeys();
+        this.openCurrentLink(false);
+        return;
+      }
+    }
+
+    // 超連結點選處理：僅在 NORMAL 模式下且游標位於超連結上時響應
+    if (state.mode === 'NORMAL') {
+      const openLinkNewTabDef = bindings.openLinkNewTab;
+      const isCmdOrCtrlEnter = e.key === 'Enter' && (e.ctrlKey || e.metaKey);
+      const matchesNewTab = Boolean(
+        openLinkNewTabDef?.enabled && (
+          matchesKeybinding(e, openLinkNewTabDef) ||
+          (openLinkNewTabDef.key === 'Enter' && isCmdOrCtrlEnter)
+        )
+      );
+
+      if (matchesNewTab && this.getHoveredAnchor(this.currentTarget)) {
+        intercept();
+        this.clearPendingKeys();
+        this.openCurrentLink(true);
+
+      }
+
+      const openLinkDef = bindings.openLink;
+      if (openLinkDef?.enabled && matchesKeybinding(e, openLinkDef) && this.getHoveredAnchor(this.currentTarget)) {
+        intercept();
+        this.clearPendingKeys();
+        this.openCurrentLink(false);
+
+      }
+    }
+
+      }
       }
       return;
     }
@@ -750,6 +809,50 @@ export class CursorController {
    */
   private handleKeyUp(_e: KeyboardEvent): void {
     // 釋放按鍵時，由 VimCursorOverlay 之 RAF 散熱冷卻引擎平滑衰減
+  }
+
+  /**
+   * 取得當前文字目標所處的超連結元素 (a[href])
+   */
+  public getHoveredAnchor(target: TextTarget | null): HTMLAnchorElement | null {
+    if (!target || !target.node) return null;
+    const parent = target.node.parentElement || (target.node instanceof HTMLElement ? target.node : null);
+    if (!parent) return null;
+    return parent.closest('a[href]') as HTMLAnchorElement | null;
+  }
+
+  /**
+   * 點選或在背景新分頁開啟當前超連結
+   */
+  public openCurrentLink(inNewTab: boolean = false): boolean {
+    const anchor = this.getHoveredAnchor(this.currentTarget);
+    if (!anchor || !anchor.href) return false;
+
+    const href = anchor.href;
+    const dict = LOCALES[cursorStore.getState().locale || 'zh-TW'] || LOCALES['zh-TW'];
+
+    if (inNewTab) {
+      try {
+        if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
+          chrome.runtime.sendMessage({
+            type: 'OPEN_TAB',
+            url: href,
+            active: false
+          });
+        } else {
+          window.open(href, '_blank', 'noopener,noreferrer');
+        }
+      } catch {
+        window.open(href, '_blank', 'noopener,noreferrer');
+      }
+
+      cursorStore.showStatusNotice(`↗ ${dict.actionOpenLinkNewTab || '新分頁已開啟'}`, 1200);
+      return true;
+    }
+
+    // 當前分頁點選開啟
+    anchor.click();
+    return true;
   }
 
   /**
@@ -1075,12 +1178,12 @@ export class CursorController {
         }
 
         this.restoreJumpPoint(toggleTarget, exact);
-        return;
+
       }
 
       // 2. 從歷史堆疊讀取最新一筆跳轉點 (不破壞堆疊)
       if (this.jumpHistory.length === 0) {
-        return;
+
       }
 
       const targetPoint = this.jumpHistory[this.jumpHistory.length - 1];
@@ -1406,7 +1509,7 @@ export class CursorController {
       if (firstText) {
         this.currentTarget = { node: firstText, offset: 0 };
         this.updateCursorPosition();
-        return;
+
       }
     }
 
@@ -1445,7 +1548,7 @@ export class CursorController {
         this.currentTarget = localTarget;
         this.updateActiveScope(localTarget.node);
         this.updateCursorPosition();
-        return;
+
       }
     }
 
@@ -1475,7 +1578,7 @@ export class CursorController {
         this.currentTarget = { node: firstText, offset: 0 };
         this.updateActiveScope(firstText);
         this.updateCursorPosition();
-        return;
+
       }
     }
 
@@ -1667,7 +1770,7 @@ export class CursorController {
           estimatedMinutesLeft: this.cachedReadingMinutes
         });
         this.previousTarget = { ...this.currentTarget };
-        return;
+
       }
 
       // 計算本次位移向量與方向 (提供 3D 透視梯形動態反饋使用)
@@ -1717,6 +1820,7 @@ export class CursorController {
         motionSequence: (prevState.motionSequence || 0) + 1,
         chargeLevel: this.currentCharge,
         isScrollUpdate: false,
+        hoveredLinkUrl: this.getHoveredAnchor(this.currentTarget)?.href || null,
         rect: {
           x: rect.left,
           y: rect.top,

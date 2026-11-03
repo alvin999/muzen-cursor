@@ -92,6 +92,13 @@ const KEY_GROUPS: KeyGroupDef[] = [
       { id: 'visualLineMode', nameKey: 'actionVisualLineMode', descKey: 'descVisualLineMode' },
       { id: 'yank', nameKey: 'actionYank', descKey: 'descYank' }
     ]
+  },
+  {
+    groupTitleKey: 'groupLinkKeysTitle',
+    actions: [
+      { id: 'openLink', nameKey: 'actionOpenLink', descKey: 'descOpenLink' },
+      { id: 'openLinkNewTab', nameKey: 'actionOpenLinkNewTab', descKey: 'descOpenLinkNewTab' }
+    ]
   }
 ];
 

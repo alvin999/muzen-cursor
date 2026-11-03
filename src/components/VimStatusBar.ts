@@ -11,6 +11,7 @@ export class VimStatusBar {
   private modeEl: HTMLElement;
   private pendingEl: HTMLElement;
   private sectionEl: HTMLElement;
+  private linkEl: HTMLElement;
   private infoEl: HTMLElement;
   private unsubscribe: (() => void) | null = null;
   private mouseMoveHandler: ((e: MouseEvent) => void) | null = null;
@@ -30,12 +31,16 @@ export class VimStatusBar {
     this.sectionEl = document.createElement('span');
     this.sectionEl.className = 'muzen-section-badge';
 
+    this.linkEl = document.createElement('span');
+    this.linkEl.className = 'muzen-link-badge';
+
     this.infoEl = document.createElement('span');
     this.infoEl.className = 'muzen-info-badge';
 
     this.element.appendChild(this.modeEl);
     this.element.appendChild(this.pendingEl);
     this.element.appendChild(this.sectionEl);
+    this.element.appendChild(this.linkEl);
     this.element.appendChild(this.infoEl);
 
     this.applyStyles();
@@ -89,6 +94,19 @@ export class VimStatusBar {
     this.sectionEl.style.overflow = 'hidden';
     this.sectionEl.style.textOverflow = 'ellipsis';
     this.sectionEl.style.transition = 'color 0.2s ease, opacity 0.2s ease';
+
+    this.linkEl.style.display = 'none';
+    this.linkEl.style.padding = '1px 6px';
+    this.linkEl.style.borderRadius = '3px';
+    this.linkEl.style.fontSize = '11px';
+    this.linkEl.style.fontWeight = 'bold';
+    this.linkEl.style.lineHeight = '1';
+    this.linkEl.style.letterSpacing = '0.5px';
+    this.linkEl.style.maxWidth = '180px';
+    this.linkEl.style.whiteSpace = 'nowrap';
+    this.linkEl.style.overflow = 'hidden';
+    this.linkEl.style.textOverflow = 'ellipsis';
+    this.linkEl.style.transition = 'color 0.2s ease, background-color 0.2s ease';
 
     this.infoEl.style.opacity = '0.75';
     this.infoEl.style.transition = 'color 0.2s ease, opacity 0.2s ease';
@@ -184,6 +202,7 @@ export class VimStatusBar {
     if (state.statusNotice) {
       this.pendingEl.style.display = 'none';
       this.sectionEl.style.display = 'none';
+      this.linkEl.style.display = 'none';
       this.modeEl.textContent = 'MUZEN';
       this.modeEl.style.color = palette.normal.hex;
       this.infoEl.textContent = state.statusNotice;
@@ -201,6 +220,7 @@ export class VimStatusBar {
     if (!state.visible) {
       this.pendingEl.style.display = 'none';
       this.sectionEl.style.display = 'none';
+      this.linkEl.style.display = 'none';
       this.modeEl.textContent = 'MUZEN';
       this.modeEl.style.color = palette.normal.hex;
       const dict = LOCALES[state.locale || 'zh-TW'] || LOCALES['zh-TW'];
@@ -238,19 +258,23 @@ export class VimStatusBar {
       this.modeEl.style.color = palette.normal.hex;
     }
 
-    // 優先顯示臨時操作通知 (如 yank 複製回饋 Toast)
-    if (state.statusNotice) {
-      this.infoEl.textContent = state.statusNotice;
-      this.infoEl.style.opacity = '1';
-      this.infoEl.style.color = palette.normal.hex;
-      return;
+    const dict = LOCALES[state.locale || 'zh-TW'] || LOCALES['zh-TW'];
+
+    // 游標停留在超連結時呈現連結提示微章
+    if (state.hoveredLinkUrl) {
+      this.linkEl.style.display = 'inline-block';
+      this.linkEl.textContent = `🔗 ${dict.statusLinkBadge || 'Link'}`;
+      this.linkEl.title = `${state.hoveredLinkUrl}\n[Enter: 開啟 | Ctrl+Enter: 新分頁]`;
+      this.linkEl.style.color = '#83a598';
+      this.linkEl.style.backgroundColor = isLight ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.14)';
+    } else {
+      this.linkEl.style.display = 'none';
     }
 
     this.infoEl.style.color = '';
     this.infoEl.style.opacity = '0.75';
 
     // 若處於選取模式且具備選取統計資訊，顯示選取字數或行數
-    const dict = LOCALES[state.locale || 'zh-TW'] || LOCALES['zh-TW'];
     if ((state.mode === 'VISUAL' || state.mode === 'VISUAL_LINE') && state.selectionStats) {
       if (state.mode === 'VISUAL_LINE') {
         const linesText = dict.statusLinesCount.replace('{count}', String(state.selectionStats.lines));

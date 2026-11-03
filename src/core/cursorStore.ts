@@ -158,7 +158,9 @@ export type KeyActionId =
   | 'visualMode'
   | 'visualLineMode'
   | 'yank'
-  | 'escapeDouble';
+  | 'escapeDouble'
+  | 'openLink'
+  | 'openLinkNewTab';
 
 export interface KeybindingDef {
   key: string;            // 例如 'v', 'Escape', 'ArrowLeft', 'g', 'G', '$'
@@ -209,7 +211,9 @@ export const DEFAULT_KEYBINDINGS: KeybindingsConfig = {
     jumpBackExact: { key: '`', isDouble: true, enabled: true }, // 連按兩次 ` 跳回前一跳轉點 (精確字元)
     visualMode: { key: 'v', enabled: true },
     visualLineMode: { key: 'V', shiftKey: true, enabled: true },
-    yank: { key: 'y', enabled: true }
+    yank: { key: 'y', enabled: true },
+    openLink: { key: 'Enter', enabled: true },
+    openLinkNewTab: { key: 'Enter', ctrlKey: true, enabled: true }
   }
 };
 
@@ -226,6 +230,7 @@ export function formatKeyCombo(binding?: KeybindingDef): string {
   let keyDisplay = binding.key;
   if (keyDisplay === ' ') keyDisplay = 'space';
   else if (keyDisplay === 'Escape' || keyDisplay === 'Esc') keyDisplay = 'esc';
+  else if (keyDisplay === 'Enter') keyDisplay = 'enter';
   else if (keyDisplay === 'ArrowUp') keyDisplay = '↑';
   else if (keyDisplay === 'ArrowDown') keyDisplay = '↓';
   else if (keyDisplay === 'ArrowLeft') keyDisplay = '←';
@@ -322,6 +327,7 @@ export interface CursorState {
   currentSectionTitle?: string; // 當前游標所處之文章章節/標題文字 (例如 § 快速上手)
   estimatedMinutesLeft?: number; // 預估剩餘閱讀時間 (分鐘數)
   chargeLevel?: number; // 當前動能蓄力等級 (0.0 ~ 1.0)
+  hoveredLinkUrl?: string | null; // 當前游標所處之超連結目標網址 (若位於 <a> 標籤內)
   rearviewNotice?: {
     text: string;
     direction: 'up' | 'down';

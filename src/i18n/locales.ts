@@ -286,6 +286,7 @@ export interface Translations {
   groupWordKeysTitle: string;
   groupPageKeysTitle: string;
   groupVisualKeysTitle: string;
+  groupLinkKeysTitle: string;
 
   actionToggleCursor: string;
   descToggleCursor: string;
@@ -329,6 +330,11 @@ export interface Translations {
   descVisualLineMode: string;
   actionYank: string;
   descYank: string;
+  actionOpenLink: string;
+  descOpenLink: string;
+  actionOpenLinkNewTab: string;
+  descOpenLinkNewTab: string;
+  statusLinkBadge: string;
 
   recordKeyBtn: string;
   recordingKeyPrompt: string;
@@ -622,6 +628,7 @@ export const LOCALES: Record<Locale, Translations> = {
     groupWordKeysTitle: '智慧跳詞與行邊界',
     groupPageKeysTitle: '翻頁與全文躍遷',
     groupVisualKeysTitle: 'Visual 選取與文字複製',
+    groupLinkKeysTitle: '超連結跳轉與瀏覽 (Links)',
 
     actionEscape: '淺層休眠 / 退出選取',
     descEscape: '退出 Visual 選取回到普通模式，或隱藏游標進入淺層休眠 (保留狀態列，隨時按 j 喚醒)',
@@ -665,6 +672,11 @@ export const LOCALES: Record<Locale, Translations> = {
     descVisualLineMode: '整行選取文字並觸發流光展開動效',
     actionYank: '複製選取文字 (Yank)',
     descYank: '將 Visual 選取字句複製至剪貼簿',
+    actionOpenLink: '開啟超連結 (Open Link)',
+    descOpenLink: '當游標停在超連結文字上時開啟該連結',
+    actionOpenLinkNewTab: '新分頁開啟超連結 (Open in New Tab)',
+    descOpenLinkNewTab: '當游標停在超連結文字上時於背景新分頁開啟該連結',
+    statusLinkBadge: '連結',
 
     recordKeyBtn: '點擊錄製',
     recordingKeyPrompt: '請按下按鍵組合...',
@@ -956,6 +968,7 @@ export const LOCALES: Record<Locale, Translations> = {
     groupWordKeysTitle: 'Word Navigation & Line Boundaries',
     groupPageKeysTitle: 'Page Scrolling & Document Boundary',
     groupVisualKeysTitle: 'Visual Selection & Yank',
+    groupLinkKeysTitle: 'Link Navigation',
 
     actionEscape: 'Light Sleep / Deselect',
     descEscape: 'Exit Visual selection or hide cursor into light sleep (keeps status bar active to resume with j)',
@@ -999,6 +1012,11 @@ export const LOCALES: Record<Locale, Translations> = {
     descVisualLineMode: 'Select entire line with beam sweep animation',
     actionYank: 'Copy Selection (Yank)',
     descYank: 'Copy selected text to clipboard',
+    actionOpenLink: 'Open Link',
+    descOpenLink: 'Open link when cursor is over an anchor element',
+    actionOpenLinkNewTab: 'Open Link in New Tab',
+    descOpenLinkNewTab: 'Open link in a background tab when cursor is over an anchor element',
+    statusLinkBadge: 'Link',
 
     recordKeyBtn: 'Record Key',
     recordingKeyPrompt: 'Press key combination...',
@@ -1290,6 +1308,7 @@ export const LOCALES: Record<Locale, Translations> = {
     groupWordKeysTitle: '単語移動と行境界',
     groupPageKeysTitle: 'ページスクロールと文書境界',
     groupVisualKeysTitle: 'Visual選択とコピー',
+    groupLinkKeysTitle: 'リンクとナビゲーション',
 
     actionEscape: '浅いスリープ / 選択解除',
     descEscape: 'Visual選択を解除、またはカーソルを非表示にして浅いスリープへ (ステータスバー維持、jキーで復帰)',
@@ -1333,6 +1352,11 @@ export const LOCALES: Record<Locale, Translations> = {
     descVisualLineMode: '行全体を選択しビーム展開アニメーションを表示',
     actionYank: '選択文字をコピー (Yank)',
     descYank: '選択範囲のテキストをクリップボードにコピー',
+    actionOpenLink: 'リンクを開く',
+    descOpenLink: 'カーソルがリンク上にあるときリンクを開く',
+    actionOpenLinkNewTab: '新しいタブでリンクを開く',
+    descOpenLinkNewTab: 'カーソルがリンク上にあるとき新しいタブで開く',
+    statusLinkBadge: 'リンク',
 
     recordKeyBtn: 'キー割り当て',
     recordingKeyPrompt: 'キーを押してください...',
