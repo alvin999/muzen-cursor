@@ -2,6 +2,12 @@
  * Muzen Cursor Background Service Worker (Manifest V3)
  */
 
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('[Muzen Cursor]');
+const bgLogger = createLogger('[Muzen Background]');
+
+
 chrome.runtime.onInstalled.addListener((details) => {
   // 清理過去可能殘留的 DNR 標頭修改規則，保持背景乾淨直連
   if (chrome.declarativeNetRequest?.updateDynamicRules) {
@@ -11,7 +17,7 @@ chrome.runtime.onInstalled.addListener((details) => {
   }
 
   if (details.reason === 'install') {
-    console.log('[Muzen Cursor] 擴充功能安裝成功。');
+    logger.info('擴充功能安裝成功。');
     // 初始化預設值
     chrome.storage.sync.set({
       muzen_enabled: true,
@@ -38,7 +44,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (wrappedMatch) {
     targetUrl = wrappedMatch[1];
     isConflictFromOtherExtension = true;
-    console.log('[Muzen Cursor] 偵測到 Adobe 或其他 PDF 擴充功能網址包覆，已自動解包原始網址:', targetUrl);
+    logger.info('偵測到 Adobe 或其他 PDF 擴充功能網址包覆，已自動解包原始網址:', targetUrl);
   }
 
   // 2. 判斷是否為 PDF 網址（且必須為 http 或 https 協議，排除無效的內部擴充功能網址）
@@ -53,7 +59,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     if (shouldIntercept) {
       const viewerUrl = `${extensionBaseUrl}src/pdf-viewer/viewer.html?file=${encodeURIComponent(targetUrl)}${isConflictFromOtherExtension ? '&conflict=adobe' : ''}`;
       chrome.tabs.update(tabId, { url: viewerUrl });
-      console.log(`[Muzen Cursor] 已將 PDF 導向至專屬閱讀器: ${targetUrl}`);
+      logger.info(`已將 PDF 導向至專屬閱讀器: ${targetUrl}`);
     }
   });
 });
@@ -88,13 +94,13 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.type === 'FETCH_PDF_DATA') {
     (async () => {
       try {
-        console.log('[Muzen Background] 開始代理抓取 PDF:', message.url);
+        bgLogger.info('開始代理抓取 PDF:', message.url);
         const resp = await fetch(message.url);
         if (!resp.ok) {
           throw new Error(`HTTP 請求失敗，狀態碼：${resp.status}`);
         }
         const buffer = await resp.arrayBuffer();
-        console.log('[Muzen Background] PDF 抓取成功，大小 (bytes):', buffer.byteLength);
+        bgLogger.info('PDF 抓取成功，大小 (bytes):', buffer.byteLength);
         // 將二進位轉成 Base64 字串傳遞給前端
         const bytes = new Uint8Array(buffer);
         let binary = '';
@@ -106,7 +112,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         }
         sendResponse({ success: true, base64: btoa(binary) });
       } catch (err) {
-        console.error('[Muzen Background] 代理抓取 PDF 失敗:', err, '目標網址:', message.url);
+        bgLogger.error('代理抓取 PDF 失敗:', err, '目標網址:', message.url);
         sendResponse({ success: false, error: err instanceof Error ? err.message : String(err) });
       }
     })();

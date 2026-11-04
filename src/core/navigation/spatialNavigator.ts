@@ -1,4 +1,5 @@
 import { CursorRect } from '../cursorStore';
+import { logger } from '../../utils/logger';
 import { TextTarget } from '../wordNavigator';
 import {
   isOutOfNormalFlowWidget,
@@ -526,7 +527,7 @@ export function computeWaypointsBetween(
       lastTop = nextRect.y;
     }
   } catch (err) {
-    console.warn('[Muzen Cursor] computeWaypointsBetween error:', err);
+    logger.warn('computeWaypointsBetween error:', err);
   }
   return waypoints;
 }

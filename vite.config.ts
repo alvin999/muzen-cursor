@@ -2,6 +2,16 @@ import { defineConfig, build as viteBuild } from 'vite';
 import { resolve } from 'path';
 import { copyFileSync, existsSync, mkdirSync, cpSync } from 'fs';
 
+const isDev = process.env.NODE_ENV === 'development';
+
+// 生產環境自動剔除無副作用的 console.log / console.debug 與 debugger
+const prodEsbuildConfig = isDev
+  ? undefined
+  : {
+      drop: ['debugger'] as ('debugger' | 'console')[],
+      pure: ['console.log', 'console.debug']
+    };
+
 // 自訂建置外掛 (Manifest、靜態資源、以及獨立封裝 Content Script 為自包含 IIFE)
 function extensionBuildPlugin() {
   return {
@@ -43,10 +53,11 @@ function extensionBuildPlugin() {
             '@': resolve(__dirname, 'src')
           }
         },
+        esbuild: prodEsbuildConfig,
         build: {
           outDir: 'dist',
           emptyOutDir: false,
-          sourcemap: process.env.NODE_ENV === 'development',
+          sourcemap: isDev,
           lib: {
             entry: resolve(__dirname, 'src/content/index.ts'),
             name: 'MuzenContentScript',
@@ -72,10 +83,11 @@ export default defineConfig({
       '@': resolve(__dirname, 'src')
     }
   },
+  esbuild: prodEsbuildConfig,
   build: {
     outDir: 'dist',
     emptyOutDir: true,
-    sourcemap: process.env.NODE_ENV === 'development',
+    sourcemap: isDev,
     rollupOptions: {
       input: {
         background: resolve(__dirname, 'src/background/index.ts'),
@@ -95,4 +107,3 @@ export default defineConfig({
   },
   plugins: [extensionBuildPlugin()]
 });
-

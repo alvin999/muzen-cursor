@@ -2,6 +2,7 @@ import { TextTarget } from '../wordNavigator';
 import { cursorStore } from '../cursorStore';
 import { findVisualLineBoundary } from './spatialNavigator';
 import { LOCALES } from '../../i18n/locales';
+import { logger } from '../../utils/logger';
 
 /**
  * Visual 模式與文字選取、剪貼簿管理員
@@ -77,7 +78,7 @@ export class VisualSelectionManager {
 
       this.updateSelectionStats(sel);
     } catch (err) {
-      console.warn('[Muzen Cursor] Selection sync error:', err);
+      logger.warn('Selection sync error:', err);
     }
   }
 
@@ -148,7 +149,7 @@ export class VisualSelectionManager {
 
       this.updateSelectionStats(sel);
     } catch (err) {
-      console.warn('[Muzen Cursor] Visual line selection sync error:', err);
+      logger.warn('Visual line selection sync error:', err);
     }
   }
 
@@ -238,9 +239,9 @@ export class VisualSelectionManager {
           ? dict.statusCopiedLines.replace('{count}', String(lineCount))
           : dict.statusCopiedChars.replace('{count}', String(text.length));
         cursorStore.showStatusNotice(notice, 1600);
-        console.log(`[Muzen Cursor] 已複製 ${text.length} 個字元至剪貼簿 (${isLineMode ? '整行' : '字元'})`);
+        logger.info(`已複製 ${text.length} 個字元至剪貼簿 (${isLineMode ? '整行' : '字元'})`);
       } catch (err) {
-        console.warn('[Muzen Cursor] 剪貼簿寫入失敗:', err);
+        logger.warn('剪貼簿寫入失敗:', err);
       }
     }
 

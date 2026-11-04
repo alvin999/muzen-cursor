@@ -2,6 +2,7 @@ import { initCursorHost } from './hostElement';
 import { CursorController } from '../core/cursorController';
 import { cursorStore, DEFAULT_ADVANCED_CONFIG, DEFAULT_KEYBINDINGS } from '../core/cursorStore';
 import { detectPageSmartInfo, observeThemeChange, SmartThemeInfo } from '../utils/themeDetector';
+import { logger } from '../utils/logger';
 
 /**
  * 判斷當前網域名稱是否命中排除名單 (支援子網域比對)
@@ -317,7 +318,7 @@ function main(): void {
     });
   });
 
-  console.log('[Muzen Cursor] 霧前禪夢，見字如初。Vim 閱讀游標已成功就緒。');
+  logger.info('霧前禪夢，見字如初。Vim 閱讀游標已成功就緒。');
 }
 
 if (document.readyState === 'loading') {

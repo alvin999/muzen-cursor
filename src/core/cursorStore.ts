@@ -1,4 +1,5 @@
 import { Locale } from '../i18n/locales';
+import { logger } from '../utils/logger';
 
 /**
  * Muzen Cursor 全域輕量狀態管理庫 (Vanilla Store)
@@ -424,7 +425,7 @@ class CursorStore {
       try {
         listener(currentState);
       } catch (err) {
-        console.error('[Muzen Cursor] Store listener error:', err);
+        logger.error('Store listener error:', err);
       }
     });
   }

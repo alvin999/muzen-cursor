@@ -1,6 +1,9 @@
 import * as pdfjsLib from 'pdfjs-dist';
 import { initCursorHost } from '../content/hostElement';
 import { CursorController } from '../core/cursorController';
+import { createLogger } from '../utils/logger';
+
+const pdfLogger = createLogger('[Muzen PDF]');
 
 // 設定 PDF.js Worker
 const workerUrl = typeof chrome !== 'undefined' && chrome.runtime?.getURL
@@ -157,7 +160,7 @@ function loadPdfFromFile(file: File): void {
  */
 async function loadPdfFromUrl(url: string): Promise<void> {
   try {
-    console.log('[Muzen PDF] 開始載入線上 PDF:', url);
+    pdfLogger.info('開始載入線上 PDF:', url);
     const name = url.split('/').pop() || 'document.pdf';
     state.fileName = decodeURIComponent(name.split('?')[0]);
     docTitle.textContent = state.fileName;
@@ -177,7 +180,7 @@ async function loadPdfFromUrl(url: string): Promise<void> {
       throw new Error(result?.error || '無法從背景下載該檔案');
     }
 
-    console.log('[Muzen PDF] 收到背景傳回的 PDF 資料，正在轉換並渲染...');
+    pdfLogger.info('收到背景傳回的 PDF 資料，正在轉換並渲染...');
     // 將 Base64 字串還原為 ArrayBuffer
     const binaryString = atob(result.base64);
     const len = binaryString.length;
@@ -188,7 +191,7 @@ async function loadPdfFromUrl(url: string): Promise<void> {
 
     await renderPdfDocument({ data: bytes.buffer });
   } catch (err) {
-    console.error('[Muzen PDF] 載入線上 PDF 失敗:', err, '目標網址:', url);
+    pdfLogger.error('載入線上 PDF 失敗:', err, '目標網址:', url);
     const retryNative = confirm(`無法載入此線上 PDF 檔案。\n目標：${url}\n原因：${err instanceof Error ? err.message : '連線失敗'}\n\n是否改用瀏覽器原生檢視器開啟此檔案？`);
     if (retryNative) {
       if (typeof chrome !== 'undefined' && chrome.tabs?.update) {
@@ -240,7 +243,7 @@ async function renderPdfDocument(src: { data?: ArrayBuffer; url?: string }): Pro
         initCursorHost();
         cursorController = new CursorController({ containerRoot: viewerContainer });
         cursorController.init();
-        console.log('[Muzen PDF] Muzen Cursor 閱讀游標已成功在 PDF 檢視器上啟動。');
+        pdfLogger.info('Muzen Cursor 閱讀游標已成功在 PDF 檢視器上啟動。');
       }
 
       // 將游標綁定至第一頁文字層
@@ -254,7 +257,7 @@ async function renderPdfDocument(src: { data?: ArrayBuffer; url?: string }): Pro
       }
     }
   } catch (err) {
-    console.error('[Muzen PDF] 解析或渲染 PDF 失敗:', err);
+    pdfLogger.error('解析或渲染 PDF 失敗:', err);
     alert('無法解析該 PDF 檔案。');
   }
 }
@@ -321,7 +324,7 @@ async function renderPage(pageNum: number): Promise<void> {
     });
     await textLayer.render();
   } catch (err) {
-    console.warn(`[Muzen PDF] Page ${pageNum} textLayer render error:`, err);
+    pdfLogger.warn(`Page ${pageNum} textLayer render error:`, err);
   }
 }
 

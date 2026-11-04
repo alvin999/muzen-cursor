@@ -3,6 +3,10 @@
  * 負責透過 GitHub Releases API 檢查最新發布版本，並提供版本比較與下載資訊
  */
 
+import { createLogger } from './logger';
+
+const updaterLogger = createLogger('[Muzen Updater]');
+
 export interface ReleaseInfo {
   currentVersion: string;
   latestVersion: string;
@@ -68,7 +72,7 @@ export async function checkExtensionUpdate(forceCheck = false): Promise<ReleaseI
         return cachedData;
       }
     } catch (e) {
-      console.warn('[Muzen Updater] 讀取快取失敗:', e);
+      updaterLogger.warn('讀取快取失敗:', e);
     }
   }
 
@@ -81,7 +85,7 @@ export async function checkExtensionUpdate(forceCheck = false): Promise<ReleaseI
     });
 
     if (!response.ok) {
-      console.warn(`[Muzen Updater] GitHub API 回應錯誤: ${response.status}`);
+      updaterLogger.warn(`GitHub API 回應錯誤: ${response.status}`);
       return null;
     }
 
@@ -120,13 +124,13 @@ export async function checkExtensionUpdate(forceCheck = false): Promise<ReleaseI
           },
         });
       } catch (err) {
-        console.warn('[Muzen Updater] 儲存快取失敗:', err);
+        updaterLogger.warn('儲存快取失敗:', err);
       }
     }
 
     return releaseInfo;
   } catch (error) {
-    console.error('[Muzen Updater] 檢查版本時發生例外:', error);
+    updaterLogger.error('檢查版本時發生例外:', error);
     return null;
   }
 }

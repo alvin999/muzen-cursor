@@ -18,6 +18,7 @@ import {
   isValidReadableTextNode
 } from './navigation/spatialNavigator';
 import { VisualSelectionManager } from './navigation/selectionManager';
+import { logger } from '../utils/logger';
 
 export interface CursorControllerOptions {
   containerRoot?: HTMLElement;
@@ -643,7 +644,7 @@ export class CursorController {
       return;
     }
 
-    // 超連結點選處理：僅在 NORMAL 模式下且游標位於超連結上時響應
+    // 超連結與互動元素點選處理：僅在 NORMAL 模式下響應
     if (state.mode === 'NORMAL') {
       const openLinkNewTabDef = bindings.openLinkNewTab;
       const isCmdOrCtrlEnter = e.key === 'Enter' && (e.ctrlKey || e.metaKey);
@@ -654,7 +655,9 @@ export class CursorController {
         )
       );
 
-      if (matchesNewTab && this.getHoveredAnchor(this.currentTarget)) {
+      const anchor = this.getHoveredAnchor(this.currentTarget);
+
+      if (matchesNewTab && anchor) {
         intercept();
         this.clearPendingKeys();
         this.openCurrentLink(true);
@@ -662,11 +665,22 @@ export class CursorController {
       }
 
       const openLinkDef = bindings.openLink;
-      if (openLinkDef?.enabled && matchesKeybinding(e, openLinkDef) && this.getHoveredAnchor(this.currentTarget)) {
-        intercept();
-        this.clearPendingKeys();
-        this.openCurrentLink(false);
-        return;
+      if (openLinkDef?.enabled && matchesKeybinding(e, openLinkDef)) {
+        if (anchor) {
+          intercept();
+          this.clearPendingKeys();
+          this.openCurrentLink(false);
+          return;
+        }
+
+        // 若非 <a> 但為標準可點選/切換之 Toggle、按鈕或 ARIA 控制項，亦模擬點選
+        const interactiveEl = this.getHoveredInteractiveElement(this.currentTarget);
+        if (interactiveEl) {
+          intercept();
+          this.clearPendingKeys();
+          interactiveEl.click();
+          return;
+        }
       }
     }
 
@@ -787,6 +801,43 @@ export class CursorController {
     const parent = target.node.parentElement || (target.node instanceof HTMLElement ? target.node : null);
     if (!parent) return null;
     return parent.closest('a[href]') as HTMLAnchorElement | null;
+  }
+
+  /**
+   * 取得當前文字目標所處的標準互動/切換元素 (Button / Summary / ARIA 控制項)
+   * 依循 W3C/ARIA 規範，並設有最大面積限制以防誤觸外層大容器
+   */
+  public getHoveredInteractiveElement(target: TextTarget | null): HTMLElement | null {
+    if (!target || !target.node) return null;
+    const parent = target.node.parentElement || (target.node instanceof HTMLElement ? target.node : null);
+    if (!parent) return null;
+
+    const INTERACTIVE_SELECTOR = [
+      'button:not([disabled])',
+      'summary',
+      'input[type="checkbox"]',
+      'input[type="button"]',
+      'input[type="submit"]',
+      '[role="button"]',
+      '[role="switch"]',
+      '[role="tab"]',
+      '[role="checkbox"]',
+      '[aria-expanded]',
+      '[aria-pressed]'
+    ].join(',');
+
+    const el = parent.closest(INTERACTIVE_SELECTOR) as HTMLElement | null;
+    if (!el) return null;
+
+    // 防誤觸機制：過濾掉面積過大的外層容器 (例如寬高超過視窗 70% 的版面區塊)
+    const rect = el.getBoundingClientRect();
+    const maxW = window.innerWidth * 0.7;
+    const maxH = window.innerHeight * 0.7;
+    if (rect.width > maxW && rect.height > maxH) {
+      return null;
+    }
+
+    return el;
   }
 
   /**
@@ -1886,7 +1937,7 @@ export class CursorController {
         }
       }
     } catch (err) {
-      console.warn('[Muzen Cursor] updateCursorPosition error:', err);
+      logger.warn('updateCursorPosition error:', err);
     }
   }
 

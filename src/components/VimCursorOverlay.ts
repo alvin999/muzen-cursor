@@ -1,4 +1,7 @@
 import { cursorStore, CursorState, CursorTheme, CursorRect, DEFAULT_ADVANCED_CONFIG } from '../core/cursorStore';
+import { createLogger } from '../utils/logger';
+
+const trailLogger = createLogger('[Muzen Trail]');
 
 interface ThemeColorSet {
   normal: { r: number; g: number; b: number; hex: string };
@@ -718,7 +721,7 @@ export class VimCursorOverlay {
       // 取得統一的換行軌跡 (主游標與殘影走完全相同的軌跡)
       const trajectory = this.buildTrajectory(originRect, targetRect, state.trailWaypoints, trailMode);
 
-      console.log('[Muzen Trail] 位移事件 ->', {
+      trailLogger.debug('位移事件 ->', {
         direction: state.motionDirection,
         dx: Math.round(dx),
         dy: Math.round(dy),
@@ -730,7 +733,7 @@ export class VimCursorOverlay {
       });
 
       if (trajectory.length > 1 && effects.smooth) {
-        console.log('[Muzen Trail] 命中分支 -> 多行飛躍模式 (Multi-line trajectory mode)', trajectory);
+        trailLogger.debug('命中分支 -> 多行飛躍模式 (Multi-line trajectory mode)', trajectory);
         // 多行換行飛躍模式：主游標沿著 waypoints 逐行飛躍，殘影緊隨身後即時釋放
         const stepMs = Math.max(22, Math.min(30, Math.round(110 / trajectory.length)));
 
@@ -807,7 +810,7 @@ export class VimCursorOverlay {
           }
         }
       } else {
-        console.log('[Muzen Trail] 命中分支 -> 單步/同行模式 (Single-step mode)', {
+        trailLogger.debug('命中分支 -> 單步/同行模式 (Single-step mode)', {
           dist: Math.round(dist),
           isTrailEnabled,
           canSpawnGhosts: isTrailEnabled && dist >= 4
@@ -896,7 +899,7 @@ export class VimCursorOverlay {
       ghost.style.borderRadius = `${borderRadius}px`;
       ghost.style.transform = `translate3d(${Math.round(gx)}px, ${Math.round(gy)}px, 0) ${deform}`.trim();
 
-      console.log(`[Muzen Trail Ghost #${idx}] 節點渲染 ->`, {
+      trailLogger.debug(`[Ghost #${idx}] 節點渲染 ->`, {
         x: Math.round(gx),
         y: Math.round(gy),
         w: Math.round(gw),
@@ -952,7 +955,7 @@ export class VimCursorOverlay {
         const cRect = this.element.getBoundingClientRect();
         const diffX = Math.round(gRect.left - cRect.left);
         const diffY = Math.round(gRect.top - cRect.top);
-        console.log(`[Muzen Trail DOM 實測 #${idx}]`, {
+        trailLogger.debug(`[DOM 實測 #${idx}]`, {
           '殘影實體坐標': { left: Math.round(gRect.left), top: Math.round(gRect.top), w: Math.round(gRect.width), h: Math.round(gRect.height) },
           '主游標實體坐標': { left: Math.round(cRect.left), top: Math.round(cRect.top), w: Math.round(cRect.width), h: Math.round(cRect.height) },
           '相對位置 (殘影 vs 主游標)': {
@@ -1054,7 +1057,7 @@ export class VimCursorOverlay {
         gx = Math.max(originX, targetX + targetW);
       }
 
-      console.log('[Muzen Trail] spawn -> 水平單字元 (h/l)', {
+      trailLogger.debug('spawn -> 水平單字元 (h/l)', {
         gx: Math.round(gx),
         gy: Math.round(targetY),
         gw: Math.round(gw),
@@ -1085,7 +1088,7 @@ export class VimCursorOverlay {
     }
 
     if (dist < 45) {
-      console.log('[Muzen Trail] spawn -> 垂直微步 (j/k)', {
+      trailLogger.debug('spawn -> 垂直微步 (j/k)', {
         originX: Math.round(originX),
         originY: Math.round(originY),
         dy: Math.round(dy)
@@ -1111,7 +1114,7 @@ export class VimCursorOverlay {
       return;
     }
 
-    console.log('[Muzen Trail] spawn -> 長距離/跳躍模式', {
+    trailLogger.debug('spawn -> 長距離/跳躍模式', {
       dist: Math.round(dist),
       isHorizontal,
       stepCount: Math.min(trailCount, Math.max(2, Math.floor(dist / 32)))
