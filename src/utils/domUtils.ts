@@ -205,9 +205,27 @@ export function getOutOfNormalFlowContainer(node: Node, rootBound?: HTMLElement)
   while (el && el !== bound && el !== document.body && el !== document.documentElement) {
     // 1. 標準語義標籤與無障礙角色
     const tag = el.tagName;
-    if (tag === 'ASIDE' || tag === 'HEADER' || tag === 'NAV') return el;
+    if (tag === 'ASIDE' || tag === 'HEADER') return el;
     const role = el.getAttribute('role');
-    if (role === 'navigation' || role === 'complementary' || role === 'banner' || role === 'search') return el;
+    if (role === 'complementary' || role === 'banner' || role === 'search') return el;
+
+    // 針對導覽標籤（NAV）與導覽角色（role="navigation"）：
+    // 若位於主內容容器（main / article）內部且物理樣式為常態排版流（非 fixed / sticky / float），
+    // 視為正文關聯之常態導覽（如篇章上一頁/下一頁 pager、分頁 pagination 或麵包屑 breadcrumb），不予隔離
+    if (tag === 'NAV' || role === 'navigation') {
+      const isInMain = !!el.closest('main, article, [role="main"], [role="article"]');
+      if (isInMain) {
+        try {
+          const style = window.getComputedStyle(el);
+          const isOut = style.position === 'fixed' || style.position === 'sticky' || style.float === 'left' || style.float === 'right';
+          if (!isOut) {
+            el = el.parentElement;
+            continue;
+          }
+        } catch { }
+      }
+      return el;
+    }
 
     // 2. 瀏覽器計算樣式物理特徵 (完全不依賴 class 名稱)
     try {

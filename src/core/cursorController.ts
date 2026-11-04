@@ -670,38 +670,6 @@ export class CursorController {
       }
     }
 
-    // 超連結點選處理：僅在 NORMAL 模式下且游標位於超連結上時響應
-    if (state.mode === 'NORMAL') {
-      const openLinkNewTabDef = bindings.openLinkNewTab;
-      const isCmdOrCtrlEnter = e.key === 'Enter' && (e.ctrlKey || e.metaKey);
-      const matchesNewTab = Boolean(
-        openLinkNewTabDef?.enabled && (
-          matchesKeybinding(e, openLinkNewTabDef) ||
-          (openLinkNewTabDef.key === 'Enter' && isCmdOrCtrlEnter)
-        )
-      );
-
-      if (matchesNewTab && this.getHoveredAnchor(this.currentTarget)) {
-        intercept();
-        this.clearPendingKeys();
-        this.openCurrentLink(true);
-
-      }
-
-      const openLinkDef = bindings.openLink;
-      if (openLinkDef?.enabled && matchesKeybinding(e, openLinkDef) && this.getHoveredAnchor(this.currentTarget)) {
-        intercept();
-        this.clearPendingKeys();
-        this.openCurrentLink(false);
-
-      }
-    }
-
-      }
-      }
-      return;
-    }
-
     if (matchesKeybinding(e, bindings.moveLeft)) {
       intercept();
       this.recordNavCharge(e.repeat);
