@@ -5,6 +5,46 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [v0.1.13] - 2026-11-04
+
+### 繁體中文 (Traditional Chinese)
+#### ✨ 新增功能與體驗優化 (Features & Improvements)
+- **游標連結與互動元素啟動 (Link & Interactive Element Activation)**：
+  - **Enter / Ctrl+Enter 跳轉**：支援在游標位於超連結或互動元素上時，按 `Enter` 於當前分頁開啟，或按 `Ctrl+Enter` (`Cmd+Enter`) 於背景新分頁開啟。
+  - **多元互動元素支援**：除標準 `<a>` 標籤外，擴展支援按鈕 (`button`)、折疊清單 (`summary`) 以及具備 ARIA 角色 (`role="button"`, `role="link"`) 之互動元件點擊。
+  - **狀態列提示徽章**：當游標懸停於可點擊元件時，狀態列即時顯示提示徽章。
+  - **設定頁面開放自訂**：於 Options 設定中心提供按鍵綁定設定，並完整支援繁體中文、英文與日文。
+
+#### 🐛 核心修復與流暢度優化 (Bug Fixes & Refinements)
+- **動態饋給與延遲版面偏移重新對齊 (Dynamic Feed Layout Shift Realignment)**：
+  - 引入導航後防抖重新對齊（Debounce Realignment）與死區補償機制，有效解決在 Facebook 等動態加載串流頁面中，因非同步內容注入導致游標脫位或偏移的問題。
+- **文章主體常態導航流放行 (In-Flow Navigation Ingestion)**：
+  - 放行位於 `<main>` 或 `<article>` 內容主體內的常態文流導航元件（`<nav>` 及 `role="navigation"`），同時保持對浮動 (`float`)、固定 (`fixed`) 與黏貼 (`sticky`) 離流元件的隔離防護。
+- **日誌模組封裝與生產環境精簡 (Logger Encapsulation & Clean Build)**：
+  - 建立專屬 Logger 工具模組並提供 Debug 模式開關，大幅清理主控台雜訊。
+  - Vite 建置設定加入生產環境自動移除 `console.log` 與 `debugger`，降低打包體積並增進執行效能。
+
+---
+
+### English
+#### ✨ Features & Improvements
+- **Link & Interactive Element Activation**:
+  - **Enter / Ctrl+Enter Navigation**: Press `Enter` to open links in the current tab, or `Ctrl+Enter` (`Cmd+Enter`) to open in a background new tab.
+  - **Broad Interactive Element Support**: Beyond standard `<a>` anchors, extended support to clickable elements including `<button>`, `<summary>`, and ARIA roles (`role="button"`, `role="link"`).
+  - **Status Bar Indicator Badge**: Displays a visual badge on the status bar whenever the cursor is over an interactive element.
+  - **Customizable Keybindings**: Fully exposed in the Options page with i18n support across Traditional Chinese, English, and Japanese.
+
+#### 🐛 Bug Fixes & Refinements
+- **Dynamic Feed Layout Shift Realignment**:
+  - Introduced post-navigation debounce realignment and deadzone compensation to prevent cursor drifting or misplacement caused by asynchronous dynamic content prepending on infinite-feed platforms like Facebook.
+- **In-Flow Navigation Elements Ingestion**:
+  - Permitted in-flow navigation blocks (`<nav>` and `role="navigation"`) residing within main content (`<main>`, `<article>`), while maintaining isolation guards for floating, fixed, and sticky out-of-flow widgets.
+- **Logger Encapsulation & Production Build Optimization**:
+  - Encapsulated console logging into a dedicated logger module with debug toggling to eliminate console clutter.
+  - Automatically drop `console.log` and `debugger` statements in production builds via Vite configuration for optimized performance.
+
+---
+
 ## [v0.1.12] - 2026-11-03
 
 ### 繁體中文 (Traditional Chinese)
