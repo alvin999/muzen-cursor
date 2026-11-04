@@ -58,6 +58,10 @@ export class CursorController {
   private countPrefix: number = 0;
   private pendingKeyTimer: any = null;
 
+  // 停頓延遲校正計時器 (Post-Navigation Debounce Realignment)
+  private realignTimer: any = null;
+  private readonly REALIGN_DEBOUNCE_MS = 200;
+
   // 長文閱讀輔助與章節快取
   private cachedTotalChars = 0;
   private lastCharCountTime = 0;
@@ -230,6 +234,10 @@ export class CursorController {
     if (this.jumpMenuTimer) {
       clearTimeout(this.jumpMenuTimer);
       this.jumpMenuTimer = null;
+    }
+    if (this.realignTimer) {
+      clearTimeout(this.realignTimer);
+      this.realignTimer = null;
     }
   }
 
@@ -408,6 +416,10 @@ export class CursorController {
         e.stopPropagation();
         e.stopImmediatePropagation();
         this.lastEscTime = 0;
+        if (this.realignTimer) {
+          clearTimeout(this.realignTimer);
+          this.realignTimer = null;
+        }
         cursorStore.setState({ enabled: false, visible: false });
         const dict = LOCALES[cursorStore.getState().locale || 'zh-TW'] || LOCALES['zh-TW'];
         cursorStore.showStatusNotice(dict.noticeDeepSleep, 1800);
@@ -441,6 +453,10 @@ export class CursorController {
 
         // 單按 Esc：由活動狀態轉為淺層休眠待機 (隱藏游標，保留右下角狀態列「按 j 開始」，隨時可喚醒)
         // 注意：此處不呼叫 preventDefault / stopPropagation，允許事件穿透冒泡給網頁原生 Modal、全螢幕或彈窗響應
+        if (this.realignTimer) {
+          clearTimeout(this.realignTimer);
+          this.realignTimer = null;
+        }
         cursorStore.setState({ visible: false });
 
       }
@@ -1936,8 +1952,114 @@ export class CursorController {
           }
         }
       }
+
+      // 連續移動停手後的延遲校正排程 (Debounce Realignment)
+      if (!isScrollUpdate) {
+        this.scheduleDebounceRealignment();
+      }
     } catch (err) {
       logger.warn('updateCursorPosition error:', err);
+    }
+  }
+
+  /**
+   * 排程停頓延遲校正 (Debounce Idle Realignment)
+   * 當使用者連續按鍵結束、停頓超過預設毫秒時，檢測游標是否因 DOM 突變或動態載入脫出死區
+   */
+  private scheduleDebounceRealignment(): void {
+    const state = cursorStore.getState();
+    if (!state.enabled || !state.visible || state.isExcluded) {
+      if (this.realignTimer) {
+        clearTimeout(this.realignTimer);
+        this.realignTimer = null;
+      }
+      return;
+    }
+
+    if (this.realignTimer) {
+      clearTimeout(this.realignTimer);
+    }
+
+    this.realignTimer = setTimeout(() => {
+      this.realignTimer = null;
+      this.performDebounceRealignment();
+    }, this.REALIGN_DEBOUNCE_MS);
+  }
+
+  /**
+   * 執行停頓校正：針對 Facebook 等動態插入/虛擬列表環境，平滑校正視窗捲動對齊
+   */
+  private performDebounceRealignment(): void {
+    const state = cursorStore.getState();
+    if (!state.enabled || !state.visible || state.isExcluded) return;
+
+    // 若仍在進行平滑滾動，稍後再檢測避免打架
+    if (isSmoothScrolling()) {
+      return;
+    }
+
+    // 1. 節點失效防禦：若節點已自 DOM 脫離 (被 Facebook 虛擬列表卸載)，走重錨邏輯
+    if (!this.currentTarget || !this.currentTarget.node.isConnected) {
+      if (this.isRecoveringTarget) return;
+      this.isRecoveringTarget = true;
+      try {
+        this.findInitialTarget();
+      } finally {
+        this.isRecoveringTarget = false;
+      }
+      if (!this.currentTarget || !this.currentTarget.node.isConnected) return;
+    }
+
+    const { node, offset } = this.currentTarget;
+    const textLen = node.textContent?.length || 0;
+    const range = document.createRange();
+    try {
+      const safeOffset = Math.min(offset, textLen);
+      range.setStart(node, safeOffset);
+      range.setEnd(node, Math.min(safeOffset + 1, textLen));
+      const rect = range.getBoundingClientRect();
+
+      // 若元素隱藏或無寬高則不處理
+      if (rect.width === 0 && rect.height === 0) return;
+
+      const { scrollTarget, viewHeight, parentTop, currentScroll } = getViewportMetrics(node, this.options?.containerRoot);
+      if (!scrollTarget) return;
+
+      const curTop = rect.top - parentTop;
+      const curBottom = rect.bottom - parentTop;
+
+      // 定義死區 (Deadzone / Safe zone)：
+      // 頂部死區邊界 (考慮導航列固定遮蔽)：70px
+      // 底部死區邊界：視窗底部往上 80px
+      const deadzoneTop = 70;
+      const deadzoneBottom = viewHeight - 80;
+
+      // 若游標穩穩位於安全視野內，完全不作任何捲動 (零干擾原則)
+      if (curTop >= deadzoneTop && curBottom <= deadzoneBottom) {
+        return;
+      }
+
+      // 若游標超出死區 (被 Facebook 突變擠壓到頂部/底部外，或極度貼邊)：
+      // 計算平滑補償量，將游標帶回舒適視野 (頂部偏向 28% 視野高度，底部偏向 70% 視野高度)
+      let targetScroll: number | null = null;
+      if (curTop < deadzoneTop) {
+        // 游標在頂部死區外或在視野上方：拉動視窗使游標落在約 28% 高度處
+        const desiredTop = Math.round(viewHeight * 0.28);
+        const delta = curTop - desiredTop;
+        targetScroll = Math.max(0, currentScroll + delta);
+      } else if (curBottom > deadzoneBottom) {
+        // 游標在底部死區外或在視野下方：拉動視窗使游標落在約 70% 高度處
+        const desiredBottom = Math.round(viewHeight * 0.70);
+        const delta = curBottom - desiredBottom;
+        targetScroll = Math.max(0, currentScroll + delta);
+      }
+
+      if (targetScroll !== null && Math.abs(targetScroll - currentScroll) > 10) {
+        // 220ms 柔和阻尼校正
+        animateScrollTo(scrollTarget, targetScroll, 220);
+      }
+    } catch (err) {
+      logger.warn('performDebounceRealignment error:', err);
     }
   }
 

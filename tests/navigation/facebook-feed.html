@@ -311,17 +311,33 @@
         }
       }, 1000);
 
-      // (c) 每 1800ms 動態移除非可視舊貼文 (模擬 Virtual Scrolling Unmount)
+      // (b2) 每 700ms 模擬 Facebook 即時新動態在上方 Prepend 注入 (引發版面下推 CLS 壓力測試)
+      let prependCount = 0;
+      setInterval(() => {
+        if (prependCount < 3 && window.scrollY > 250) {
+          prependCount++;
+          const newPost = createPostElement({
+            author: '⚡ [即時動態推播]',
+            time: '剛才',
+            content: '這是一篇在上方突然動態插入的即時貼文，模擬 Facebook 演算法向當前視野上方注入新動態導致的版面劇烈下推。'
+          }, 990 + prependCount);
+          feedEl.insertBefore(newPost, feedEl.firstChild);
+        }
+      }, 700);
+
+      // (c) 模擬 Virtual Scrolling 快速卸載滑出可視範圍之舊貼文 (壓測 !isConnected 原地重錨)
       setInterval(() => {
         const posts = feedEl.querySelectorAll('article.fb-post');
-        if (posts.length > 8 && window.scrollY > 800) {
-          const firstPost = posts[0];
-          const rect = firstPost.getBoundingClientRect();
-          if (rect.bottom < -100) {
-            firstPost.remove();
+        if (posts.length > 5 && window.scrollY > 400) {
+          for (const p of posts) {
+            const rect = p.getBoundingClientRect();
+            if (rect.bottom < -50) {
+              p.remove();
+              break;
+            }
           }
         }
-      }, 1800);
+      }, 600);
     };
   </script>
 </body>

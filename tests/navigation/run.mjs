@@ -106,6 +106,7 @@ async function executeScenario({ name, htmlFile, port, testScript, timeoutMs = 1
 
   const chromeProc = spawn(browserPath, [
     '--headless=new',
+    '--no-sandbox',
     `--user-data-dir=${tempProfile}`,
     '--no-first-run',
     '--no-default-browser-check',
@@ -257,6 +258,23 @@ async function runAllNavigationTests() {
       }
       window.dispatchEvent(new KeyboardEvent('keyup', { key: 'j', code: 'KeyJ', bubbles: true, cancelable: true }));
 
+      // 階段 3: 等待 260ms，檢驗停手後 Debounce 停頓校正是否成功將游標拉回安全閱讀死區
+      await sleep(260);
+
+      const overlayAfter = document.querySelector('#muzen-cursor-host-root');
+      const shadowAfter = overlayAfter ? overlayAfter.shadowRoot : null;
+      const cursorAfter = shadowAfter ? shadowAfter.querySelector('.muzen-cursor-overlay') : null;
+      const finalCRect = cursorAfter ? cursorAfter.getBoundingClientRect() : null;
+
+      let deadzoneViolation = false;
+      const finalCursorTop = finalCRect ? Math.round(finalCRect.top) : -1;
+      const finalCursorBottom = finalCRect ? Math.round(finalCRect.bottom) : -1;
+
+      // 嚴格死區判定：頂部不得被導航列遮擋 (top >= 70)，底部不得貼邊或出界 (bottom <= window.innerHeight - 80)
+      if (finalCursorTop < 70 || finalCursorBottom > (window.innerHeight - 80)) {
+        deadzoneViolation = true;
+      }
+
       fetch('/api/report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -266,6 +284,9 @@ async function runAllNavigationTests() {
           leakedToHeader,
           jumpBackCount,
           ceilingJumps,
+          deadzoneViolation,
+          finalCursorTop,
+          finalCursorBottom,
           totalSteps: 50,
           finalScrollY: Math.round(window.scrollY),
           sampleSteps: [steps[0], steps[7], steps[14], steps[17], steps[20]]
@@ -288,11 +309,13 @@ async function runAllNavigationTests() {
   console.log(`- 滾動逆向倒退跳躍次數: ${fbReport.jumpBackCount} 次 (標準: 0)`);
   console.log(`- 長按游標瞬移飛頂次數: ${fbReport.ceilingJumps} 次 (標準: 0)`);
   console.log(`- 最終滾動進度 (scrollY): ${fbReport.finalScrollY}px (標準: > 1000px，成功穿透 720px 大圖)`);
+  console.log(`- 停手死區安全校正檢驗: ${fbReport.deadzoneViolation ? '❌ FAIL (游標脫出安全視野: top=' + fbReport.finalCursorTop + ', bottom=' + fbReport.finalCursorBottom + ')' : '✅ PASS (游標維持於黃金舒適區: top=' + fbReport.finalCursorTop + ', bottom=' + fbReport.finalCursorBottom + ')'}`);
 
   const isFbPassed = fbReport.leakedToSidebar === 0 &&
                      fbReport.leakedToHeader === 0 &&
                      fbReport.jumpBackCount === 0 &&
                      fbReport.ceilingJumps === 0 &&
+                     !fbReport.deadzoneViolation &&
                      fbReport.finalScrollY > 1000;
   console.log(`👉 測試判定: ${isFbPassed ? '✅ PASS (大圖穿透流暢，長按幀同步完美推進)' : '❌ FAIL'}`);
 
