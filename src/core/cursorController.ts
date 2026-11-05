@@ -383,7 +383,7 @@ export class CursorController {
           } else {
             this.updateCursorPosition(true);
           }
-  
+
         }
       }
       return;
@@ -434,7 +434,7 @@ export class CursorController {
           e.stopPropagation();
           e.stopImmediatePropagation();
           this.clearPendingKeys();
-  
+
         }
 
         // 單按 Esc：若處於 VISUAL 或 VISUAL_LINE 模式，退出選取回到 NORMAL (攔截事件)
@@ -443,12 +443,12 @@ export class CursorController {
           e.stopPropagation();
           e.stopImmediatePropagation();
           this.exitVisualMode();
-  
+
         }
 
         // 若原本就已處於淺層待命 (!visible)，維持待命
         if (!state.visible) {
-  
+
         }
 
         // 單按 Esc：由活動狀態轉為淺層休眠待機 (隱藏游標，保留右下角狀態列「按 j 開始」，隨時可喚醒)
@@ -1987,7 +1987,7 @@ export class CursorController {
   }
 
   /**
-   * 執行停頓校正：針對 Facebook 等動態插入/虛擬列表環境，平滑校正視窗捲動對齊
+   * 執行停頓校正：針對動態插入 DOM /虛擬列表環境，平滑校正視窗捲動對齊
    */
   private performDebounceRealignment(): void {
     const state = cursorStore.getState();
@@ -1998,7 +1998,7 @@ export class CursorController {
       return;
     }
 
-    // 1. 節點失效防禦：若節點已自 DOM 脫離 (被 Facebook 虛擬列表卸載)，走重錨邏輯
+    // 1. 節點失效防禦：若節點已自 DOM 脫離 (被虛擬列表卸載)，走重錨邏輯
     if (!this.currentTarget || !this.currentTarget.node.isConnected) {
       if (this.isRecoveringTarget) return;
       this.isRecoveringTarget = true;

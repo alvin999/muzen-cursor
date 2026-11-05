@@ -247,6 +247,42 @@ kbd {
   gap: 8px;
 }
 
+.header-right-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--fg-muted);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  padding: 0;
+  line-height: 1;
+}
+
+.header-icon-btn:hover {
+  background: var(--bg-color);
+  color: var(--accent-orange);
+  border-color: var(--accent-orange);
+  transform: scale(1.06);
+}
+
+.header-icon-btn-legacy {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .master-switch-title {
   font-size: 11px;
   font-weight: 600;
@@ -255,6 +291,34 @@ kbd {
 }
 
 .tab-status-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  transition: background-color 0.25s ease, border-color 0.25s ease;
+}
+
+.tab-status-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.tab-status-site-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* 舊版單一容器相容 */
+.tab-status-legacy {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 6px;
@@ -1270,6 +1334,59 @@ input:checked + .slider-small:before {
 }
 
 .pdf-conflict-hint .hint-text {
+  flex: 1;
+  color: var(--fg-muted);
+}
+
+/* ===== Popup 分頁標籤導航與內容面板 ===== */
+.popup-tabs-nav {
+  display: flex;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 3px;
+  gap: 4px;
+}
+
+.popup-tab-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 4px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: var(--fg-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  user-select: none;
+}
+
+.popup-tab-btn:hover {
+  color: var(--fg-color);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.popup-tab-btn.active {
+  color: var(--accent-orange);
+  background: color-mix(in srgb, var(--accent-orange) 15%, var(--bg-color));
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.popup-tab-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.popup-tab-pane.hidden {
+  display: none !important;
+}
+
+.pdf-conflict-hint-legacy {
   flex: 1;
   color: var(--fg-muted);
 }

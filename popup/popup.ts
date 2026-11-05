@@ -8,6 +8,19 @@ import { SmartThemePalette } from '../src/utils/themeDetector';
  */
 
 document.addEventListener('DOMContentLoaded', () => {
+  // ===== 分頁標籤切換邏輯 =====
+  const popupTabBtns = document.querySelectorAll<HTMLButtonElement>('.popup-tab-btn');
+  const popupTabPanes = document.querySelectorAll<HTMLElement>('.popup-tab-pane');
+
+  popupTabBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const targetId = btn.getAttribute('data-tab');
+      popupTabBtns.forEach((b) => b.classList.toggle('active', b === btn));
+      popupTabPanes.forEach((pane) => {
+        pane.classList.toggle('hidden', pane.id !== targetId);
+      });
+    });
+  });
   const toggleEnabled = document.getElementById('toggle-enabled') as HTMLInputElement | null;
   const tabStatusDot = document.getElementById('tab-status-dot');
   const tabStatusText = document.getElementById('tab-status-text');

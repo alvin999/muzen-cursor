@@ -256,23 +256,42 @@ function syncCursorStore(): void {
   });
 }
 
-function switchTab(tabId: 'tab-physics' | 'tab-keybindings'): void {
+type OptionsTabId = 'tab-geometry' | 'tab-physics' | 'tab-effects' | 'tab-keybindings';
+
+function switchTab(tabId: OptionsTabId): void {
   const tabBtns = document.querySelectorAll<HTMLButtonElement>('.tab-btn');
   tabBtns.forEach((btn) => {
     btn.classList.toggle('active', btn.getAttribute('data-tab') === tabId);
   });
 
-  const tabPhysics = document.getElementById('tab-physics');
-  const tabKeys = document.getElementById('tab-keybindings');
+  const allPanes: OptionsTabId[] = ['tab-geometry', 'tab-physics', 'tab-effects', 'tab-keybindings'];
+  allPanes.forEach((paneId) => {
+    const pane = document.getElementById(paneId);
+    if (pane) {
+      pane.classList.toggle('hidden', paneId !== tabId);
+    }
+  });
 
-  if (tabId === 'tab-physics') {
-    tabPhysics?.classList.remove('hidden');
-    tabKeys?.classList.add('hidden');
-    window.location.hash = '#physics';
-  } else {
-    tabPhysics?.classList.add('hidden');
-    tabKeys?.classList.remove('hidden');
-    window.location.hash = '#keybindings';
+  const hashMap: Record<OptionsTabId, string> = {
+    'tab-geometry': '#appearance',
+    'tab-physics': '#physics',
+    'tab-effects': '#effects',
+    'tab-keybindings': '#keybindings'
+  };
+  window.location.hash = hashMap[tabId] || '#appearance';
+}
+
+
+function applyHashRoute(): void {
+  const hash = window.location.hash;
+  if (hash === '#keybindings' || hash === '#shortcuts') {
+    switchTab('tab-keybindings');
+  } else if (hash === '#physics' || hash === '#motion') {
+    switchTab('tab-physics');
+  } else if (hash === '#effects' || hash === '#trail' || hash === '#overdrive') {
+    switchTab('tab-effects');
+  } else if (hash === '#appearance' || hash === '#geometry') {
+    switchTab('tab-geometry');
   }
 }
 
@@ -811,8 +830,9 @@ function loadConfig(): void {
       populateForm(currentConfig);
       renderKeybindingsList();
 
-      if (window.location.hash === '#keybindings' || window.location.hash === '#shortcuts') {
-        switchTab('tab-keybindings');
+      applyHashRoute();
+      if (false) {
+        // no-op
       }
     });
   } else {
@@ -848,8 +868,9 @@ function loadConfig(): void {
     populateForm(currentConfig);
     renderKeybindingsList();
 
-    if (window.location.hash === '#keybindings' || window.location.hash === '#shortcuts') {
-      switchTab('tab-keybindings');
+    applyHashRoute();
+    if (false) {
+      // no-op
     }
   }
 }
@@ -1191,7 +1212,7 @@ function initEvents(): void {
   // 9. 標籤頁點擊切換
   document.querySelectorAll<HTMLButtonElement>('.tab-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
-      const targetTab = btn.getAttribute('data-tab') as 'tab-physics' | 'tab-keybindings';
+      const targetTab = btn.getAttribute('data-tab') as OptionsTabId;
       if (targetTab) switchTab(targetTab);
     });
   });
@@ -1318,6 +1339,7 @@ function initEvents(): void {
   );
 
   // 14. 全域按鍵錄製與點擊取消監聽
+  window.addEventListener('hashchange', applyHashRoute);
   window.addEventListener('keydown', handleGlobalRecordingKeyDown, true);
   window.addEventListener('click', () => {
     if (recordingActionId) {

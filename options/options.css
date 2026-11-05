@@ -594,6 +594,15 @@ body {
 /* 標籤頁導航列 */
 .options-tabs-nav {
   display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 12px;
+}
+
+.options-tabs-nav-legacy {
+  display: flex;
   gap: 12px;
   margin-bottom: 24px;
   border-bottom: 1px solid var(--border-subtle);

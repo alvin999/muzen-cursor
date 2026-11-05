@@ -41,13 +41,19 @@
     <!-- 儲存反饋提示條 -->
     <div id="save-toast" class="toast hidden">✓ 數值已更新並同步至全部分頁</div>
 
-    <!-- 導覽標籤列 -->
+    <!-- 導覽標籤列 (4 個專業頂部頁籤) -->
     <nav class="options-tabs-nav">
-      <button type="button" class="tab-btn active" data-tab="tab-physics">
-        <span data-i18n="tabPhysicsTitle">📐 物理與動態調校</span>
+      <button type="button" class="tab-btn active" data-tab="tab-geometry">
+        <span data-i18n="tabAppearanceTitle">🎨 外觀與筆觸</span>
+      </button>
+      <button type="button" class="tab-btn" data-tab="tab-physics">
+        <span data-i18n="tabPhysicsTitle">⚡ 物理與動態</span>
+      </button>
+      <button type="button" class="tab-btn" data-tab="tab-effects">
+        <span data-i18n="tabEffectsTitle">☄️ 特效與超頻</span>
       </button>
       <button type="button" class="tab-btn" data-tab="tab-keybindings">
-        <span data-i18n="tabKeybindingsTitle">⌨️ 按鍵設定與衝突管理</span>
+        <span data-i18n="tabKeybindingsTitle">⌨️ 按鍵與網站管理</span>
       </button>
     </nav>
 
@@ -56,543 +62,549 @@
       <!-- 左側：各項數值輸入表單 -->
       <section class="settings-panel">
 
-        <!-- 標籤 1: 物理與動態數值調校 -->
-        <div id="tab-physics" class="tab-pane active">
-        <div class="setting-group">
-          <div class="group-header">
-            <span class="group-icon">📐</span>
-            <div class="group-title-wrap">
-              <h2 class="group-title" data-i18n="groupGeometryTitle">幾何外觀與筆觸 (Geometry & Appearance)</h2>
-              <p class="group-desc" data-i18n="groupGeometryDesc">控制游標輪廓線條、圓角弧度與色彩半透明度</p>
-            </div>
-          </div>
-          <div class="group-grid">
-            
-            <div class="field-card">
-              <div class="field-label-row">
-                <label for="adv-thickness" class="field-label" data-i18n="fieldThickness">游標粗細/線寬 (Thickness)</label>
-                <button type="button" class="btn-field-reset" data-key="thickness" title="還原預設值">↺</button>
-              </div>
-              <p class="field-hint" data-i18n="hintThickness">外框線寬或底線高度</p>
-              <div class="input-with-unit">
-                <input type="number" id="adv-thickness" data-key="thickness" min="0.5" max="12" step="0.1" value="1.5">
-                <span class="unit-badge">px</span>
+        <!-- 標籤 1: 外觀與筆觸 (Geometry & Rhythm) -->
+        <div id="tab-geometry" class="tab-pane active">
+          <!-- 模組 1: 幾何外觀與筆觸 -->
+          <div class="setting-group">
+            <div class="group-header">
+              <span class="group-icon">📐</span>
+              <div class="group-title-wrap">
+                <h2 class="group-title" data-i18n="groupGeometryTitle">幾何外觀與筆觸 (Geometry & Appearance)</h2>
+                <p class="group-desc" data-i18n="groupGeometryDesc">控制游標輪廓線條、圓角弧度與色彩半透明度</p>
               </div>
             </div>
+            <div class="group-grid">
+              
+              <div class="field-card">
+                <div class="field-label-row">
+                  <label for="adv-thickness" class="field-label" data-i18n="fieldThickness">游標粗細/線寬 (Thickness)</label>
+                  <button type="button" class="btn-field-reset" data-key="thickness" title="還原預設值">↺</button>
+                </div>
+                <p class="field-hint" data-i18n="hintThickness">外框線寬或底線高度</p>
+                <div class="input-with-unit">
+                  <input type="number" id="adv-thickness" data-key="thickness" min="0.5" max="12" step="0.1" value="1.5">
+                  <span class="unit-badge">px</span>
+                </div>
+              </div>
 
-            <div class="field-card">
-              <div class="field-label-row">
-                <label for="adv-borderRadius" class="field-label" data-i18n="fieldBorderRadius">圓角半徑 (Border Radius)</label>
-                <button type="button" class="btn-field-reset" data-key="borderRadius" title="還原預設值">↺</button>
+              <div class="field-card">
+                <div class="field-label-row">
+                  <label for="adv-borderRadius" class="field-label" data-i18n="fieldBorderRadius">圓角半徑 (Border Radius)</label>
+                  <button type="button" class="btn-field-reset" data-key="borderRadius" title="還原預設值">↺</button>
+                </div>
+                <p class="field-hint" data-i18n="hintBorderRadius">方塊與外框角落平滑度</p>
+                <div class="input-with-unit">
+                  <input type="number" id="adv-borderRadius" data-key="borderRadius" min="0" max="24" step="0.5" value="1.5">
+                  <span class="unit-badge">px</span>
+                </div>
               </div>
-              <p class="field-hint" data-i18n="hintBorderRadius">方塊與外框角落平滑度</p>
-              <div class="input-with-unit">
-                <input type="number" id="adv-borderRadius" data-key="borderRadius" min="0" max="24" step="0.5" value="1.5">
-                <span class="unit-badge">px</span>
-              </div>
-            </div>
 
-            <div class="field-card">
-              <div class="field-label-row">
-                <label for="adv-outlineOffset" class="field-label" data-i18n="fieldOutlineOffset">外框外擴偏移 (Outline Offset)</label>
-                <button type="button" class="btn-field-reset" data-key="outlineOffset" title="還原預設值">↺</button>
+              <div class="field-card">
+                <div class="field-label-row">
+                  <label for="adv-outlineOffset" class="field-label" data-i18n="fieldOutlineOffset">外框外擴偏移 (Outline Offset)</label>
+                  <button type="button" class="btn-field-reset" data-key="outlineOffset" title="還原預設值">↺</button>
+                </div>
+                <p class="field-hint" data-i18n="hintOutlineOffset">實心方塊輪廓向外或向內偏移</p>
+                <div class="input-with-unit">
+                  <input type="number" id="adv-outlineOffset" data-key="outlineOffset" min="-6" max="10" step="1" value="-1">
+                  <span class="unit-badge">px</span>
+                </div>
               </div>
-              <p class="field-hint" data-i18n="hintOutlineOffset">實心方塊輪廓向外或向內偏移</p>
-              <div class="input-with-unit">
-                <input type="number" id="adv-outlineOffset" data-key="outlineOffset" min="-6" max="10" step="1" value="-1">
-                <span class="unit-badge">px</span>
-              </div>
-            </div>
 
-            <div class="field-card">
-              <div class="field-label-row">
-                <label for="adv-glowRadius" class="field-label" data-i18n="fieldGlowRadius">光暈擴散半徑 (Glow Radius)</label>
-                <button type="button" class="btn-field-reset" data-key="glowRadius" title="還原預設值">↺</button>
+              <div class="field-card">
+                <div class="field-label-row">
+                  <label for="adv-glowRadius" class="field-label" data-i18n="fieldGlowRadius">光暈擴散半徑 (Glow Radius)</label>
+                  <button type="button" class="btn-field-reset" data-key="glowRadius" title="還原預設值">↺</button>
+                </div>
+                <p class="field-hint" data-i18n="hintGlowRadius">周邊陰影發光半徑 (0 為關閉)</p>
+                <div class="input-with-unit">
+                  <input type="number" id="adv-glowRadius" data-key="glowRadius" min="0" max="30" step="1" value="0">
+                  <span class="unit-badge">px</span>
+                </div>
               </div>
-              <p class="field-hint" data-i18n="hintGlowRadius">周邊陰影發光半徑 (0 為關閉)</p>
-              <div class="input-with-unit">
-                <input type="number" id="adv-glowRadius" data-key="glowRadius" min="0" max="30" step="1" value="0">
-                <span class="unit-badge">px</span>
-              </div>
-            </div>
 
-            <div class="field-card">
-              <div class="field-label-row">
-                <label for="adv-blockBgOpacity" class="field-label" data-i18n="fieldBlockBgOpacity">NORMAL 方塊背景透明度</label>
-                <button type="button" class="btn-field-reset" data-key="blockBgOpacity" title="還原預設值">↺</button>
+              <div class="field-card">
+                <div class="field-label-row">
+                  <label for="adv-blockBgOpacity" class="field-label" data-i18n="fieldBlockBgOpacity">NORMAL 方塊背景透明度</label>
+                  <button type="button" class="btn-field-reset" data-key="blockBgOpacity" title="還原預設值">↺</button>
+                </div>
+                <p class="field-hint" data-i18n="hintBlockBgOpacity">實心方塊底色填充不透明度 (0 ~ 1)</p>
+                <div class="input-with-unit">
+                  <input type="number" id="adv-blockBgOpacity" data-key="blockBgOpacity" min="0" max="1" step="0.01" value="0.22">
+                  <span class="unit-badge">α</span>
+                </div>
               </div>
-              <p class="field-hint" data-i18n="hintBlockBgOpacity">實心方塊底色填充不透明度 (0 ~ 1)</p>
-              <div class="input-with-unit">
-                <input type="number" id="adv-blockBgOpacity" data-key="blockBgOpacity" min="0" max="1" step="0.01" value="0.22">
-                <span class="unit-badge">α</span>
-              </div>
-            </div>
 
-            <div class="field-card">
-              <div class="field-label-row">
-                <label for="adv-visualBgOpacity" class="field-label" data-i18n="fieldVisualBgOpacity">VISUAL 選取背景透明度</label>
-                <button type="button" class="btn-field-reset" data-key="visualBgOpacity" title="還原預設值">↺</button>
+              <div class="field-card">
+                <div class="field-label-row">
+                  <label for="adv-visualBgOpacity" class="field-label" data-i18n="fieldVisualBgOpacity">VISUAL 選取背景透明度</label>
+                  <button type="button" class="btn-field-reset" data-key="visualBgOpacity" title="還原預設值">↺</button>
+                </div>
+                <p class="field-hint" data-i18n="hintVisualBgOpacity">選取反白高亮不透明度 (0 ~ 1)</p>
+                <div class="input-with-unit">
+                  <input type="number" id="adv-visualBgOpacity" data-key="visualBgOpacity" min="0.05" max="1" step="0.01" value="0.35">
+                  <span class="unit-badge">α</span>
+                </div>
               </div>
-              <p class="field-hint" data-i18n="hintVisualBgOpacity">選取反白高亮不透明度 (0 ~ 1)</p>
-              <div class="input-with-unit">
-                <input type="number" id="adv-visualBgOpacity" data-key="visualBgOpacity" min="0.05" max="1" step="0.01" value="0.35">
-                <span class="unit-badge">α</span>
-              </div>
-            </div>
 
-            <div class="field-card">
-              <div class="field-label-row">
-                <label for="adv-hollowBgOpacity" class="field-label" data-i18n="fieldHollowBgOpacity">空心內部底色透明度</label>
-                <button type="button" class="btn-field-reset" data-key="hollowBgOpacity" title="還原預設值">↺</button>
+              <div class="field-card">
+                <div class="field-label-row">
+                  <label for="adv-hollowBgOpacity" class="field-label" data-i18n="fieldHollowBgOpacity">空心內部底色透明度</label>
+                  <button type="button" class="btn-field-reset" data-key="hollowBgOpacity" title="還原預設值">↺</button>
+                </div>
+                <p class="field-hint" data-i18n="hintHollowBgOpacity">空心外框形態內部淡彩 (0 ~ 1)</p>
+                <div class="input-with-unit">
+                  <input type="number" id="adv-hollowBgOpacity" data-key="hollowBgOpacity" min="0" max="0.5" step="0.01" value="0.05">
+                  <span class="unit-badge">α</span>
+                </div>
               </div>
-              <p class="field-hint" data-i18n="hintHollowBgOpacity">空心外框形態內部淡彩 (0 ~ 1)</p>
-              <div class="input-with-unit">
-                <input type="number" id="adv-hollowBgOpacity" data-key="hollowBgOpacity" min="0" max="0.5" step="0.01" value="0.05">
-                <span class="unit-badge">α</span>
-              </div>
-            </div>
 
-          </div>
-        </div>
-
-        <!-- 模組 2: 梯形彈跳與 3D 透視物理 -->
-        <div class="setting-group">
-          <div class="group-header">
-            <span class="group-icon">⚡</span>
-            <div class="group-title-wrap">
-              <h2 class="group-title" data-i18n="groupPhysicsTitle">梯形彈跳與 3D 透視物理 (Trapezoid & 3D Deformation)</h2>
-              <p class="group-desc" data-i18n="groupPhysicsDesc">招牌梯形回彈與立體果凍形變數值</p>
-            </div>
-          </div>
-          <div class="group-grid">
-
-            <div class="field-card">
-              <div class="field-label-row">
-                <label for="adv-perspective" class="field-label" data-i18n="fieldPerspective">3D 透視景深 (Perspective)</label>
-                <button type="button" class="btn-field-reset" data-key="perspective" title="還原預設值">↺</button>
-              </div>
-              <p class="field-hint" data-i18n="hintPerspective">3D 視角距離，數值愈小立體傾角愈強烈</p>
-              <div class="input-with-unit">
-                <input type="number" id="adv-perspective" data-key="perspective" min="80" max="1200" step="10" value="320">
-                <span class="unit-badge">px</span>
-              </div>
-            </div>
-
-            <div class="field-card">
-              <div class="field-label-row">
-                <label for="adv-tiltAngleX" class="field-label" data-i18n="fieldTiltAngleX">水平跳字傾斜角 (Tilt Angle X)</label>
-                <button type="button" class="btn-field-reset" data-key="tiltAngleX" title="還原預設值">↺</button>
-              </div>
-              <p class="field-hint" data-i18n="hintTiltAngleX">左右移動 (h/l/w/b) rotateY 梯形旋轉角度</p>
-              <div class="input-with-unit">
-                <input type="number" id="adv-tiltAngleX" data-key="tiltAngleX" min="0" max="50" step="1" value="18">
-                <span class="unit-badge">deg</span>
-              </div>
-            </div>
-
-            <div class="field-card">
-              <div class="field-label-row">
-                <label for="adv-tiltAngleY" class="field-label" data-i18n="fieldTiltAngleY">垂直跳行傾斜角 (Tilt Angle Y)</label>
-                <button type="button" class="btn-field-reset" data-key="tiltAngleY" title="還原預設值">↺</button>
-              </div>
-              <p class="field-hint" data-i18n="hintTiltAngleY">上下換行 (j/k) rotateX 梯形旋轉角度</p>
-              <div class="input-with-unit">
-                <input type="number" id="adv-tiltAngleY" data-key="tiltAngleY" min="0" max="50" step="1" value="18">
-                <span class="unit-badge">deg</span>
-              </div>
-            </div>
-
-            <div class="field-card">
-              <div class="field-label-row">
-                <label for="adv-scaleStretchX" class="field-label" data-i18n="fieldScaleStretchX">橫向衝刺伸展倍率 (Stretch X)</label>
-                <button type="button" class="btn-field-reset" data-key="scaleStretchX" title="還原預設值">↺</button>
-              </div>
-              <p class="field-hint" data-i18n="hintScaleStretchX">左右跳字瞬間水平方向拉伸比例</p>
-              <div class="input-with-unit">
-                <input type="number" id="adv-scaleStretchX" data-key="scaleStretchX" min="1.0" max="2.0" step="0.01" value="1.15">
-                <span class="unit-badge">x</span>
-              </div>
-            </div>
-
-            <div class="field-card">
-              <div class="field-label-row">
-                <label for="adv-scaleSquishY" class="field-label" data-i18n="fieldScaleSquishY">橫向抗積擠壓比例 (Squish Y)</label>
-                <button type="button" class="btn-field-reset" data-key="scaleSquishY" title="還原預設值">↺</button>
-              </div>
-              <p class="field-hint" data-i18n="hintScaleSquishY">左右跳字瞬間垂直方向擠壓比例</p>
-              <div class="input-with-unit">
-                <input type="number" id="adv-scaleSquishY" data-key="scaleSquishY" min="0.5" max="1.0" step="0.01" value="0.94">
-                <span class="unit-badge">x</span>
-              </div>
-            </div>
-
-            <div class="field-card">
-              <div class="field-label-row">
-                <label for="adv-scaleStretchY" class="field-label" data-i18n="fieldScaleStretchY">垂直換行伸展倍率 (Stretch Y)</label>
-                <button type="button" class="btn-field-reset" data-key="scaleStretchY" title="還原預設值">↺</button>
-              </div>
-              <p class="field-hint" data-i18n="hintScaleStretchY">上下跳行瞬間垂直方向拉長比例</p>
-              <div class="input-with-unit">
-                <input type="number" id="adv-scaleStretchY" data-key="scaleStretchY" min="1.0" max="2.0" step="0.01" value="1.10">
-                <span class="unit-badge">x</span>
-              </div>
-            </div>
-
-            <div class="field-card">
-              <div class="field-label-row">
-                <label for="adv-scaleSquishX" class="field-label" data-i18n="fieldScaleSquishX">垂直換行擠壓比例 (Squish X)</label>
-                <button type="button" class="btn-field-reset" data-key="scaleSquishX" title="還原預設值">↺</button>
-              </div>
-              <p class="field-hint" data-i18n="hintScaleSquishX">上下跳行瞬間水平方向微縮比例</p>
-              <div class="input-with-unit">
-                <input type="number" id="adv-scaleSquishX" data-key="scaleSquishX" min="0.5" max="1.0" step="0.01" value="0.90">
-                <span class="unit-badge">x</span>
-              </div>
-            </div>
-
-            <div class="field-card">
-              <div class="field-label-row">
-                <label for="adv-deformSettleMs" class="field-label" data-i18n="fieldDeformSettleMs">形變回彈復原時間 (Settle Time)</label>
-                <button type="button" class="btn-field-reset" data-key="deformSettleMs" title="還原預設值">↺</button>
-              </div>
-              <p class="field-hint" data-i18n="hintDeformSettleMs">梯形瞬間恢復為常規矩形的延遲時長</p>
-              <div class="input-with-unit">
-                <input type="number" id="adv-deformSettleMs" data-key="deformSettleMs" min="20" max="350" step="5" value="75">
-                <span class="unit-badge">ms</span>
-              </div>
-            </div>
-
-          </div>
-        </div>
-
-        <!-- 模組 3: 平滑過渡與阻尼時間 -->
-        <div class="setting-group">
-          <div class="group-header">
-            <span class="group-icon">🌀</span>
-            <div class="group-title-wrap">
-              <h2 class="group-title" data-i18n="groupTransitionTitle">平滑過渡與阻尼時間 (Transition & Spring Physics)</h2>
-              <p class="group-desc" data-i18n="groupTransitionDesc">位移過渡曲線與超調回彈彈力</p>
-            </div>
-          </div>
-          <div class="group-grid">
-
-            <div class="field-card">
-              <div class="field-label-row">
-                <label for="adv-smoothDurationMs" class="field-label" data-i18n="fieldSmoothDurationMs">純平滑位移時長 (Smooth Duration)</label>
-                <button type="button" class="btn-field-reset" data-key="smoothDurationMs" title="還原預設值">↺</button>
-              </div>
-              <p class="field-hint" data-i18n="hintSmoothDurationMs">未開啟彈簧回彈時之基礎平滑位移耗時</p>
-              <div class="input-with-unit">
-                <input type="number" id="adv-smoothDurationMs" data-key="smoothDurationMs" min="10" max="400" step="5" value="80">
-                <span class="unit-badge">ms</span>
-              </div>
-            </div>
-
-            <div class="field-card">
-              <div class="field-label-row">
-                <label for="adv-springDurationMs" class="field-label" data-i18n="fieldSpringDurationMs">彈簧回彈過渡時長 (Spring Duration)</label>
-                <button type="button" class="btn-field-reset" data-key="springDurationMs" title="還原預設值">↺</button>
-              </div>
-              <p class="field-hint" data-i18n="hintSpringDurationMs">開啟彈跳時之衝刺與回彈動畫時長</p>
-              <div class="input-with-unit">
-                <input type="number" id="adv-springDurationMs" data-key="springDurationMs" min="20" max="500" step="5" value="110">
-                <span class="unit-badge">ms</span>
-              </div>
-            </div>
-
-            <div class="field-card">
-              <div class="field-label-row">
-                <label for="adv-springOvershoot" class="field-label" data-i18n="fieldSpringOvershoot">彈簧超調張力係數 (Overshoot)</label>
-                <button type="button" class="btn-field-reset" data-key="springOvershoot" title="還原預設值">↺</button>
-              </div>
-              <p class="field-hint" data-i18n="hintSpringOvershoot">Cubic-bezier(0.34, X, 0.64, 1) 彈力超調值</p>
-              <div class="input-with-unit">
-                <input type="number" id="adv-springOvershoot" data-key="springOvershoot" min="1.0" max="2.5" step="0.05" value="1.45">
-                <span class="unit-badge" data-i18n="unitTension">張力</span>
-              </div>
-            </div>
-
-          </div>
-        </div>
-
-        <!-- 模組 4: 動態節奏與計時器 -->
-        <div class="setting-group">
-          <div class="group-header">
-            <span class="group-icon">🪷</span>
-            <div class="group-title-wrap">
-              <h2 class="group-title" data-i18n="groupAnimationTitle">動態節奏與避震計時器 (Animation & Rhythm)</h2>
-              <p class="group-desc" data-i18n="groupAnimationDesc">控制呼吸燈律動、閃爍循環與移動停止後的避震恢復</p>
-            </div>
-          </div>
-          <div class="group-grid">
-
-            <div class="field-card">
-              <div class="field-label-row">
-                <label for="adv-breatheDuration" class="field-label" data-i18n="fieldBreatheDuration">呼吸燈完整週期 (Breathe Duration)</label>
-                <button type="button" class="btn-field-reset" data-key="breatheDuration" title="還原預設值">↺</button>
-              </div>
-              <p class="field-hint" data-i18n="hintBreatheDuration">吸氣至頂峰再呼氣之完整循環時長</p>
-              <div class="input-with-unit">
-                <input type="number" id="adv-breatheDuration" data-key="breatheDuration" min="0.5" max="10.0" step="0.1" value="3.0">
-                <span class="unit-badge" data-i18n="unitSeconds">秒 (s)</span>
-              </div>
-            </div>
-
-            <div class="field-card">
-              <div class="field-label-row">
-                <label for="adv-breathePeakOpacity" class="field-label" data-i18n="fieldBreathePeakOpacity">呼吸燈頂峰不透明度 (Peak Opacity)</label>
-                <button type="button" class="btn-field-reset" data-key="breathePeakOpacity" title="還原預設值">↺</button>
-              </div>
-              <p class="field-hint" data-i18n="hintBreathePeakOpacity">吸氣至最亮頂峰時的不透明度 (0 ~ 1)</p>
-              <div class="input-with-unit">
-                <input type="number" id="adv-breathePeakOpacity" data-key="breathePeakOpacity" min="0.2" max="1.0" step="0.02" value="0.96">
-                <span class="unit-badge">α</span>
-              </div>
-            </div>
-
-            <div class="field-card">
-              <div class="field-label-row">
-                <label for="adv-blinkDuration" class="field-label" data-i18n="fieldBlinkDuration">經典閃爍循環週期 (Blink Duration)</label>
-                <button type="button" class="btn-field-reset" data-key="blinkDuration" title="還原預設值">↺</button>
-              </div>
-              <p class="field-hint" data-i18n="hintBlinkDuration">終端機閃爍完整亮滅週期時長</p>
-              <div class="input-with-unit">
-                <input type="number" id="adv-blinkDuration" data-key="blinkDuration" min="0.3" max="3.0" step="0.1" value="1.1">
-                <span class="unit-badge" data-i18n="unitSeconds">秒 (s)</span>
-              </div>
-            </div>
-
-            <div class="field-card">
-              <div class="field-label-row">
-                <label for="adv-moveSettleDelayMs" class="field-label" data-i18n="fieldMoveSettleDelayMs">移動避震恢復延遲 (Move Settle Delay)</label>
-                <button type="button" class="btn-field-reset" data-key="moveSettleDelayMs" title="還原預設值">↺</button>
-              </div>
-              <p class="field-hint" data-i18n="hintMoveSettleDelayMs">停止打字移動後，恢復閃爍/呼吸之延遲</p>
-              <div class="input-with-unit">
-                <input type="number" id="adv-moveSettleDelayMs" data-key="moveSettleDelayMs" min="50" max="1200" step="25" value="400">
-                <span class="unit-badge">ms</span>
-              </div>
-            </div>
-
-          </div>
-        </div>
-
-        <!-- 模組 5: 平滑捲動與視窗視野 -->
-        <div class="setting-group">
-          <div class="group-header">
-            <span class="group-icon">📜</span>
-            <div class="group-title-wrap">
-              <h2 class="group-title" data-i18n="groupScrollTitle">平滑捲動與黃金視野 (Scrolling & Viewport)</h2>
-              <p class="group-desc" data-i18n="groupScrollDesc">Ease-Out Cubic 視窗阻尼捲動與黃金閱讀邊界</p>
-            </div>
-          </div>
-          <div class="group-grid">
-
-            <div class="field-card">
-              <div class="field-label-row">
-                <label for="adv-scrollDurationMs" class="field-label" data-i18n="fieldScrollDurationMs">視窗平滑捲動時長 (Scroll Duration)</label>
-                <button type="button" class="btn-field-reset" data-key="scrollDurationMs" title="還原預設值">↺</button>
-              </div>
-              <p class="field-hint" data-i18n="hintScrollDurationMs">Ease-Out Cubic 物理平滑捲動之總耗時</p>
-              <div class="input-with-unit">
-                <input type="number" id="adv-scrollDurationMs" data-key="scrollDurationMs" min="80" max="1200" step="20" value="380">
-                <span class="unit-badge">ms</span>
-              </div>
-            </div>
-
-            <div class="field-card">
-              <div class="field-label-row">
-                <label for="adv-viewportPaddingTop" class="field-label" data-i18n="fieldViewportPaddingTop">視窗頂部安全邊距 (Padding Top)</label>
-                <button type="button" class="btn-field-reset" data-key="viewportPaddingTop" title="還原預設值">↺</button>
-              </div>
-              <p class="field-hint" data-i18n="hintViewportPaddingTop">游標向上接近頂部多少像素時自動推動頁面</p>
-              <div class="input-with-unit">
-                <input type="number" id="adv-viewportPaddingTop" data-key="viewportPaddingTop" min="0" max="400" step="10" value="120">
-                <span class="unit-badge">px</span>
-              </div>
-            </div>
-
-            <div class="field-card">
-              <div class="field-label-row">
-                <label for="adv-viewportPaddingBottom" class="field-label" data-i18n="fieldViewportPaddingBottom">視窗底部安全邊距 (Padding Bottom)</label>
-                <button type="button" class="btn-field-reset" data-key="viewportPaddingBottom" title="還原預設值">↺</button>
-              </div>
-              <p class="field-hint" data-i18n="hintViewportPaddingBottom">游標向下接近底部多少像素時自動推動頁面</p>
-              <div class="input-with-unit">
-                <input type="number" id="adv-viewportPaddingBottom" data-key="viewportPaddingBottom" min="0" max="400" step="10" value="160">
-                <span class="unit-badge">px</span>
-              </div>
-            </div>
-
-          </div>
-        </div>
-
-        <!-- 模組 6: 流光殘影與動態拖尾 -->
-        <div class="setting-group">
-          <div class="group-header">
-            <span class="group-icon">☄️</span>
-            <div class="group-title-wrap">
-              <h2 class="group-title" data-i18n="groupTrailTitle">流光殘影與動態拖尾 (Motion Trail & Afterimage)</h2>
-              <p class="group-desc" data-i18n="groupTrailDesc">移動時留下由濃漸淡、且保持 3D 透視梯形角度的水墨流光拖尾</p>
-            </div>
-          </div>
-          <div class="group-grid">
-
-            <div class="field-card">
-              <div class="field-label-row">
-                <label for="adv-trailMode" class="field-label" data-i18n="fieldTrailMode">殘影軌跡模式 (Trail Mode)</label>
-                <button type="button" class="btn-field-reset" data-key="trailMode" title="還原預設值">↺</button>
-              </div>
-              <p class="field-hint" data-i18n="hintTrailMode">選擇換行時殘影貼著每一行穿梭流動，或兩點起終點直線躍遷</p>
-              <div class="select-with-badge">
-                <select id="adv-trailMode" data-key="trailMode" class="adv-select">
-                  <option value="line" data-i18n="trailModeLine">逐行流光 (貼著每一行流動)</option>
-                  <option value="direct" data-i18n="trailModeDirect">兩點躍遷 (起終點直線過渡)</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="field-card">
-              <div class="field-label-row">
-                <label for="adv-trailCount" class="field-label" data-i18n="fieldTrailCount">殘影階數/數量 (Trail Count)</label>
-                <button type="button" class="btn-field-reset" data-key="trailCount" title="還原預設值">↺</button>
-              </div>
-              <p class="field-hint" data-i18n="hintTrailCount">拖尾產生的分身殘影階數 (2 ~ 8 階)</p>
-              <div class="input-with-unit">
-                <input type="number" id="adv-trailCount" data-key="trailCount" min="2" max="8" step="1" value="4">
-                <span class="unit-badge">階</span>
-              </div>
-            </div>
-
-            <div class="field-card">
-              <div class="field-label-row">
-                <label for="adv-trailDurationMs" class="field-label" data-i18n="fieldTrailDurationMs">殘影消散時長 (Trail Duration)</label>
-                <button type="button" class="btn-field-reset" data-key="trailDurationMs" title="還原預設值">↺</button>
-              </div>
-              <p class="field-hint" data-i18n="hintTrailDurationMs">殘影從顯現至平滑消散的毫秒數 (ms)</p>
-              <div class="input-with-unit">
-                <input type="number" id="adv-trailDurationMs" data-key="trailDurationMs" min="50" max="800" step="10" value="260">
-                <span class="unit-badge">ms</span>
-              </div>
-            </div>
-
-            <div class="field-card">
-              <div class="field-label-row">
-                <label for="adv-trailDecayExponent" class="field-label" data-i18n="fieldTrailDecayExponent">距離衰減曲率 (Decay Exponent)</label>
-                <button type="button" class="btn-field-reset" data-key="trailDecayExponent" title="還原預設值">↺</button>
-              </div>
-              <p class="field-hint" data-i18n="hintTrailDecayExponent">數值越大，離游標越遠的殘影越快變淡</p>
-              <div class="input-with-unit">
-                <input type="number" id="adv-trailDecayExponent" data-key="trailDecayExponent" min="0.5" max="3.0" step="0.05" value="1.35">
-                <span class="unit-badge">γ</span>
-              </div>
-            </div>
-
-            <div class="field-card">
-              <div class="field-label-row">
-                <label for="adv-trailMaxOpacity" class="field-label" data-i18n="fieldTrailMaxOpacity">近端殘影不透明度 (Peak Opacity)</label>
-                <button type="button" class="btn-field-reset" data-key="trailMaxOpacity" title="還原預設值">↺</button>
-              </div>
-              <p class="field-hint" data-i18n="hintTrailMaxOpacity">最靠近主游標的殘影起始明亮程度 (0.1 ~ 1.0)</p>
-              <div class="input-with-unit">
-                <input type="number" id="adv-trailMaxOpacity" data-key="trailMaxOpacity" min="0.1" max="1.0" step="0.05" value="0.75">
-                <span class="unit-badge">α</span>
-              </div>
-            </div>
-
-            <div class="field-card">
-              <div class="field-label-row">
-                <label for="adv-trailPreserveTrapezoid" class="field-label" data-i18n="fieldTrailPreserveTrapezoid">保持梯形透視 (Preserve Trapezoid)</label>
-                <button type="button" class="btn-field-reset" data-key="trailPreserveTrapezoid" title="還原預設值">↺</button>
-              </div>
-              <p class="field-hint" data-i18n="hintTrailPreserveTrapezoid">殘影淡出全程鎖定 3D 透視梯形形變角度</p>
-              <div class="checkbox-row" style="padding-top: 8px; display: flex; align-items: center;">
-                <label class="switch-small">
-                  <input type="checkbox" id="adv-trailPreserveTrapezoid" data-key="trailPreserveTrapezoid" checked>
-                  <span class="slider-small"></span>
-                </label>
-                <span style="font-size: 13px; color: var(--color-fg-muted, #7c6f64); margin-left: 8px;">鎖定 3D 梯形</span>
-              </div>
-            </div>
-
-          </div>
-        </div>
-
-        <!-- 群組 7: 動能蓄力與過載超頻物理 -->
-        <div class="setting-group">
-          <div class="group-header">
-            <span class="group-icon">⚡</span>
-            <div class="group-title-wrap">
-              <h2 class="group-title" data-i18n="groupChargeTitle">動能蓄力與過載超頻 (Kinetic Charge & Overdrive)</h2>
-              <p class="group-desc" data-i18n="groupChargeDesc">高速連續按鍵或長按時積蓄動能，升溫提升光澤與殘影，放開時平滑阻尼散熱</p>
             </div>
           </div>
 
-          <div class="field-grid">
-
-            <div class="field-card">
-              <div class="field-label-row">
-                <label for="adv-chargeStepImpulse" class="field-label" data-i18n="fieldChargeStepImpulse">充能速率/單步衝量 (Step Impulse)</label>
-                <button type="button" class="btn-field-reset" data-key="chargeStepImpulse" title="還原預設值">↺</button>
-              </div>
-              <p class="field-hint" data-i18n="hintChargeStepImpulse">每次有效按鍵注入的動能增量 (0.005 ~ 0.200，預設 0.035 延緩十倍)</p>
-              <div class="input-with-unit">
-                <input type="number" id="adv-chargeStepImpulse" data-key="chargeStepImpulse" min="0.005" max="0.200" step="0.005" value="0.035">
+          <!-- 模組 4: 動態節奏與計時器 (歸類至外觀與律動) -->
+          <div class="setting-group">
+            <div class="group-header">
+              <span class="group-icon">🪷</span>
+              <div class="group-title-wrap">
+                <h2 class="group-title" data-i18n="groupAnimationTitle">動態節奏與避震計時器 (Animation & Rhythm)</h2>
+                <p class="group-desc" data-i18n="groupAnimationDesc">控制呼吸燈律動、閃爍循環與移動停止後的避震恢復</p>
               </div>
             </div>
+            <div class="group-grid">
 
-            <div class="field-card">
-              <div class="field-label-row">
-                <label for="adv-chargeThreshold" class="field-label" data-i18n="fieldChargeThreshold">白熱超載門檻 (Overdrive Threshold)</label>
-                <button type="button" class="btn-field-reset" data-key="chargeThreshold" title="還原預設值">↺</button>
+              <div class="field-card">
+                <div class="field-label-row">
+                  <label for="adv-breatheDuration" class="field-label" data-i18n="fieldBreatheDuration">呼吸燈完整週期 (Breathe Duration)</label>
+                  <button type="button" class="btn-field-reset" data-key="breatheDuration" title="還原預設值">↺</button>
+                </div>
+                <p class="field-hint" data-i18n="hintBreatheDuration">吸氣至頂峰再呼氣之完整循環時長</p>
+                <div class="input-with-unit">
+                  <input type="number" id="adv-breatheDuration" data-key="breatheDuration" min="0.5" max="10.0" step="0.1" value="3.0">
+                  <span class="unit-badge" data-i18n="unitSeconds">秒 (s)</span>
+                </div>
               </div>
-              <p class="field-hint" data-i18n="hintChargeThreshold">開始泛起熾白電光核心的蓄力比例 (0.30 ~ 0.95，預設 0.70 延後變白)</p>
-              <div class="input-with-unit">
-                <input type="number" id="adv-chargeThreshold" data-key="chargeThreshold" min="0.30" max="0.95" step="0.05" value="0.70">
+
+              <div class="field-card">
+                <div class="field-label-row">
+                  <label for="adv-breathePeakOpacity" class="field-label" data-i18n="fieldBreathePeakOpacity">呼吸燈頂峰不透明度 (Peak Opacity)</label>
+                  <button type="button" class="btn-field-reset" data-key="breathePeakOpacity" title="還原預設值">↺</button>
+                </div>
+                <p class="field-hint" data-i18n="hintBreathePeakOpacity">吸氣至最亮頂峰時的不透明度 (0 ~ 1)</p>
+                <div class="input-with-unit">
+                  <input type="number" id="adv-breathePeakOpacity" data-key="breathePeakOpacity" min="0.2" max="1.0" step="0.02" value="0.96">
+                  <span class="unit-badge">α</span>
+                </div>
               </div>
+
+              <div class="field-card">
+                <div class="field-label-row">
+                  <label for="adv-blinkDuration" class="field-label" data-i18n="fieldBlinkDuration">經典閃爍循環週期 (Blink Duration)</label>
+                  <button type="button" class="btn-field-reset" data-key="blinkDuration" title="還原預設值">↺</button>
+                </div>
+                <p class="field-hint" data-i18n="hintBlinkDuration">終端機閃爍完整亮滅週期時長</p>
+                <div class="input-with-unit">
+                  <input type="number" id="adv-blinkDuration" data-key="blinkDuration" min="0.3" max="3.0" step="0.1" value="1.1">
+                  <span class="unit-badge" data-i18n="unitSeconds">秒 (s)</span>
+                </div>
+              </div>
+
+              <div class="field-card">
+                <div class="field-label-row">
+                  <label for="adv-moveSettleDelayMs" class="field-label" data-i18n="fieldMoveSettleDelayMs">移動避震恢復延遲 (Move Settle Delay)</label>
+                  <button type="button" class="btn-field-reset" data-key="moveSettleDelayMs" title="還原預設值">↺</button>
+                </div>
+                <p class="field-hint" data-i18n="hintMoveSettleDelayMs">停止打字移動後，恢復閃爍/呼吸之延遲</p>
+                <div class="input-with-unit">
+                  <input type="number" id="adv-moveSettleDelayMs" data-key="moveSettleDelayMs" min="50" max="1200" step="25" value="400">
+                  <span class="unit-badge">ms</span>
+                </div>
+              </div>
+
             </div>
-
-            <div class="field-card">
-              <div class="field-label-row">
-                <label for="adv-chargeDecayMs" class="field-label" data-i18n="fieldChargeDecayMs">散熱冷卻時長 (Cooldown Decay)</label>
-                <button type="button" class="btn-field-reset" data-key="chargeDecayMs" title="還原預設值">↺</button>
-              </div>
-              <p class="field-hint" data-i18n="hintChargeDecayMs">放開按鍵後從過載降溫平滑恢復常態的毫秒數 (ms，預設 800)</p>
-              <div class="input-with-unit">
-                <input type="number" id="adv-chargeDecayMs" data-key="chargeDecayMs" min="100" max="3000" step="50" value="800">
-                <span class="unit-badge">ms</span>
-              </div>
-            </div>
-
-            <div class="field-card">
-              <div class="field-label-row">
-                <label for="adv-chargeMaxGlow" class="field-label" data-i18n="fieldChargeMaxGlow">超載光暈峰值 (Overdrive Glow)</label>
-                <button type="button" class="btn-field-reset" data-key="chargeMaxGlow" title="還原預設值">↺</button>
-              </div>
-              <p class="field-hint" data-i18n="hintChargeMaxGlow">滿蓄力時向外噴發之電光光暈最大擴散半徑 (px，預設 14)</p>
-              <div class="input-with-unit">
-                <input type="number" id="adv-chargeMaxGlow" data-key="chargeMaxGlow" min="0" max="30" step="1" value="14">
-                <span class="unit-badge">px</span>
-              </div>
-            </div>
-
-            <div class="field-card">
-              <div class="field-label-row">
-                <label for="adv-chargeTrailBoost" class="field-label" data-i18n="fieldChargeTrailBoost">滿蓄力殘影增量 (Trail Boost)</label>
-                <button type="button" class="btn-field-reset" data-key="chargeTrailBoost" title="還原預設值">↺</button>
-              </div>
-              <p class="field-hint" data-i18n="hintChargeTrailBoost">高速滿蓄力超載時額外激發的流光殘影階數 (預設 +3 階)</p>
-              <div class="input-with-unit">
-                <input type="number" id="adv-chargeTrailBoost" data-key="chargeTrailBoost" min="0" max="6" step="1" value="3">
-              </div>
-            </div>
-
           </div>
-        </div>
+        </div><!-- 結束 tab-geometry -->
 
+        <!-- 標籤 2: 物理與動態 (Physics & Motion) -->
+        <div id="tab-physics" class="tab-pane hidden">
+          <!-- 模組 2: 梯形彈跳與 3D 透視物理 -->
+          <div class="setting-group">
+            <div class="group-header">
+              <span class="group-icon">⚡</span>
+              <div class="group-title-wrap">
+                <h2 class="group-title" data-i18n="groupPhysicsTitle">梯形彈跳與 3D 透視物理 (Trapezoid & 3D Deformation)</h2>
+                <p class="group-desc" data-i18n="groupPhysicsDesc">招牌梯形回彈與立體果凍形變數值</p>
+              </div>
+            </div>
+            <div class="group-grid">
+
+              <div class="field-card">
+                <div class="field-label-row">
+                  <label for="adv-perspective" class="field-label" data-i18n="fieldPerspective">3D 透視景深 (Perspective)</label>
+                  <button type="button" class="btn-field-reset" data-key="perspective" title="還原預設值">↺</button>
+                </div>
+                <p class="field-hint" data-i18n="hintPerspective">3D 視角距離，數值愈小立體傾角愈強烈</p>
+                <div class="input-with-unit">
+                  <input type="number" id="adv-perspective" data-key="perspective" min="80" max="1200" step="10" value="320">
+                  <span class="unit-badge">px</span>
+                </div>
+              </div>
+
+              <div class="field-card">
+                <div class="field-label-row">
+                  <label for="adv-tiltAngleX" class="field-label" data-i18n="fieldTiltAngleX">水平跳字傾斜角 (Tilt Angle X)</label>
+                  <button type="button" class="btn-field-reset" data-key="tiltAngleX" title="還原預設值">↺</button>
+                </div>
+                <p class="field-hint" data-i18n="hintTiltAngleX">左右移動 (h/l/w/b) rotateY 梯形旋轉角度</p>
+                <div class="input-with-unit">
+                  <input type="number" id="adv-tiltAngleX" data-key="tiltAngleX" min="0" max="50" step="1" value="18">
+                  <span class="unit-badge">deg</span>
+                </div>
+              </div>
+
+              <div class="field-card">
+                <div class="field-label-row">
+                  <label for="adv-tiltAngleY" class="field-label" data-i18n="fieldTiltAngleY">垂直跳行傾斜角 (Tilt Angle Y)</label>
+                  <button type="button" class="btn-field-reset" data-key="tiltAngleY" title="還原預設值">↺</button>
+                </div>
+                <p class="field-hint" data-i18n="hintTiltAngleY">上下換行 (j/k) rotateX 梯形旋轉角度</p>
+                <div class="input-with-unit">
+                  <input type="number" id="adv-tiltAngleY" data-key="tiltAngleY" min="0" max="50" step="1" value="18">
+                  <span class="unit-badge">deg</span>
+                </div>
+              </div>
+
+              <div class="field-card">
+                <div class="field-label-row">
+                  <label for="adv-scaleStretchX" class="field-label" data-i18n="fieldScaleStretchX">橫向衝刺伸展倍率 (Stretch X)</label>
+                  <button type="button" class="btn-field-reset" data-key="scaleStretchX" title="還原預設值">↺</button>
+                </div>
+                <p class="field-hint" data-i18n="hintScaleStretchX">左右跳字瞬間水平方向拉伸比例</p>
+                <div class="input-with-unit">
+                  <input type="number" id="adv-scaleStretchX" data-key="scaleStretchX" min="1.0" max="2.0" step="0.01" value="1.15">
+                  <span class="unit-badge">x</span>
+                </div>
+              </div>
+
+              <div class="field-card">
+                <div class="field-label-row">
+                  <label for="adv-scaleSquishY" class="field-label" data-i18n="fieldScaleSquishY">橫向抗積擠壓比例 (Squish Y)</label>
+                  <button type="button" class="btn-field-reset" data-key="scaleSquishY" title="還原預設值">↺</button>
+                </div>
+                <p class="field-hint" data-i18n="hintScaleSquishY">左右跳字瞬間垂直方向擠壓比例</p>
+                <div class="input-with-unit">
+                  <input type="number" id="adv-scaleSquishY" data-key="scaleSquishY" min="0.5" max="1.0" step="0.01" value="0.94">
+                  <span class="unit-badge">x</span>
+                </div>
+              </div>
+
+              <div class="field-card">
+                <div class="field-label-row">
+                  <label for="adv-scaleStretchY" class="field-label" data-i18n="fieldScaleStretchY">垂直換行伸展倍率 (Stretch Y)</label>
+                  <button type="button" class="btn-field-reset" data-key="scaleStretchY" title="還原預設值">↺</button>
+                </div>
+                <p class="field-hint" data-i18n="hintScaleStretchY">上下跳行瞬間垂直方向拉長比例</p>
+                <div class="input-with-unit">
+                  <input type="number" id="adv-scaleStretchY" data-key="scaleStretchY" min="1.0" max="2.0" step="0.01" value="1.10">
+                  <span class="unit-badge">x</span>
+                </div>
+              </div>
+
+              <div class="field-card">
+                <div class="field-label-row">
+                  <label for="adv-scaleSquishX" class="field-label" data-i18n="fieldScaleSquishX">垂直換行擠壓比例 (Squish X)</label>
+                  <button type="button" class="btn-field-reset" data-key="scaleSquishX" title="還原預設值">↺</button>
+                </div>
+                <p class="field-hint" data-i18n="hintScaleSquishX">上下跳行瞬間水平方向微縮比例</p>
+                <div class="input-with-unit">
+                  <input type="number" id="adv-scaleSquishX" data-key="scaleSquishX" min="0.5" max="1.0" step="0.01" value="0.90">
+                  <span class="unit-badge">x</span>
+                </div>
+              </div>
+
+              <div class="field-card">
+                <div class="field-label-row">
+                  <label for="adv-deformSettleMs" class="field-label" data-i18n="fieldDeformSettleMs">形變回彈復原時間 (Settle Time)</label>
+                  <button type="button" class="btn-field-reset" data-key="deformSettleMs" title="還原預設值">↺</button>
+                </div>
+                <p class="field-hint" data-i18n="hintDeformSettleMs">梯形瞬間恢復為常規矩形的延遲時長</p>
+                <div class="input-with-unit">
+                  <input type="number" id="adv-deformSettleMs" data-key="deformSettleMs" min="20" max="350" step="5" value="75">
+                  <span class="unit-badge">ms</span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- 模組 3: 平滑過渡與阻尼時間 -->
+          <div class="setting-group">
+            <div class="group-header">
+              <span class="group-icon">🌀</span>
+              <div class="group-title-wrap">
+                <h2 class="group-title" data-i18n="groupTransitionTitle">平滑過渡與阻尼時間 (Transition & Spring Physics)</h2>
+                <p class="group-desc" data-i18n="groupTransitionDesc">位移過渡曲線與超調回彈彈力</p>
+              </div>
+            </div>
+            <div class="group-grid">
+
+              <div class="field-card">
+                <div class="field-label-row">
+                  <label for="adv-smoothDurationMs" class="field-label" data-i18n="fieldSmoothDurationMs">純平滑位移時長 (Smooth Duration)</label>
+                  <button type="button" class="btn-field-reset" data-key="smoothDurationMs" title="還原預設值">↺</button>
+                </div>
+                <p class="field-hint" data-i18n="hintSmoothDurationMs">未開啟彈簧回彈時之基礎平滑位移耗時</p>
+                <div class="input-with-unit">
+                  <input type="number" id="adv-smoothDurationMs" data-key="smoothDurationMs" min="10" max="400" step="5" value="80">
+                  <span class="unit-badge">ms</span>
+                </div>
+              </div>
+
+              <div class="field-card">
+                <div class="field-label-row">
+                  <label for="adv-springDurationMs" class="field-label" data-i18n="fieldSpringDurationMs">彈簧回彈過渡時長 (Spring Duration)</label>
+                  <button type="button" class="btn-field-reset" data-key="springDurationMs" title="還原預設值">↺</button>
+                </div>
+                <p class="field-hint" data-i18n="hintSpringDurationMs">開啟彈跳時之衝刺與回彈動畫時長</p>
+                <div class="input-with-unit">
+                  <input type="number" id="adv-springDurationMs" data-key="springDurationMs" min="20" max="500" step="5" value="110">
+                  <span class="unit-badge">ms</span>
+                </div>
+              </div>
+
+              <div class="field-card">
+                <div class="field-label-row">
+                  <label for="adv-springOvershoot" class="field-label" data-i18n="fieldSpringOvershoot">彈簧超調張力係數 (Overshoot)</label>
+                  <button type="button" class="btn-field-reset" data-key="springOvershoot" title="還原預設值">↺</button>
+                </div>
+                <p class="field-hint" data-i18n="hintSpringOvershoot">Cubic-bezier(0.34, X, 0.64, 1) 彈力超調值</p>
+                <div class="input-with-unit">
+                  <input type="number" id="adv-springOvershoot" data-key="springOvershoot" min="1.0" max="2.5" step="0.05" value="1.45">
+                  <span class="unit-badge" data-i18n="unitTension">張力</span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- 模組 5: 平滑捲動與視窗視野 -->
+          <div class="setting-group">
+            <div class="group-header">
+              <span class="group-icon">📜</span>
+              <div class="group-title-wrap">
+                <h2 class="group-title" data-i18n="groupScrollTitle">平滑捲動與黃金視野 (Scrolling & Viewport)</h2>
+                <p class="group-desc" data-i18n="groupScrollDesc">Ease-Out Cubic 視窗阻尼捲動與黃金閱讀邊界</p>
+              </div>
+            </div>
+            <div class="group-grid">
+
+              <div class="field-card">
+                <div class="field-label-row">
+                  <label for="adv-scrollDurationMs" class="field-label" data-i18n="fieldScrollDurationMs">視窗平滑捲動時長 (Scroll Duration)</label>
+                  <button type="button" class="btn-field-reset" data-key="scrollDurationMs" title="還原預設值">↺</button>
+                </div>
+                <p class="field-hint" data-i18n="hintScrollDurationMs">Ease-Out Cubic 物理平滑捲動之總耗時</p>
+                <div class="input-with-unit">
+                  <input type="number" id="adv-scrollDurationMs" data-key="scrollDurationMs" min="80" max="1200" step="20" value="380">
+                  <span class="unit-badge">ms</span>
+                </div>
+              </div>
+
+              <div class="field-card">
+                <div class="field-label-row">
+                  <label for="adv-viewportPaddingTop" class="field-label" data-i18n="fieldViewportPaddingTop">視窗頂部安全邊距 (Padding Top)</label>
+                  <button type="button" class="btn-field-reset" data-key="viewportPaddingTop" title="還原預設值">↺</button>
+                </div>
+                <p class="field-hint" data-i18n="hintViewportPaddingTop">游標向上接近頂部多少像素時自動推動頁面</p>
+                <div class="input-with-unit">
+                  <input type="number" id="adv-viewportPaddingTop" data-key="viewportPaddingTop" min="0" max="400" step="10" value="120">
+                  <span class="unit-badge">px</span>
+                </div>
+              </div>
+
+              <div class="field-card">
+                <div class="field-label-row">
+                  <label for="adv-viewportPaddingBottom" class="field-label" data-i18n="fieldViewportPaddingBottom">視窗底部安全邊距 (Padding Bottom)</label>
+                  <button type="button" class="btn-field-reset" data-key="viewportPaddingBottom" title="還原預設值">↺</button>
+                </div>
+                <p class="field-hint" data-i18n="hintViewportPaddingBottom">游標向下接近底部多少像素時自動推動頁面</p>
+                <div class="input-with-unit">
+                  <input type="number" id="adv-viewportPaddingBottom" data-key="viewportPaddingBottom" min="0" max="400" step="10" value="160">
+                  <span class="unit-badge">px</span>
+                </div>
+              </div>
+
+            </div>
+          </div>
         </div><!-- 結束 tab-physics -->
 
-        <!-- 標籤 2: 按鍵自訂與停用名單 -->
+        <!-- 標籤 3: 特效與超頻 (Effects & Overdrive) -->
+        <div id="tab-effects" class="tab-pane hidden">
+          <!-- 模組 6: 流光殘影與動態拖尾 -->
+          <div class="setting-group">
+            <div class="group-header">
+              <span class="group-icon">☄️</span>
+              <div class="group-title-wrap">
+                <h2 class="group-title" data-i18n="groupTrailTitle">流光殘影與動態拖尾 (Motion Trail & Afterimage)</h2>
+                <p class="group-desc" data-i18n="groupTrailDesc">移動時留下由濃漸淡、且保持 3D 透視梯形角度的水墨流光拖尾</p>
+              </div>
+            </div>
+            <div class="group-grid">
+
+              <div class="field-card">
+                <div class="field-label-row">
+                  <label for="adv-trailMode" class="field-label" data-i18n="fieldTrailMode">殘影軌跡模式 (Trail Mode)</label>
+                  <button type="button" class="btn-field-reset" data-key="trailMode" title="還原預設值">↺</button>
+                </div>
+                <p class="field-hint" data-i18n="hintTrailMode">選擇換行時殘影貼著每一行穿梭流動，或兩點起終點直線躍遷</p>
+                <div class="select-with-badge">
+                  <select id="adv-trailMode" data-key="trailMode" class="adv-select">
+                    <option value="line" data-i18n="trailModeLine">逐行流光 (貼著每一行流動)</option>
+                    <option value="direct" data-i18n="trailModeDirect">兩點躍遷 (起終點直線過渡)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="field-card">
+                <div class="field-label-row">
+                  <label for="adv-trailCount" class="field-label" data-i18n="fieldTrailCount">殘影階數/數量 (Trail Count)</label>
+                  <button type="button" class="btn-field-reset" data-key="trailCount" title="還原預設值">↺</button>
+                </div>
+                <p class="field-hint" data-i18n="hintTrailCount">拖尾產生的分身殘影階數 (2 ~ 8 階)</p>
+                <div class="input-with-unit">
+                  <input type="number" id="adv-trailCount" data-key="trailCount" min="2" max="8" step="1" value="4">
+                  <span class="unit-badge">階</span>
+                </div>
+              </div>
+
+              <div class="field-card">
+                <div class="field-label-row">
+                  <label for="adv-trailDurationMs" class="field-label" data-i18n="fieldTrailDurationMs">殘影消散時長 (Trail Duration)</label>
+                  <button type="button" class="btn-field-reset" data-key="trailDurationMs" title="還原預設值">↺</button>
+                </div>
+                <p class="field-hint" data-i18n="hintTrailDurationMs">殘影從顯現至平滑消散的毫秒數 (ms)</p>
+                <div class="input-with-unit">
+                  <input type="number" id="adv-trailDurationMs" data-key="trailDurationMs" min="50" max="800" step="10" value="260">
+                  <span class="unit-badge">ms</span>
+                </div>
+              </div>
+
+              <div class="field-card">
+                <div class="field-label-row">
+                  <label for="adv-trailDecayExponent" class="field-label" data-i18n="fieldTrailDecayExponent">距離衰減曲率 (Decay Exponent)</label>
+                  <button type="button" class="btn-field-reset" data-key="trailDecayExponent" title="還原預設值">↺</button>
+                </div>
+                <p class="field-hint" data-i18n="hintTrailDecayExponent">數值越大，離游標越遠的殘影越快變淡</p>
+                <div class="input-with-unit">
+                  <input type="number" id="adv-trailDecayExponent" data-key="trailDecayExponent" min="0.5" max="3.0" step="0.05" value="1.35">
+                  <span class="unit-badge">γ</span>
+                </div>
+              </div>
+
+              <div class="field-card">
+                <div class="field-label-row">
+                  <label for="adv-trailMaxOpacity" class="field-label" data-i18n="fieldTrailMaxOpacity">近端殘影不透明度 (Peak Opacity)</label>
+                  <button type="button" class="btn-field-reset" data-key="trailMaxOpacity" title="還原預設值">↺</button>
+                </div>
+                <p class="field-hint" data-i18n="hintTrailMaxOpacity">最靠近主游標的殘影起始明亮程度 (0.1 ~ 1.0)</p>
+                <div class="input-with-unit">
+                  <input type="number" id="adv-trailMaxOpacity" data-key="trailMaxOpacity" min="0.1" max="1.0" step="0.05" value="0.75">
+                  <span class="unit-badge">α</span>
+                </div>
+              </div>
+
+              <div class="field-card">
+                <div class="field-label-row">
+                  <label for="adv-trailPreserveTrapezoid" class="field-label" data-i18n="fieldTrailPreserveTrapezoid">保持梯形透視 (Preserve Trapezoid)</label>
+                  <button type="button" class="btn-field-reset" data-key="trailPreserveTrapezoid" title="還原預設值">↺</button>
+                </div>
+                <p class="field-hint" data-i18n="hintTrailPreserveTrapezoid">殘影淡出全程鎖定 3D 透視梯形形變角度</p>
+                <div class="checkbox-row" style="padding-top: 8px; display: flex; align-items: center;">
+                  <label class="switch-small">
+                    <input type="checkbox" id="adv-trailPreserveTrapezoid" data-key="trailPreserveTrapezoid" checked>
+                    <span class="slider-small"></span>
+                  </label>
+                  <span style="font-size: 13px; color: var(--color-fg-muted, #7c6f64); margin-left: 8px;">鎖定 3D 梯形</span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- 模組 7: 動能蓄力與過載超頻物理 -->
+          <div class="setting-group">
+            <div class="group-header">
+              <span class="group-icon">⚡</span>
+              <div class="group-title-wrap">
+                <h2 class="group-title" data-i18n="groupChargeTitle">動能蓄力與過載超頻 (Kinetic Charge & Overdrive)</h2>
+                <p class="group-desc" data-i18n="groupChargeDesc">高速連續按鍵或長按時積蓄動能，升溫提升光澤與殘影，放開時平滑阻尼散熱</p>
+              </div>
+            </div>
+
+            <div class="group-grid">
+
+              <div class="field-card">
+                <div class="field-label-row">
+                  <label for="adv-chargeStepImpulse" class="field-label" data-i18n="fieldChargeStepImpulse">充能速率/單步衝量 (Step Impulse)</label>
+                  <button type="button" class="btn-field-reset" data-key="chargeStepImpulse" title="還原預設值">↺</button>
+                </div>
+                <p class="field-hint" data-i18n="hintChargeStepImpulse">每次有效按鍵注入的動能增量 (0.005 ~ 0.200，預設 0.035 延緩十倍)</p>
+                <div class="input-with-unit">
+                  <input type="number" id="adv-chargeStepImpulse" data-key="chargeStepImpulse" min="0.005" max="0.200" step="0.005" value="0.035">
+                </div>
+              </div>
+
+              <div class="field-card">
+                <div class="field-label-row">
+                  <label for="adv-chargeThreshold" class="field-label" data-i18n="fieldChargeThreshold">白熱超載門檻 (Overdrive Threshold)</label>
+                  <button type="button" class="btn-field-reset" data-key="chargeThreshold" title="還原預設值">↺</button>
+                </div>
+                <p class="field-hint" data-i18n="hintChargeThreshold">開始泛起熾白電光核心的蓄力比例 (0.30 ~ 0.95，預設 0.70 延後變白)</p>
+                <div class="input-with-unit">
+                  <input type="number" id="adv-chargeThreshold" data-key="chargeThreshold" min="0.30" max="0.95" step="0.05" value="0.70">
+                </div>
+              </div>
+
+              <div class="field-card">
+                <div class="field-label-row">
+                  <label for="adv-chargeDecayMs" class="field-label" data-i18n="fieldChargeDecayMs">散熱冷卻時長 (Cooldown Decay)</label>
+                  <button type="button" class="btn-field-reset" data-key="chargeDecayMs" title="還原預設值">↺</button>
+                </div>
+                <p class="field-hint" data-i18n="hintChargeDecayMs">放開按鍵後從過載降溫平滑恢復常態的毫秒數 (ms，預設 800)</p>
+                <div class="input-with-unit">
+                  <input type="number" id="adv-chargeDecayMs" data-key="chargeDecayMs" min="100" max="3000" step="50" value="800">
+                  <span class="unit-badge">ms</span>
+                </div>
+              </div>
+
+              <div class="field-card">
+                <div class="field-label-row">
+                  <label for="adv-chargeMaxGlow" class="field-label" data-i18n="fieldChargeMaxGlow">超載光暈峰值 (Overdrive Glow)</label>
+                  <button type="button" class="btn-field-reset" data-key="chargeMaxGlow" title="還原預設值">↺</button>
+                </div>
+                <p class="field-hint" data-i18n="hintChargeMaxGlow">滿蓄力時向外噴發之電光光暈最大擴散半徑 (px，預設 14)</p>
+                <div class="input-with-unit">
+                  <input type="number" id="adv-chargeMaxGlow" data-key="chargeMaxGlow" min="0" max="30" step="1" value="14">
+                  <span class="unit-badge">px</span>
+                </div>
+              </div>
+
+              <div class="field-card">
+                <div class="field-label-row">
+                  <label for="adv-chargeTrailBoost" class="field-label" data-i18n="fieldChargeTrailBoost">滿蓄力殘影增量 (Trail Boost)</label>
+                  <button type="button" class="btn-field-reset" data-key="chargeTrailBoost" title="還原預設值">↺</button>
+                </div>
+                <p class="field-hint" data-i18n="hintChargeTrailBoost">高速滿蓄力超載時額外激發的流光殘影階數 (預設 +3 階)</p>
+                <div class="input-with-unit">
+                  <input type="number" id="adv-chargeTrailBoost" data-key="chargeTrailBoost" min="0" max="6" step="1" value="3">
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div><!-- 結束 tab-effects -->
+
+        <!-- 標籤 4: 按鍵自訂與網站管理 (Keybindings & Sites) -->
         <div id="tab-keybindings" class="tab-pane hidden">
 
           <!-- 區塊 A: 完全停用名單 (Blacklist) -->
@@ -636,6 +648,8 @@
                   <option value="history" data-i18n="jumpModeHistory">歷史堆疊依序回溯 (Stack 歷史導航)</option>
                 </select>
               </div>
+            </div>
+
             <div class="field-card" style="max-width: 640px; margin-top: 10px;">
               <div class="field-label-row">
                 <label for="enable-jump-menu" class="field-label" data-i18n="fieldEnableJumpMenu">Neovim 浮動跳轉選單 (Floating Jump Menu)</label>

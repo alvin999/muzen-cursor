@@ -252,7 +252,12 @@ export interface Translations {
   modalBtnGotIt: string;
 
   // 標籤頁與按鍵設定
+  popupTabAppearance: string;
+  popupTabFeatures: string;
+  popupTabShortcuts: string;
+  tabAppearanceTitle: string;
   tabPhysicsTitle: string;
+  tabEffectsTitle: string;
   tabKeybindingsTitle: string;
   keybindingsSectionTitle: string;
   keybindingsSectionDesc: string;
@@ -594,8 +599,13 @@ export const LOCALES: Record<Locale, Translations> = {
     modalBtnCancel: '取消',
     modalBtnGotIt: '我知道了',
 
-    tabPhysicsTitle: '📐 物理與動態調校',
-    tabKeybindingsTitle: '⌨️ 按鍵設定與衝突管理',
+    popupTabAppearance: '🎨 外觀動態',
+    popupTabFeatures: '🛠️ 閱讀功能',
+    popupTabShortcuts: '⌨️ 快捷支援',
+    tabAppearanceTitle: '🎨 外觀與筆觸',
+    tabPhysicsTitle: '⚡ 物理與動態',
+    tabEffectsTitle: '☄️ 特效與超頻',
+    tabKeybindingsTitle: '⌨️ 按鍵與網站管理',
     keybindingsSectionTitle: '快捷鍵設定與防衝突機制',
     keybindingsSectionDesc: '自訂所有 Vim 導航按鍵，並靈活應對 YouTube、GitHub、Gmail 等網頁專屬快捷鍵',
     jumpModeSectionTitle: '跳轉與回溯模式 (Jump Mode)',
@@ -934,8 +944,13 @@ export const LOCALES: Record<Locale, Translations> = {
     modalBtnCancel: 'Cancel',
     modalBtnGotIt: 'Got it',
 
-    tabPhysicsTitle: '📐 Physics & Motion',
-    tabKeybindingsTitle: '⌨️ Keybindings & Shortcuts',
+    popupTabAppearance: '🎨 Appearance',
+    popupTabFeatures: '🛠️ Features',
+    popupTabShortcuts: '⌨️ Shortcuts',
+    tabAppearanceTitle: '🎨 Appearance & Stroke',
+    tabPhysicsTitle: '⚡ Physics & Motion',
+    tabEffectsTitle: '☄️ Effects & Overdrive',
+    tabKeybindingsTitle: '⌨️ Keybindings & Sites',
     keybindingsSectionTitle: 'Keybindings & Conflict Resolution',
     keybindingsSectionDesc: 'Customize Vim navigation keys and resolve conflicts with YouTube, GitHub, and Gmail shortcuts',
     jumpModeSectionTitle: 'Jump Navigation Mode',
@@ -1274,8 +1289,13 @@ export const LOCALES: Record<Locale, Translations> = {
     modalBtnCancel: 'キャンセル',
     modalBtnGotIt: '了解',
 
-    tabPhysicsTitle: '📐 物理とモーション調律',
-    tabKeybindingsTitle: '⌨️ キー設定と衝突管理',
+    popupTabAppearance: '🎨 外観・動態',
+    popupTabFeatures: '🛠️ リーディング機能',
+    popupTabShortcuts: '⌨️ ショートカット',
+    tabAppearanceTitle: '🎨 外観と筆致',
+    tabPhysicsTitle: '⚡ 物理とモーション',
+    tabEffectsTitle: '☄️ エフェクトと過負荷',
+    tabKeybindingsTitle: '⌨️ キー設定とサイト管理',
     keybindingsSectionTitle: 'ショートカットキー設定と競合回避',
     keybindingsSectionDesc: 'Vim移動キーを自由にカスタマイズし、YouTubeやGitHub、Gmail等の独自ショートカットとの衝突を防止します',
     jumpModeSectionTitle: 'ジャンプ・復帰モード設定',
