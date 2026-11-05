@@ -100,6 +100,7 @@ export interface Translations {
   statusMinutesLeft: string;
   statusLessMinute: string;
   advancedSettingsBtn: string;
+  advancedSettingsDesc: string;
   resetDefaultsBtn: string;
   resetDefaultsConfirm: string;
   resetDefaultsSuccess: string;
@@ -459,6 +460,7 @@ export const LOCALES: Record<Locale, Translations> = {
     statusMinutesLeft: '剩 ~{min} 分鐘',
     statusLessMinute: '< 1 分鐘',
     advancedSettingsBtn: '⚙️ 進階數值調校 (物理與動態)',
+    advancedSettingsDesc: '3D 梯形、阻尼超調、水墨流光與過載超頻',
     resetDefaultsBtn: '回復預設值',
     resetDefaultsConfirm: '確定回復預設值？',
     resetDefaultsSuccess: '已回復預設值',
@@ -804,6 +806,7 @@ export const LOCALES: Record<Locale, Translations> = {
     statusMinutesLeft: '~{min}m left',
     statusLessMinute: '< 1m left',
     advancedSettingsBtn: '⚙️ Advanced Physics Tuning',
+    advancedSettingsDesc: '3D trapezoid, spring physics, trail & overdrive',
     resetDefaultsBtn: 'Reset to Defaults',
     resetDefaultsConfirm: 'Confirm Reset?',
     resetDefaultsSuccess: 'Restored Defaults',
@@ -1149,6 +1152,7 @@ export const LOCALES: Record<Locale, Translations> = {
     statusMinutesLeft: '残り ~{min} 分',
     statusLessMinute: '< 1 分',
     advancedSettingsBtn: '⚙️ 高度な物理・動態調整',
+    advancedSettingsDesc: '3D台形変形、スプリング物理、残像＆オーバードライブ',
     resetDefaultsBtn: '初期設定に戻す',
     resetDefaultsConfirm: '初期化しますか？',
     resetDefaultsSuccess: '初期値に戻しました',

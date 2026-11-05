@@ -183,11 +183,11 @@ body[data-theme='smart-adaptive'].theme-light {
 }
 
 body {
-  width: 320px;
+  width: 336px;
   background-color: var(--bg-color);
   color: var(--fg-color);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  padding: 14px;
+  padding: 13px;
   user-select: none;
   transition: background-color 0.25s ease, color 0.25s ease;
 }
@@ -257,24 +257,25 @@ kbd {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  color: var(--fg-muted);
-  font-size: 13px;
+  width: 28px;
+  height: 28px;
+  background: rgba(254, 128, 25, 0.12);
+  border: 1px solid rgba(254, 128, 25, 0.35);
+  border-radius: 6px;
+  color: var(--accent-orange);
+  font-size: 14px;
   cursor: pointer;
-  transition: all 0.18s ease;
+  transition: all 0.2s ease;
   padding: 0;
   line-height: 1;
 }
 
 .header-icon-btn:hover {
-  background: var(--bg-color);
-  color: var(--accent-orange);
+  background: var(--accent-orange);
+  color: #1d2021;
   border-color: var(--accent-orange);
-  transform: scale(1.06);
+  box-shadow: 0 0 10px rgba(254, 128, 25, 0.4);
+  transform: scale(1.08) rotate(45deg);
 }
 
 .header-icon-btn-legacy {
@@ -1338,14 +1339,15 @@ input:checked + .slider-small:before {
   color: var(--fg-muted);
 }
 
-/* ===== Popup 分頁標籤導航與內容面板 ===== */
+/* ===== Popup 分頁標籤導航與內容面板 (A+C 膠囊分段控制器 - 全主題與智慧感應動態配色) ===== */
 .popup-tabs-nav {
   display: flex;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
+  background: var(--kbd-bg, #141516);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+  border-radius: 8px;
   padding: 3px;
-  gap: 4px;
+  gap: 3px;
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.35);
 }
 
 .popup-tab-btn {
@@ -1353,16 +1355,18 @@ input:checked + .slider-small:before {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 6px 4px;
+  gap: 4px;
+  padding: 6px 3px;
   background: transparent;
-  border: none;
-  border-radius: 4px;
+  border: 1px solid transparent;
+  border-radius: 6px;
   color: var(--fg-muted);
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.18s ease;
   user-select: none;
+  white-space: nowrap; /* 確保單行顯示，絕不折行 */
 }
 
 .popup-tab-btn:hover {
@@ -1371,9 +1375,138 @@ input:checked + .slider-small:before {
 }
 
 .popup-tab-btn.active {
+  background: linear-gradient(
+    135deg,
+    var(--accent-orange) 0%,
+    color-mix(in srgb, var(--accent-orange) 75%, var(--accent-green, #fabd2f)) 100%
+  );
+  color: var(--kbd-bg, #18191a);
+  font-weight: 700;
+  border-color: color-mix(in srgb, var(--accent-orange) 80%, black);
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--accent-orange) 40%, transparent);
+}
+
+/* 淺色主題對比度防護 */
+body[data-theme='gruvbox-light'] .popup-tab-btn.active,
+body[data-theme='intellij-light'] .popup-tab-btn.active,
+body.theme-light .popup-tab-btn.active {
+  color: #ffffff;
+}
+
+/* 鍵盤風格角標徽章 (隨主題/智慧動態變換) */
+.popup-tab-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 15px;
+  height: 14px;
+  padding: 0 2px;
+  border-radius: 3px;
+  font-family: monospace;
+  font-size: 9.5px;
+  font-weight: 700;
+  background: rgba(0, 0, 0, 0.35);
   color: var(--accent-orange);
-  background: color-mix(in srgb, var(--accent-orange) 15%, var(--bg-color));
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  border: 1px solid color-mix(in srgb, var(--accent-orange) 40%, transparent);
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.popup-tab-btn.active .popup-tab-num {
+  background: var(--kbd-bg, #18191a);
+  color: var(--accent-orange);
+  border-color: rgba(0, 0, 0, 0.25);
+}
+
+/* 進階設定導引卡片 (醒目橫幅) */
+.advanced-entry-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 12px;
+  margin-top: 4px;
+  background: color-mix(in srgb, var(--accent-orange) 10%, var(--bg-card));
+  border: 1px solid color-mix(in srgb, var(--accent-orange) 35%, transparent);
+  border-radius: 7px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+  text-align: left;
+}
+
+.advanced-entry-card:hover {
+  background: color-mix(in srgb, var(--accent-orange) 18%, var(--bg-card));
+  border-color: var(--accent-orange);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--accent-orange) 28%, transparent);
+  transform: translateY(-1px);
+}
+
+.advanced-entry-card:active {
+  transform: scale(0.99);
+}
+
+.advanced-entry-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.advanced-entry-icon {
+  font-size: 18px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.advanced-entry-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.advanced-entry-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent-orange);
+  letter-spacing: 0.2px;
+}
+
+.advanced-entry-desc {
+  font-size: 10.5px;
+  color: var(--fg-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.advanced-entry-arrow {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent-orange);
+  margin-left: 8px;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.advanced-entry-card:hover .advanced-entry-arrow {
+  transform: translateX(3px);
+}
+
+/* 高亮按鈕 (Tab 3 數值調校按鈕) */
+.action-btn-highlight {
+  background: color-mix(in srgb, var(--accent-orange) 14%, var(--bg-card)) !important;
+  border-color: var(--accent-orange) !important;
+  color: var(--accent-orange) !important;
+  font-weight: 700 !important;
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent-orange) 20%, transparent);
+}
+
+.action-btn-highlight:hover {
+  background: var(--accent-orange) !important;
+  color: #1d2021 !important;
+  box-shadow: 0 0 14px color-mix(in srgb, var(--accent-orange) 45%, transparent);
 }
 
 .popup-tab-pane {

@@ -51,15 +51,18 @@
       </div>
     </div>
 
-    <!-- 緊湊分頁導覽標籤列 -->
+    <!-- 緊湊分頁導覽標籤列 (A+C 膠囊分段控制器) -->
     <nav class="popup-tabs-nav">
       <button type="button" class="popup-tab-btn active" data-tab="tab-appearance">
+        <span class="popup-tab-num">1</span>
         <span data-i18n="popupTabAppearance">🎨 外觀動態</span>
       </button>
       <button type="button" class="popup-tab-btn" data-tab="tab-features">
+        <span class="popup-tab-num">2</span>
         <span data-i18n="popupTabFeatures">🛠️ 閱讀功能</span>
       </button>
       <button type="button" class="popup-tab-btn" data-tab="tab-shortcuts">
+        <span class="popup-tab-num">3</span>
         <span data-i18n="popupTabShortcuts">⌨️ 快捷支援</span>
       </button>
     </nav>
@@ -201,6 +204,18 @@
           </label>
         </div>
       </section>
+
+      <!-- 前往進階數值調校導引卡片 -->
+      <button type="button" id="btn-quick-options" class="advanced-entry-card">
+        <div class="advanced-entry-left">
+          <span class="advanced-entry-icon">⚙️</span>
+          <div class="advanced-entry-text">
+            <span class="advanced-entry-title" data-i18n="advancedSettingsBtn">進階數值調校 (物理與動態)</span>
+            <span class="advanced-entry-desc" data-i18n="advancedSettingsDesc">3D 梯形、阻尼超調、水墨流光與過載超頻</span>
+          </div>
+        </div>
+        <span class="advanced-entry-arrow">➔</span>
+      </button>
     </div>
 
     <!-- 分頁 2: 閱讀功能 -->
@@ -303,6 +318,9 @@
       </section>
 
       <section class="section action-section">
+        <button type="button" id="btn-tab3-options" class="action-btn action-btn-highlight" style="margin-bottom: 8px;" data-i18n="advancedSettingsBtn">
+          ⚙️ 進階數值調校 (物理與動態)
+        </button>
         <button type="button" id="btn-open-keybindings" class="action-btn" style="margin-bottom: 8px; background: rgba(250, 189, 47, 0.15); border-color: rgba(250, 189, 47, 0.4); color: #fabd2f;" data-i18n="openKeybindingsSettingsBtn">
           ⌨️ 自訂按鍵與防衝突設定
         </button>

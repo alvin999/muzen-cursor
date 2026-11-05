@@ -272,6 +272,10 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
+    if (btnOpenOptions) {
+      btnOpenOptions.title = dict.advancedSettingsBtn;
+    }
+
     // 2. 替換特定輸入框的 placeholder
     if (blacklistInput) {
       blacklistInput.placeholder = dict.blacklistPlaceholder;
@@ -848,8 +852,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // 14.5 開啟進階設定頁面
-  btnOpenOptions?.addEventListener('click', () => {
+  // 14.5 開啟進階設定頁面 (支援 Header 圖示、Tab 1 導引卡片與 Tab 3 按鈕)
+  const openAdvancedOptions = () => {
     if (typeof chrome !== 'undefined' && chrome.tabs && chrome.runtime) {
       const url = chrome.runtime.getURL('options/index.html#physics');
       chrome.tabs.create({ url });
@@ -858,7 +862,11 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       window.open('../options/index.html#physics', '_blank');
     }
-  });
+  };
+
+  btnOpenOptions?.addEventListener('click', openAdvancedOptions);
+  document.getElementById('btn-quick-options')?.addEventListener('click', openAdvancedOptions);
+  document.getElementById('btn-tab3-options')?.addEventListener('click', openAdvancedOptions);
 
   // 15. 回復預設值事件 (展開【取消】與【確定】雙按鈕防呆)
   let isResetConfirming = false;
