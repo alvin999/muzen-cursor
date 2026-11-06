@@ -89,17 +89,30 @@ body {
   gap: 12px;
 }
 
+.header-actions .sandbox-select {
+  height: 36px;
+  min-height: 36px;
+  padding: 0 12px;
+  font-size: 0.84rem;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 8px 16px;
-  font-size: 0.88rem;
+  height: 36px;
+  min-height: 36px;
+  padding: 0 16px;
+  font-size: 0.86rem;
   font-weight: 600;
-  border-radius: var(--radius-sm);
+  border-radius: 8px;
   cursor: pointer;
   transition: all var(--transition-fast);
   border: 1px solid transparent;
+  box-sizing: border-box;
+  user-select: none;
 }
 
 .btn-secondary {
@@ -248,20 +261,29 @@ body {
 }
 
 .btn-field-reset {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  min-height: 22px;
   background: transparent;
-  border: none;
+  border: 1px solid transparent;
   color: var(--text-dim);
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   cursor: pointer;
-  padding: 2px 4px;
-  border-radius: 4px;
+  padding: 0;
+  border-radius: 5px;
   line-height: 1;
   transition: all var(--transition-fast);
+  box-sizing: border-box;
 }
 
 .btn-field-reset:hover {
   color: var(--accent-gold);
-  background: rgba(250, 189, 47, 0.12);
+  background: rgba(250, 189, 47, 0.14);
+  border-color: rgba(250, 189, 47, 0.25);
 }
 
 .field-hint {
@@ -419,12 +441,15 @@ body {
 .sandbox-select {
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
+  border-radius: 6px;
   color: var(--text-main);
-  padding: 6px 10px;
+  height: 30px;
+  min-height: 30px;
+  padding: 0 10px;
   font-size: 0.82rem;
   outline: none;
   cursor: pointer;
+  box-sizing: border-box;
 }
 
 .sandbox-select:focus {
@@ -450,16 +475,22 @@ body {
 }
 
 .pad-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   color: var(--text-main);
   font-family: var(--font-mono);
   font-size: 0.8rem;
   font-weight: 600;
-  padding: 6px 14px;
-  border-radius: var(--radius-sm);
+  height: 30px;
+  min-height: 30px;
+  padding: 0 14px;
+  border-radius: 6px;
   cursor: pointer;
   transition: all var(--transition-fast);
+  box-sizing: border-box;
 }
 
 .pad-btn:hover {
@@ -781,16 +812,19 @@ body {
   align-items: center;
   justify-content: center;
   min-width: 72px;
-  padding: 4px 10px;
+  height: 30px;
+  min-height: 30px;
+  padding: 0 10px;
   background: #121314;
   border: 1px solid rgba(235, 219, 178, 0.2);
   border-bottom: 2px solid rgba(235, 219, 178, 0.35);
-  border-radius: 4px;
+  border-radius: 6px;
   font-family: var(--font-mono);
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   color: var(--accent-orange);
   font-weight: 600;
   text-align: center;
+  box-sizing: border-box;
 }
 
 .key-badge.disabled {
@@ -800,8 +834,13 @@ body {
 }
 
 .btn-key-record {
-  padding: 5px 12px;
-  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 6px;
   border: 1px solid rgba(254, 128, 25, 0.3);
   background: rgba(254, 128, 25, 0.1);
   color: var(--accent-orange);
@@ -809,6 +848,7 @@ body {
   font-weight: 600;
   cursor: pointer;
   transition: all var(--transition-fast);
+  box-sizing: border-box;
 }
 
 .btn-key-record:hover {
@@ -835,14 +875,20 @@ body {
 }
 
 .btn-key-clear {
-  padding: 5px 10px;
-  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 6px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: transparent;
   color: var(--text-muted);
   font-size: 0.8rem;
   cursor: pointer;
   transition: all var(--transition-fast);
+  box-sizing: border-box;
 }
 
 .btn-key-clear:hover {
@@ -952,9 +998,12 @@ body {
 }
 
 .modal-actions .btn {
-  min-width: 90px;
-  padding: 9px 18px;
-  font-size: 0.9rem;
+  min-width: 96px;
+  height: 38px;
+  min-height: 38px;
+  padding: 0 20px;
+  font-size: 0.88rem;
+  border-radius: 8px;
 }
 
 
