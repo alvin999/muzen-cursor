@@ -25,7 +25,7 @@ function main(): void {
   if ((window as any).__MUZEN_CONTROLLER__) {
     try {
       (window as any).__MUZEN_CONTROLLER__.destroy();
-    } catch {}
+    } catch { }
   }
 
   // 避免重複注入

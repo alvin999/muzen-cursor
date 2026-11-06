@@ -139,7 +139,8 @@
         </div>
         <div class="preset-group">
           <button type="button" class="preset-btn" data-thickness="1" data-i18n="thicknessPresetThin">1px 極細</button>
-          <button type="button" class="preset-btn active" data-thickness="1.5" data-i18n="thicknessPresetClassic">1.5px 經典</button>
+          <button type="button" class="preset-btn active" data-thickness="1.5" data-i18n="thicknessPresetClassic">1.5px
+            經典</button>
           <button type="button" class="preset-btn" data-thickness="2" data-i18n="thicknessPresetMedium">2px 標準</button>
         </div>
         <div class="slider-wrapper">
@@ -210,8 +211,7 @@
         <div class="advanced-entry-left">
           <span class="advanced-entry-icon">⚙️</span>
           <div class="advanced-entry-text">
-            <span class="advanced-entry-title" data-i18n="advancedSettingsBtn">進階數值調校 (物理與動態)</span>
-            <span class="advanced-entry-desc" data-i18n="advancedSettingsDesc">3D 梯形、阻尼超調、水墨流光與過載超頻</span>
+            <span class="advanced-entry-title" data-i18n="advancedSettingsBtn">進階數值調校</span>
           </div>
         </div>
         <span class="advanced-entry-arrow">➔</span>
@@ -230,7 +230,8 @@
         </div>
         <p class="section-desc" data-i18n="statusBarSectionDesc">畫面右下角呈現目前 Vim 模式與文章進度</p>
         <div class="row-between status-sub-row" id="sub-status-bar-advanced">
-          <label class="section-sublabel" for="toggle-advanced-status-bar" data-i18n="statusBarAdvancedLabel">進階長文閱讀輔助 (章節標題與預估時間)</label>
+          <label class="section-sublabel" for="toggle-advanced-status-bar" data-i18n="statusBarAdvancedLabel">進階長文閱讀輔助
+            (章節標題與預估時間)</label>
           <label class="switch-small">
             <input type="checkbox" id="toggle-advanced-status-bar" checked>
             <span class="slider-small"></span>
@@ -249,7 +250,8 @@
         <p class="section-desc" data-i18n="pdfSectionDesc">開啟後，點擊 .pdf 網址將自動進入禪意閱讀器</p>
         <div class="pdf-conflict-hint" id="pdf-conflict-hint">
           <span class="hint-icon">💡</span>
-          <span class="hint-text" data-i18n="pdfConflictHint">提示：若安裝了 Adobe Acrobat 等 PDF 擴充功能，可能會發生接管衝突，建議停用衝突擴充功能以獲得最佳體驗。</span>
+          <span class="hint-text" data-i18n="pdfConflictHint">提示：若安裝了 Adobe Acrobat 等 PDF
+            擴充功能，可能會發生接管衝突，建議停用衝突擴充功能以獲得最佳體驗。</span>
         </div>
         <button id="btn-open-pdf-viewer" class="action-btn" data-i18n="pdfOpenBtn">
           📄 開啟 PDF 閱讀器
@@ -261,15 +263,18 @@
           <span class="section-label" data-i18n="blacklistSectionLabel">完全停用名單</span>
         </div>
         <p class="section-desc" data-i18n="blacklistSectionDesc">排除之網域將自動凍結游標，避免干擾編輯器或專用快捷鍵</p>
-        
+
         <div class="blacklist-collapse">
           <button type="button" id="btn-toggle-blacklist-view" class="link-btn">
-            <span><span id="blacklist-manage-label" data-i18n="blacklistManage">⚙️ 管理排除名單</span> (<span id="blacklist-count">0</span>)</span>
+            <span><span id="blacklist-manage-label" data-i18n="blacklistManage">⚙️ 管理排除名單</span> (<span
+                id="blacklist-count">0</span>)</span>
             <span id="collapse-arrow">▼</span>
           </button>
           <div id="blacklist-drawer" class="drawer hidden">
-            <textarea id="blacklist-input" class="textarea-input" placeholder="每行輸入一個網域，例如：&#10;docs.google.com&#10;mail.google.com&#10;notion.so" rows="4"></textarea>
-            <button type="button" id="btn-save-blacklist" class="action-btn-sm" data-i18n="blacklistSaveBtn">儲存排除名單</button>
+            <textarea id="blacklist-input" class="textarea-input"
+              placeholder="每行輸入一個網域，例如：&#10;docs.google.com&#10;mail.google.com&#10;notion.so" rows="4"></textarea>
+            <button type="button" id="btn-save-blacklist" class="action-btn-sm"
+              data-i18n="blacklistSaveBtn">儲存排除名單</button>
           </div>
         </div>
       </section>
@@ -318,11 +323,23 @@
       </section>
 
       <section class="section action-section">
-        <button type="button" id="btn-tab3-options" class="action-btn action-btn-highlight" style="margin-bottom: 8px;" data-i18n="advancedSettingsBtn">
-          ⚙️ 進階數值調校 (物理與動態)
+        <button type="button" id="btn-tab3-options" class="advanced-entry-card compact">
+          <div class="advanced-entry-left">
+            <span class="advanced-entry-icon">⚙️</span>
+            <div class="advanced-entry-text">
+              <span class="advanced-entry-title" data-i18n="advancedSettingsBtn">進階數值調校</span>
+            </div>
+          </div>
+          <span class="advanced-entry-arrow">➔</span>
         </button>
-        <button type="button" id="btn-open-keybindings" class="action-btn" style="margin-bottom: 8px; background: rgba(250, 189, 47, 0.15); border-color: rgba(250, 189, 47, 0.4); color: #fabd2f;" data-i18n="openKeybindingsSettingsBtn">
-          ⌨️ 自訂按鍵與防衝突設定
+        <button type="button" id="btn-open-keybindings" class="advanced-entry-card compact variant-secondary">
+          <div class="advanced-entry-left">
+            <span class="advanced-entry-icon">⌨️</span>
+            <div class="advanced-entry-text">
+              <span class="advanced-entry-title" data-i18n="openKeybindingsSettingsBtn">自訂按鍵與防衝突設定</span>
+            </div>
+          </div>
+          <span class="advanced-entry-arrow">➔</span>
         </button>
         <div class="reset-action-wrapper">
           <button type="button" id="btn-reset-defaults" class="btn-reset">

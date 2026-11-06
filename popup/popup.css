@@ -261,8 +261,8 @@ kbd {
   height: 26px;
   min-width: 26px;
   min-height: 26px;
-  background: rgba(254, 128, 25, 0.12);
-  border: 1px solid rgba(254, 128, 25, 0.35);
+  background: color-mix(in srgb, var(--accent-orange) 12%, var(--bg-card));
+  border: 1px solid color-mix(in srgb, var(--accent-orange) 35%, transparent);
   border-radius: 5px;
   color: var(--accent-orange);
   font-size: 13px;
@@ -275,9 +275,9 @@ kbd {
 
 .header-icon-btn:hover {
   background: var(--accent-orange);
-  color: #1d2021;
+  color: var(--kbd-bg, #1d2021);
   border-color: var(--accent-orange);
-  box-shadow: 0 0 10px rgba(254, 128, 25, 0.4);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--accent-orange) 40%, transparent);
   transform: scale(1.08) rotate(45deg);
 }
 
@@ -1463,7 +1463,7 @@ body.theme-light .popup-tab-btn.active {
   border-color: rgba(0, 0, 0, 0.25);
 }
 
-/* 進階設定導引卡片 (醒目橫幅) */
+/* 進階設定導引卡片 (醒目橫幅與緊湊按鈕) */
 .advanced-entry-card {
   display: flex;
   align-items: center;
@@ -1477,6 +1477,7 @@ body.theme-light .popup-tab-btn.active {
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
   text-align: left;
+  box-sizing: border-box;
 }
 
 .advanced-entry-card:hover {
@@ -1499,9 +1500,25 @@ body.theme-light .popup-tab-btn.active {
 }
 
 .advanced-entry-icon {
-  font-size: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  background: color-mix(in srgb, var(--accent-orange) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent-orange) 30%, transparent);
+  border-radius: 6px;
+  font-size: 14px;
   line-height: 1;
   flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.advanced-entry-card:hover .advanced-entry-icon {
+  background: color-mix(in srgb, var(--accent-orange) 25%, transparent);
+  border-color: var(--accent-orange);
 }
 
 .advanced-entry-text {
@@ -1516,15 +1533,11 @@ body.theme-light .popup-tab-btn.active {
   font-weight: 700;
   color: var(--accent-orange);
   letter-spacing: 0.2px;
-}
-
-.advanced-entry-desc {
-  font-size: 10.5px;
-  color: var(--fg-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
 
 .advanced-entry-arrow {
   font-size: 13px;
@@ -1539,19 +1552,53 @@ body.theme-light .popup-tab-btn.active {
   transform: translateX(3px);
 }
 
-/* 高亮按鈕 (Tab 3 數值調校按鈕) */
-.action-btn-highlight {
-  background: color-mix(in srgb, var(--accent-orange) 14%, var(--bg-card)) !important;
-  border-color: var(--accent-orange) !important;
-  color: var(--accent-orange) !important;
-  font-weight: 700 !important;
-  box-shadow: 0 0 8px color-mix(in srgb, var(--accent-orange) 20%, transparent);
+/* 緊湊單行版本 (用於分頁 3) */
+.advanced-entry-card.compact {
+  padding: 6px 10px;
+  margin-top: 0;
+  margin-bottom: 6px;
+  min-height: 36px;
 }
 
-.action-btn-highlight:hover {
-  background: var(--accent-orange) !important;
-  color: #1d2021 !important;
-  box-shadow: 0 0 14px color-mix(in srgb, var(--accent-orange) 45%, transparent);
+.advanced-entry-card.compact .advanced-entry-icon {
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  min-height: 22px;
+  font-size: 12px;
+  border-radius: 4px;
+}
+
+.advanced-entry-card.compact .advanced-entry-title {
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+/* 次強調色版本 (用於自訂按鍵與防衝突設定，清晰可辨且完美融於主題) */
+.advanced-entry-card.variant-secondary {
+  background: color-mix(in srgb, var(--accent-green) 10%, var(--bg-card));
+  border-color: color-mix(in srgb, var(--accent-green) 35%, transparent);
+}
+
+.advanced-entry-card.variant-secondary:hover {
+  background: color-mix(in srgb, var(--accent-green) 18%, var(--bg-card));
+  border-color: var(--accent-green);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--accent-green) 28%, transparent);
+}
+
+.advanced-entry-card.variant-secondary .advanced-entry-icon {
+  background: color-mix(in srgb, var(--accent-green) 15%, transparent);
+  border-color: color-mix(in srgb, var(--accent-green) 30%, transparent);
+}
+
+.advanced-entry-card.variant-secondary:hover .advanced-entry-icon {
+  background: color-mix(in srgb, var(--accent-green) 25%, transparent);
+  border-color: var(--accent-green);
+}
+
+.advanced-entry-card.variant-secondary .advanced-entry-title,
+.advanced-entry-card.variant-secondary .advanced-entry-arrow {
+  color: var(--accent-green);
 }
 
 .popup-tab-pane {
