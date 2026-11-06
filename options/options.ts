@@ -239,6 +239,26 @@ function computeSandboxDynamicPalette(): SmartThemePalette {
   return generateSmartCursorPalette(theme, bg);
 }
 
+function applyPageTheme(): void {
+  const root = document.body;
+  if (isAutoTheme) {
+    root.setAttribute('data-theme', 'smart-adaptive');
+    root.classList.toggle('theme-light', isSandboxLightBg);
+    const dynPalette = computeSandboxDynamicPalette();
+    if (dynPalette?.normal?.hex) {
+      root.style.setProperty('--accent-orange', dynPalette.normal.hex);
+    }
+    if (dynPalette?.visual?.hex) {
+      root.style.setProperty('--accent-green', dynPalette.visual.hex);
+    }
+  } else {
+    root.classList.toggle('theme-light', sandboxTheme === 'gruvbox-light' || sandboxTheme === 'intellij-light');
+    root.style.removeProperty('--accent-orange');
+    root.style.removeProperty('--accent-green');
+    root.setAttribute('data-theme', sandboxTheme || 'gruvbox-dark');
+  }
+}
+
 function syncCursorStore(): void {
   const dynamicPalette = isAutoTheme ? computeSandboxDynamicPalette() : undefined;
   cursorStore.setState({
@@ -290,7 +310,7 @@ function applyHashRoute(): void {
     switchTab('tab-physics');
   } else if (hash === '#effects' || hash === '#trail' || hash === '#overdrive') {
     switchTab('tab-effects');
-  } else if (hash === '#appearance' || hash === '#geometry') {
+  } else {
     switchTab('tab-geometry');
   }
 }
@@ -728,6 +748,49 @@ function stopPreview(): void {
   }
 }
 
+function initFieldSliders(): void {
+  const numberInputs = document.querySelectorAll<HTMLInputElement>('.field-card .input-with-unit input[type="number"][data-key]');
+  numberInputs.forEach((input) => {
+    const card = input.closest('.field-card');
+    if (!card) return;
+
+    let slider = card.querySelector<HTMLInputElement>('input.range-slider');
+    if (!slider) {
+      const sliderWrapper = document.createElement('div');
+      sliderWrapper.className = 'slider-wrapper';
+      slider = document.createElement('input');
+      slider.type = 'range';
+      slider.className = 'range-slider';
+      slider.min = input.min || '0';
+      slider.max = input.max || '100';
+      slider.step = input.step || '1';
+      slider.value = input.value;
+      sliderWrapper.appendChild(slider);
+      card.appendChild(sliderWrapper);
+
+      slider.addEventListener('input', () => {
+        if (!slider) return;
+        input.value = slider.value;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+    } else {
+      slider.value = input.value;
+    }
+  });
+}
+
+function syncAllSlidersFromInputs(): void {
+  const numberInputs = document.querySelectorAll<HTMLInputElement>('.field-card .input-with-unit input[type="number"][data-key]');
+  numberInputs.forEach((input) => {
+    const card = input.closest('.field-card');
+    if (!card) return;
+    const slider = card.querySelector<HTMLInputElement>('input.range-slider');
+    if (slider) {
+      slider.value = input.value;
+    }
+  });
+}
+
 function populateForm(config: AdvancedConfig): void {
   const thicknessInput = document.getElementById('adv-thickness') as HTMLInputElement | null;
   if (thicknessInput) thicknessInput.value = String(currentThickness);
@@ -754,6 +817,8 @@ function populateForm(config: AdvancedConfig): void {
     }
   });
 
+  initFieldSliders();
+  syncAllSlidersFromInputs();
   updateDiagnostics();
   syncCursorStore();
 }
@@ -829,6 +894,7 @@ function loadConfig(): void {
 
       populateForm(currentConfig);
       renderKeybindingsList();
+      applyPageTheme();
 
       applyHashRoute();
       if (false) {
@@ -867,6 +933,7 @@ function loadConfig(): void {
 
     populateForm(currentConfig);
     renderKeybindingsList();
+    applyPageTheme();
 
     applyHashRoute();
     if (false) {
@@ -912,6 +979,7 @@ function initEvents(): void {
         const themeSel = document.getElementById('sandbox-theme') as HTMLSelectElement | null;
         if (themeSel && !isAutoTheme) themeSel.value = sandboxTheme;
         syncCursorStore();
+        applyPageTheme();
       }
       if (changes.muzen_auto_theme) {
         isAutoTheme = Boolean(changes.muzen_auto_theme.newValue);
@@ -920,6 +988,7 @@ function initEvents(): void {
           themeSel.value = isAutoTheme ? 'auto' : sandboxTheme;
         }
         syncCursorStore();
+        applyPageTheme();
       }
       if (changes.muzen_dark_theme) {
         darkThemeConfig = changes.muzen_dark_theme.newValue;
@@ -928,6 +997,7 @@ function initEvents(): void {
           const themeSel = document.getElementById('sandbox-theme') as HTMLSelectElement | null;
           if (themeSel) themeSel.value = sandboxTheme;
           syncCursorStore();
+          applyPageTheme();
         }
       }
       if (changes.muzen_light_theme) {
@@ -937,6 +1007,7 @@ function initEvents(): void {
           const themeSel = document.getElementById('sandbox-theme') as HTMLSelectElement | null;
           if (themeSel) themeSel.value = sandboxTheme;
           syncCursorStore();
+          applyPageTheme();
         }
       }
       if (changes.muzen_shape && changes.muzen_shape.newValue) {
@@ -969,6 +1040,12 @@ function initEvents(): void {
     const handleInput = () => {
       const key = input.getAttribute('data-key') as any;
       if (!key) return;
+
+      const card = input.closest('.field-card');
+      const slider = card?.querySelector<HTMLInputElement>('input.range-slider');
+      if (slider && slider.value !== input.value) {
+        slider.value = input.value;
+      }
 
       if (key === 'thickness') {
         const numVal = parseFloat(input.value);
@@ -1025,6 +1102,7 @@ function initEvents(): void {
         const targetControl = document.getElementById('adv-thickness') as HTMLInputElement | null;
         if (targetControl) targetControl.value = '1.5';
         saveConfig(false);
+        syncAllSlidersFromInputs();
         const dict = LOCALES[currentLocale] || LOCALES['zh-TW'];
         showToast(dict.toastFieldReset.replace('{field}', 'thickness') + ' (1.5)');
         return;
@@ -1034,6 +1112,7 @@ function initEvents(): void {
         const targetControl = document.getElementById('adv-glowRadius') as HTMLInputElement | null;
         if (targetControl) targetControl.value = '0';
         saveConfig(false);
+        syncAllSlidersFromInputs();
         const dict = LOCALES[currentLocale] || LOCALES['zh-TW'];
         showToast(dict.toastFieldReset.replace('{field}', 'glowRadius') + ' (0)');
         return;
@@ -1052,6 +1131,7 @@ function initEvents(): void {
       }
 
       saveConfig(false);
+      syncAllSlidersFromInputs();
       const dict = LOCALES[currentLocale] || LOCALES['zh-TW'];
       showToast(dict.toastFieldReset.replace('{field}', key) + ` (${defaultVal})`);
     });
@@ -1154,6 +1234,7 @@ function initEvents(): void {
         }
       }
       syncCursorStore();
+      applyPageTheme();
     });
   }
 
@@ -1171,6 +1252,7 @@ function initEvents(): void {
         sandboxBgBtn.textContent = dict.sandboxBgDark;
       }
       syncCursorStore();
+      applyPageTheme();
     });
   }
 

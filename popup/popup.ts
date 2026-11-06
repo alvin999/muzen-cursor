@@ -855,12 +855,12 @@ document.addEventListener('DOMContentLoaded', () => {
   // 14.5 開啟進階設定頁面 (支援 Header 圖示、Tab 1 導引卡片與 Tab 3 按鈕)
   const openAdvancedOptions = () => {
     if (typeof chrome !== 'undefined' && chrome.tabs && chrome.runtime) {
-      const url = chrome.runtime.getURL('options/index.html#physics');
+      const url = chrome.runtime.getURL('options/index.html#appearance');
       chrome.tabs.create({ url });
     } else if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.openOptionsPage) {
       chrome.runtime.openOptionsPage();
     } else {
-      window.open('../options/index.html#physics', '_blank');
+      window.open('../options/index.html#appearance', '_blank');
     }
   };
 
