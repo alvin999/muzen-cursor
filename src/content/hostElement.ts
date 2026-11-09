@@ -26,6 +26,21 @@ export class MuzenCursorHost {
     this.hostElement.style.width = '0';
     this.hostElement.style.height = '0';
     this.hostElement.style.pointerEvents = 'none';
+
+    // 1. 啟用現代原生 Popover API (manual 模式跳脫所有父層 Stacking Context，躍升至瀏覽器真實 Top Layer)
+    if (typeof this.hostElement.showPopover === 'function') {
+      try {
+        this.hostElement.setAttribute('popover', 'manual');
+        // 清除瀏覽器對 popover 預設的 margin、padding、邊框與背景色
+        this.hostElement.style.margin = '0';
+        this.hostElement.style.padding = '0';
+        this.hostElement.style.border = 'none';
+        this.hostElement.style.background = 'transparent';
+        this.hostElement.style.overflow = 'visible';
+        this.hostElement.style.outline = 'none';
+      } catch { }
+    }
+    // 2. 舊版瀏覽器相容 Fallback: 保留最大 32-bit zIndex 防遮擋
     this.hostElement.style.zIndex = '2147483647';
 
     // 建立 Shadow DOM 隔離外部網頁 CSS
@@ -49,6 +64,11 @@ export class MuzenCursorHost {
   }
 
   public destroy(): void {
+    if (typeof this.hostElement.hidePopover === 'function') {
+      try {
+        this.hostElement.hidePopover();
+      } catch { }
+    }
     this.overlay.destroy();
     this.statusBar.destroy();
     this.jumpMenu.destroy();
@@ -75,13 +95,23 @@ export function initCursorHost(): MuzenCursorHost {
   const hostEl = hostInstance.getHostElement();
   (hostEl as unknown as { __muzen_host_instance__: MuzenCursorHost }).__muzen_host_instance__ = hostInstance;
 
-  // 掛載至 documentElement 或 body
+  // 掛載至 documentElement 或 body 並喚醒 Top Layer
+  const mountAndShow = (target: HTMLElement) => {
+    target.appendChild(hostEl);
+    // 依據 HTML 規範，popover 必須在掛載至 DOM 樹後才能呼叫 showPopover()
+    if (typeof hostEl.showPopover === 'function') {
+      try {
+        hostEl.showPopover();
+      } catch { }
+    }
+  };
+
   const mountTarget = document.body || document.documentElement;
   if (mountTarget) {
-    mountTarget.appendChild(hostEl);
+    mountAndShow(mountTarget);
   } else {
     document.addEventListener('DOMContentLoaded', () => {
-      (document.body || document.documentElement).appendChild(hostEl);
+      mountAndShow(document.body || document.documentElement);
     });
   }
 

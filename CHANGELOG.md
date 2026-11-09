@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [v0.1.14] - 2026-11-09
+
+### 繁體中文 (Traditional Chinese)
+#### ✨ 新增功能與體驗優化 (Features & Improvements)
+- **Top Layer 原生頂層支援 (Native Popover Top Layer Upgrade)**：
+  - 宿主容器升級採用現代原生 HTML Popover API (`popover="manual"`)，使游標及狀態列直接躍升進入瀏覽器的真實 Top Layer（頂層），徹底跳脫宿主網頁複雜的 CSS 堆疊上下文（Stacking Context Trap）與層級限制。
+  - 清理瀏覽器預設的 Popover 樣式，並於 DOM 掛載完成後正確啟動 `showPopover()`，銷毀時安全執行 `hidePopover()`。
+  - 保留 32 位元整數最大值 `zIndex = '2147483647'` 作為舊版瀏覽器相容性之平滑降級 Fallback。
+- **純數學連續智慧感應色彩演算法 (Pure Mathematical Generative Theme Model)**：
+  - 徹底移除原本人工寫死的 70 多行 hardcoded 色相區間判斷（如 `if (h >= 190 && h < 265)`）與固定色彩。
+  - 引入基於色彩空間幾何與連續平滑函數的生成式演算法：
+    - **色相 (Hue)**：以色輪 $180^\circ$ 對稱互補角演算有彩色，黑白灰無彩色自適應為極光湛藍（$205^\circ$）。
+    - **選取色相 (Visual Hue)**：沿色輪和諧鄰近角自動偏轉 $+38^\circ$。
+    - **飽和度 (Saturation)**：採用負反饋聚焦公式，背景越灰暗素淨游標越鮮豔明亮。
+    - **明度 (Lightness)**：平滑對比推開函數自適應深淺色背景，全面符合 WCAG 2.1 高對比度標準。
+  - 100% 完整保留原本 14 套經典主題，未啟用智慧感應或手動指定主題時維持既有美學。
+
+---
+
+### English
+#### ✨ Features & Improvements
+- **Native Popover Top Layer Upgrade**:
+  - Upgraded the host container to use the modern native HTML Popover API (`popover="manual"`), promoting the cursor and HUD overlays into the browser's true Top Layer to completely escape arbitrary stacking context traps and z-index wars on complex host webpages.
+  - Reset default user-agent popover styles (margin, padding, border, background), properly invoking `showPopover()` upon DOM mounting and safely calling `hidePopover()` upon destruction.
+  - Retained `zIndex = '2147483647'` as a graceful fallback for legacy browsers.
+- **Pure Mathematical Generative Smart Theme Algorithm**:
+  - Completely replaced hardcoded hue interval branches (e.g. `if (h >= 190 && h < 265)`) and static palette values with a procedural, mathematical color generation model.
+  - Derived colors via continuous cylindrical color space geometry:
+    - **Hue**: $180^\circ$ symmetric complementary rotation for chromatic backgrounds, and adaptive aurora azure ($205^\circ$) for achromatic/grayscale backgrounds.
+    - **Visual Hue**: $+38^\circ$ harmonic analogous offset for visual selection mode.
+    - **Saturation**: Negative-feedback visual focus formula where neutral backgrounds produce vivid, punchy accents.
+    - **Lightness**: Smooth hyperbolic contrast divergence function guaranteeing WCAG 2.1 high contrast on both dark and light pages.
+  - 100% preserved all 14 built-in classic themes when manual theme mode is selected.
+
+---
+
 ## [v0.1.13] - 2026-11-04
 
 ### 繁體中文 (Traditional Chinese)

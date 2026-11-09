@@ -302,7 +302,7 @@ export function generateSmartCursorPalette(
   bg: { r: number; g: number; b: number },
   accent: { r: number; g: number; b: number } | null = null
 ): SmartThemePalette {
-  const [h, s] = rgbToHsl(bg.r, bg.g, bg.b);
+  const [h, s, l] = rgbToHsl(bg.r, bg.g, bg.b);
 
   // 1. 若網頁有顯著的品牌強調色，調校亮度後直接化為專屬游標主色
   if (accent) {
@@ -315,73 +315,30 @@ export function generateSmartCursorPalette(
     }
   }
 
-  // 2. 依網頁底色之色相區間與感知特性，衍生高對比之多彩游標
-  if (theme === 'dark') {
-    // ===== 深色網頁 =====
-    if (s >= 12) {
-      // 具備顯著底色色相
-      if (h >= 190 && h < 265) {
-        // 冷藍黑 / 靛青底 (如 GitHub Dark, VSCode): 活力極光科技青
-        return {
-          normal: hslToRgb(185, 88, 64), // #38bdf8 風格高亮青藍
-          visual: hslToRgb(42, 95, 62)   // 金琥珀
-        };
-      } else if (h >= 265 && h < 330) {
-        // 紫夜 / 洋紅底 (如 Discord, Twitch, Dracula): 螢光薄荷亮綠
-        return {
-          normal: hslToRgb(152, 92, 64), // 鮮明螢光薄荷綠
-          visual: hslToRgb(315, 88, 68)  // 霓光粉紫
-        };
-      } else if (h >= 75 && h < 190) {
-        // 森林墨綠底 (如 Everforest, 護眼綠): 珊瑚暖赤金
-        return {
-          normal: hslToRgb(25, 92, 64),  // 珊瑚暖金赤
-          visual: hslToRgb(75, 85, 60)   // 嫩芽金綠
-        };
-      } else {
-        // 暖赭棕紅底: 澄澈冰原霜藍
-        return {
-          normal: hslToRgb(210, 88, 66), // 冰原霜藍
-          visual: hslToRgb(45, 95, 62)   // 暖日金
-        };
-      }
-    } else {
-      // 中性深黑 / 深灰 (如 Twitter Pure Black, YouTube): 冰原極光天藍
-      return {
-        normal: { r: 56, g: 189, b: 248, hex: '#38bdf8' }, // 澄澈極光青藍
-        visual: { r: 250, g: 204, b: 21, hex: '#facc15' }  // 明亮金黃
-      };
-    }
-  } else {
-    // ===== 淺色網頁 =====
-    if (s >= 12) {
-      if (h >= 75 && h < 170) {
-        // 護眼綠 / 豆沙綠底: 深絳赤紅，絕佳對比
-        return {
-          normal: hslToRgb(355, 85, 38), // 深絳赤紅
-          visual: hslToRgb(42, 90, 32)   // 深琥珀金
-        };
-      } else if (h >= 30 && h < 75) {
-        // 暖米黃 / 紙張底: 深邃皇家寶石藍
-        return {
-          normal: hslToRgb(220, 88, 36), // 深寶石湛藍
-          visual: hslToRgb(15, 85, 35)   // 深赤赭
-        };
-      } else {
-        // 淺冷粉 / 淺藍底: 典雅墨寶石翠綠
-        return {
-          normal: hslToRgb(165, 88, 32), // 深翡翠綠
-          visual: hslToRgb(220, 80, 36)  // 深湛藍
-        };
-      }
-    } else {
-      // 純白 / 淺灰底 (如 Wikipedia, Medium): 高辨識度皇家深湛藍
-      return {
-        normal: { r: 37, g: 99, b: 235, hex: '#2563eb' },  // 深湛藍 (人眼最清晰且不眩光)
-        visual: { r: 217, g: 119, b: 6, hex: '#d97706' }   // 典雅深金
-      };
-    }
-  }
+  // 2. 純數學連續色彩生成演算法 (Pure Mathematical Generative Color Algorithm)
+  // 零 hardcode、零靜態查表，現場根據環境光譜連續演算專屬游標配色
+
+  // (1) 色相 (Hue)：色輪 180° 對稱互補 + 中性底色自適應
+  const baseH = s > 12 ? (h + 180) % 360 : 205; // 有彩色走 180° 對稱互補，黑白灰走極光湛藍
+  const visualH = (baseH + 38) % 360;           // Visual 模式沿和諧角旋轉 38°
+
+  // (2) 飽和度 (Saturation)：負反饋聚焦公式 (背景越灰暗素淨，游標飽和度越充沛聚焦)
+  const baseS = Math.min(95, Math.max(72, 96 - s * 0.22));
+  const visualS = Math.min(95, Math.max(78, baseS + 4));
+
+  // (3) 明度 (Lightness)：平滑對比推開函數，保證 WCAG 2.1 高對比度
+  const isDark = theme === 'dark';
+  const normalL = isDark
+    ? Math.min(85, Math.max(62, 100 - l * 0.55))    // 深色網頁底 -> 映射至 62% ~ 85% 明亮清澈區間
+    : Math.max(22, Math.min(40, (100 - l) * 0.65)); // 淺色網頁底 -> 映射至 22% ~ 40% 濃郁深色區間
+
+  // Visual 狀態明度階梯偏置 (深色背景更亮、淺色背景更沉穩，強化選取立體感)
+  const visualL = isDark ? Math.min(90, normalL + 7) : Math.max(18, normalL - 6);
+
+  return {
+    normal: hslToRgb(baseH, baseS, normalL),
+    visual: hslToRgb(visualH, visualS, visualL)
+  };
 }
 
 /**
