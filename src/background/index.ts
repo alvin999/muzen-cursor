@@ -9,13 +9,6 @@ const bgLogger = createLogger('[Muzen Background]');
 
 
 chrome.runtime.onInstalled.addListener((details) => {
-  // 清理過去可能殘留的 DNR 標頭修改規則，保持背景乾淨直連
-  if (chrome.declarativeNetRequest?.updateDynamicRules) {
-    chrome.declarativeNetRequest.updateDynamicRules({
-      removeRuleIds: [9999]
-    }).catch(() => {});
-  }
-
   if (details.reason === 'install') {
     logger.info('擴充功能安裝成功。');
     // 初始化預設值

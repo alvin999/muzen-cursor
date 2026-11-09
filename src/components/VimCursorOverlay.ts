@@ -600,7 +600,7 @@ export class VimCursorOverlay {
         targetY = state.rect.y + state.rect.height - thickness;
         break;
 
-      case 'block': // 經典實心方塊 (完全對齊 mugen-yomu 原始碼規格)
+      case 'block': // 經典實心方塊
       default:
         this.element.style.background = state.mode === 'VISUAL'
           ? `rgba(${color.r}, ${color.g}, ${color.b}, ${visualBgOpacity})`
