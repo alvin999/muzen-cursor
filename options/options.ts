@@ -3,6 +3,8 @@ import {
   DEFAULT_ADVANCED_CONFIG,
   CursorTheme,
   CursorShape,
+  TrailStyle,
+  resolveTrailStyle,
   cursorStore,
   KeyActionId,
   KeybindingsConfig,
@@ -683,6 +685,21 @@ function startPreview(key: keyof AdvancedConfig): void {
       break;
     }
 
+    case 'smearStiffness':
+    case 'smearTrailingStiffness':
+    case 'smearTrailingExponent':
+    case 'smearDamping':
+    case 'smearDistanceStopAnimating':
+    case 'smearMaxLength':
+      cursorStore.setState({
+        effects: { ...cursorStore.getState().effects, trailStyle: 'smear', smear: true, trail: false }
+      });
+      controller?.moveVertical(3);
+      previewTimer = setTimeout(() => {
+        controller?.moveVertical(-3);
+      }, 420);
+      break;
+
     case 'trailMode':
     case 'trailCount':
     case 'trailDurationMs':
@@ -690,9 +707,41 @@ function startPreview(key: keyof AdvancedConfig): void {
     case 'trailMaxOpacity':
     case 'trailPreserveTrapezoid':
       cursorStore.setState({
-        effects: { ...cursorStore.getState().effects, trail: true }
+        effects: { ...cursorStore.getState().effects, trailStyle: 'trail', trail: true, smear: false }
       });
       controller?.moveVertical(2);
+      previewTimer = setTimeout(() => {
+        controller?.moveVertical(-2);
+      }, 420);
+      break;
+
+    case 'laserDurationMs':
+    case 'laserWidth':
+      cursorStore.setState({
+        effects: { ...cursorStore.getState().effects, trailStyle: 'laser', smear: false, trail: false }
+      });
+      controller?.moveVertical(3);
+      previewTimer = setTimeout(() => {
+        controller?.moveVertical(-3);
+      }, 420);
+      break;
+
+    case 'sparkleDensity':
+      cursorStore.setState({
+        effects: { ...cursorStore.getState().effects, trailStyle: 'sparkle', smear: false, trail: false }
+      });
+      controller?.moveVertical(3);
+      previewTimer = setTimeout(() => {
+        controller?.moveVertical(-3);
+      }, 420);
+      break;
+
+    case 'ribbonDurationMs':
+      cursorStore.setState({
+        effects: { ...cursorStore.getState().effects, trailStyle: 'ribbon', smear: false, trail: false }
+      });
+      controller?.moveVertical(2);
+      setTimeout(() => controller?.moveHorizontal(6), 90);
       previewTimer = setTimeout(() => {
         controller?.moveVertical(-2);
       }, 420);
@@ -844,7 +893,7 @@ function saveConfig(silent = false): void {
 
 function loadConfig(): void {
   if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
-    chrome.storage.sync.get(['muzen_advanced', 'muzen_thickness', 'muzen_glow', 'muzen_theme', 'muzen_auto_theme', 'muzen_dark_theme', 'muzen_light_theme', 'muzen_shape', 'muzen_locale', 'muzen_keybindings', 'muzen_excluded_sites'], (res) => {
+    chrome.storage.sync.get(['muzen_advanced', 'muzen_thickness', 'muzen_glow', 'muzen_theme', 'muzen_auto_theme', 'muzen_dark_theme', 'muzen_light_theme', 'muzen_shape', 'muzen_effects', 'muzen_locale', 'muzen_keybindings', 'muzen_excluded_sites'], (res) => {
       const savedLocale = (res.muzen_locale as Locale) || detectDefaultLocale();
       applyLocale(savedLocale);
 
@@ -885,6 +934,23 @@ function loadConfig(): void {
 
       const shapeSel = document.getElementById('sandbox-shape') as HTMLSelectElement | null;
       if (shapeSel && res.muzen_shape) shapeSel.value = res.muzen_shape;
+
+      const trailStyleSel = document.getElementById('sandbox-trail-style') as HTMLSelectElement | null;
+      if (res.muzen_effects && typeof res.muzen_effects === 'object') {
+        const style = resolveTrailStyle(res.muzen_effects);
+        cursorStore.setState({
+          effects: {
+            ...cursorStore.getState().effects,
+            ...res.muzen_effects,
+            trailStyle: style,
+            smear: style === 'smear',
+            trail: style === 'trail'
+          }
+        });
+        if (trailStyleSel) trailStyleSel.value = style;
+      } else if (trailStyleSel) {
+        trailStyleSel.value = resolveTrailStyle(cursorStore.getState().effects);
+      }
 
       // 載入完全停用名單
       const excludedInput = document.getElementById('excluded-sites-input') as HTMLTextAreaElement | null;
@@ -1261,6 +1327,25 @@ function initEvents(): void {
     shapeSel.addEventListener('change', () => {
       sandboxShape = shapeSel.value as CursorShape;
       syncCursorStore();
+    });
+  }
+
+  const trailStyleSel = document.getElementById('sandbox-trail-style') as HTMLSelectElement | null;
+  if (trailStyleSel) {
+    trailStyleSel.addEventListener('change', () => {
+      const style = trailStyleSel.value as TrailStyle;
+      const nextEffects = {
+        ...cursorStore.getState().effects,
+        trailStyle: style,
+        smear: style === 'smear',
+        trail: style === 'trail'
+      };
+      cursorStore.setState({ effects: nextEffects });
+      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
+        chrome.storage.sync.set({ muzen_effects: nextEffects });
+      }
+      controller?.moveVertical(2);
+      setTimeout(() => controller?.moveVertical(-2), 360);
     });
   }
 

@@ -223,6 +223,9 @@ function main(): void {
         });
       }
       if (result.muzen_effects) {
+        const hasTrail = result.muzen_effects.trail ?? false;
+        const hasSmear = result.muzen_effects.smear !== undefined ? result.muzen_effects.smear : !hasTrail;
+        const trailStyle = result.muzen_effects.trailStyle || (hasSmear ? 'smear' : hasTrail ? 'trail' : 'none');
         cursorStore.setState({
           effects: {
             smooth: result.muzen_effects.smooth ?? true,
@@ -230,7 +233,9 @@ function main(): void {
             smoothScroll: result.muzen_effects.smoothScroll ?? true,
             breathe: result.muzen_effects.breathe ?? false,
             blink: result.muzen_effects.blink ?? true,
-            trail: result.muzen_effects.trail ?? true
+            trailStyle,
+            trail: trailStyle === 'trail',
+            smear: trailStyle === 'smear'
           }
         });
       }

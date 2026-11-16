@@ -1,5 +1,7 @@
-import { cursorStore, CursorState, CursorTheme, CursorRect, DEFAULT_ADVANCED_CONFIG } from '../core/cursorStore';
+import { cursorStore, CursorState, CursorTheme, CursorRect, DEFAULT_ADVANCED_CONFIG, resolveTrailStyle, TrailStyle } from '../core/cursorStore';
 import { createLogger } from '../utils/logger';
+import { SmearPhysicsEngine, SmearConfig, Point2D } from '../utils/smearPhysics';
+import { CanvasTrailEffects } from '../utils/canvasTrailEffects';
 
 const trailLogger = createLogger('[Muzen Trail]');
 
@@ -98,6 +100,25 @@ export class VimCursorOverlay {
   private keyupListener: ((e: KeyboardEvent) => void) | null = null;
   private lastState: CursorState | null = null;
 
+  // Smear Cursor 連續形變物理與 Canvas 渲染層
+  private smearCanvas: HTMLCanvasElement;
+  private smearCtx: CanvasRenderingContext2D | null = null;
+  private smearEngine = new SmearPhysicsEngine();
+  private smearRafId: number | null = null;
+  private smearLastTimestamp = 0;
+  private smearCurrentConfig: SmearConfig | null = null;
+  private canvasTrailEffects = new CanvasTrailEffects();
+  private trailEffectsRafId: number | null = null;
+  private trailEffectsLastTs = 0;
+  private smearRenderStyle: {
+    shape: string;
+    color: { r: number; g: number; b: number; hex: string };
+    thickness: number;
+    borderRadius: number;
+    glow: number;
+    fillOpacity: number;
+  } | null = null;
+
   constructor() {
     this.container = document.createElement('div');
     this.container.className = 'muzen-cursor-container';
@@ -145,6 +166,18 @@ export class VimCursorOverlay {
       this.ghostTimers.push(null);
       this.container.appendChild(ghost);
     }
+    // 初始化 Smear Cursor 全螢幕 Canvas 渲染層
+    this.smearCanvas = document.createElement('canvas');
+    this.smearCanvas.className = 'muzen-cursor-smear-canvas';
+    this.smearCanvas.style.position = 'fixed';
+    this.smearCanvas.style.top = '0px';
+    this.smearCanvas.style.left = '0px';
+    this.smearCanvas.style.width = '100vw';
+    this.smearCanvas.style.height = '100vh';
+    this.smearCanvas.style.pointerEvents = 'none';
+    this.smearCtx = this.smearCanvas.getContext('2d');
+    this.container.appendChild(this.smearCanvas);
+
     this.container.appendChild(this.element);
 
     this.styleSheet = document.createElement('style');
@@ -478,6 +511,8 @@ export class VimCursorOverlay {
         this.lineSweepElement.style.animation = 'none';
       }
       this.clearAllGhosts();
+      this.stopSmear(true);
+      this.stopCanvasTrailEffects();
       this.lastRect = null;
       return;
     }
@@ -655,9 +690,24 @@ export class VimCursorOverlay {
       this.element.style.opacity = '1'; // 移動中或無動畫時維持 100% 滿格全亮常駐
     }
 
+    const trailStyle: TrailStyle = resolveTrailStyle(effects);
+    const isSmearEnabled = trailStyle === 'smear';
+    const isCanvasTrailEffect = trailStyle === 'laser' || trailStyle === 'sparkle' || trailStyle === 'ribbon';
+    if (!isSmearEnabled && this.smearRafId !== null) {
+      this.stopSmear(true);
+    }
+    if (!isCanvasTrailEffect && this.trailEffectsRafId !== null) {
+      this.stopCanvasTrailEffects();
+    }
+
     if (state.isScrollUpdate) {
-      // 視窗純捲動/縮放更新：僅靜默貼齊游標位置，嚴格抑制殘影
+      // 視窗純捲動/縮放更新：僅靜默貼齊游標位置，嚴格抑制殘影與 Smear 拖尾
       this.clearTrajectoryTimers();
+      this.stopCanvasTrailEffects();
+      if (isSmearEnabled) {
+        this.stopSmear(false);
+        this.smearEngine.snapTo({ x: targetX, y: targetY, width: targetW, height: targetH });
+      }
       this.element.style.width = `${targetW}px`;
       this.element.style.height = `${targetH}px`;
       this.element.style.transition = 'none';
@@ -699,7 +749,7 @@ export class VimCursorOverlay {
       }
     }
 
-    const isTrailEnabled = effects.trail !== false;
+    const isTrailEnabled = trailStyle === 'trail';
     const trailMode = (adv.trailMode || 'line') as 'line' | 'direct';
     const trailDurationMs = typeof adv.trailDurationMs === 'number'
       ? Math.round(Math.max(100, adv.trailDurationMs) * (1 + (isChargeEnabled ? this.currentCharge * 0.45 : 0)))
@@ -717,6 +767,65 @@ export class VimCursorOverlay {
       const dx = targetX - originRect.x;
       const dy = targetY - originRect.y;
       const dist = Math.hypot(dx, dy);
+
+      if (isSmearEnabled) {
+        // Smear Cursor 連續形變物理模式：由 Canvas 接管移動過程，主 DOM 游標靜默貼齊終點並暫時隱藏
+        this.element.style.transition = 'none';
+        this.element.style.width = `${targetW}px`;
+        this.element.style.height = `${targetH}px`;
+        this.element.style.transform = `translate3d(${targetX}px, ${targetY}px, 0)`;
+
+        const smearConfig: SmearConfig = {
+          stiffness: typeof adv.smearStiffness === 'number' ? adv.smearStiffness : 0.85,
+          trailingStiffness: typeof adv.smearTrailingStiffness === 'number' ? adv.smearTrailingStiffness : 0.30,
+          trailingExponent: typeof adv.smearTrailingExponent === 'number' ? adv.smearTrailingExponent : 2.0,
+          damping: typeof adv.smearDamping === 'number' ? adv.smearDamping : 0.82,
+          distanceStopAnimating: typeof adv.smearDistanceStopAnimating === 'number' ? adv.smearDistanceStopAnimating : 0.5,
+          maxLength: typeof adv.smearMaxLength === 'number' ? adv.smearMaxLength : 0
+        };
+        const fillOpacity = shape === 'underline'
+          ? 1
+          : shape === 'hollow'
+            ? (typeof adv.hollowBgOpacity === 'number' ? adv.hollowBgOpacity : 0.05)
+            : (state.mode === 'VISUAL'
+                ? (typeof adv.visualBgOpacity === 'number' ? adv.visualBgOpacity : 0.35)
+                : (typeof adv.blockBgOpacity === 'number' ? adv.blockBgOpacity : 0.22));
+
+        this.smearRenderStyle = {
+          shape,
+          color,
+          thickness,
+          borderRadius,
+          glow,
+          fillOpacity
+        };
+        this.smearCurrentConfig = smearConfig;
+
+        if (this.smearEngine.setTarget(targetRect, smearConfig)) {
+          this.element.style.opacity = '0';
+          this.startSmearLoop();
+        }
+
+        this.lastRect = targetRect;
+        return;
+      }
+
+      if (isCanvasTrailEffect) {
+        this.canvasTrailEffects.spawn(
+          trailStyle as 'laser' | 'sparkle' | 'ribbon',
+          originRect,
+          targetRect,
+          color,
+          isChargeEnabled ? this.currentCharge : 0,
+          {
+            laserDurationMs: typeof adv.laserDurationMs === 'number' ? adv.laserDurationMs : 220,
+            laserWidth: typeof adv.laserWidth === 'number' ? adv.laserWidth : 2.2,
+            sparkleDensity: typeof adv.sparkleDensity === 'number' ? adv.sparkleDensity : 1.0,
+            ribbonDurationMs: typeof adv.ribbonDurationMs === 'number' ? adv.ribbonDurationMs : 220
+          }
+        );
+        this.startCanvasTrailEffectsLoop();
+      }
 
       // 取得統一的換行軌跡 (主游標與殘影走完全相同的軌跡)
       const trajectory = this.buildTrajectory(originRect, targetRect, state.trailWaypoints, trailMode);
@@ -855,6 +964,12 @@ export class VimCursorOverlay {
       this.element.style.width = `${targetW}px`;
       this.element.style.height = `${targetH}px`;
       this.element.style.transform = `translate3d(${targetX}px, ${targetY}px, 0)`;
+      if (isSmearEnabled && this.lastRect === null) {
+        this.smearEngine.snapTo({ x: targetX, y: targetY, width: targetW, height: targetH });
+      }
+      if (this.smearRafId !== null) {
+        this.element.style.opacity = '0';
+      }
     }
 
     // 紀錄本次位移歷史座標供下一影格計算殘影軌跡
@@ -1184,6 +1299,185 @@ export class VimCursorOverlay {
     sweep.style.animation = 'muzen-line-sweep 0.26s cubic-bezier(0.16, 1, 0.3, 1) forwards';
   }
 
+  /**
+   * 啟動 Smear Cursor 逐幀物理運算與 Canvas 繪製迴圈
+   */
+  private startSmearLoop(): void {
+    if (this.smearRafId !== null) return;
+    this.smearLastTimestamp = performance.now();
+
+    const tick = (now: number) => {
+      const dt = now - this.smearLastTimestamp;
+      this.smearLastTimestamp = now;
+
+      if (!this.smearCurrentConfig) {
+        this.stopSmear(true);
+        return;
+      }
+
+      const active = this.smearEngine.step(dt, this.smearCurrentConfig);
+      this.drawSmearFrame(this.smearEngine.getPolygon());
+
+      if (active) {
+        this.smearRafId = requestAnimationFrame(tick);
+      } else {
+        this.stopSmear(false);
+        // 動畫收斂結束：恢復主 DOM 游標顯示
+        if (this.lastState && this.lastState.visible && this.lastState.enabled && !this.lastState.isExcluded) {
+          this.element.style.opacity = '1';
+        }
+      }
+    };
+
+    this.drawSmearFrame(this.smearEngine.getPolygon());
+    this.smearRafId = requestAnimationFrame(tick);
+  }
+
+  /**
+   * 將當前 Smear 四角凸包多邊形繪製至 HiDPI Canvas
+   */
+  private drawSmearFrame(polygon: Point2D[]): void {
+    const ctx = this.smearCtx;
+    const style = this.smearRenderStyle;
+    if (!ctx || !style || polygon.length < 3) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    const viewW = window.innerWidth;
+    const viewH = window.innerHeight;
+    const targetCanvasW = Math.round(viewW * dpr);
+    const targetCanvasH = Math.round(viewH * dpr);
+
+    if (this.smearCanvas.width !== targetCanvasW || this.smearCanvas.height !== targetCanvasH) {
+      this.smearCanvas.width = targetCanvasW;
+      this.smearCanvas.height = targetCanvasH;
+    }
+
+    ctx.save();
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, viewW, viewH);
+
+    if (style.glow > 0) {
+      ctx.shadowColor = style.color.hex;
+      ctx.shadowBlur = Math.round(style.glow * 1.2);
+    }
+
+    ctx.beginPath();
+    ctx.moveTo(polygon[0].x, polygon[0].y);
+    for (let i = 1; i < polygon.length; i++) {
+      ctx.lineTo(polygon[i].x, polygon[i].y);
+    }
+    ctx.closePath();
+
+    const { tail, head } = this.smearEngine.getGradientAxis();
+    const axisDist = Math.hypot(head.x - tail.x, head.y - tail.y);
+    const useGradient = axisDist > 4;
+
+    if (style.shape === 'underline') {
+      if (useGradient) {
+        const grad = ctx.createLinearGradient(tail.x, tail.y, head.x, head.y);
+        grad.addColorStop(0, `rgba(${style.color.r}, ${style.color.g}, ${style.color.b}, 0.12)`);
+        grad.addColorStop(0.55, `rgba(${style.color.r}, ${style.color.g}, ${style.color.b}, 0.78)`);
+        grad.addColorStop(1, style.color.hex);
+        ctx.fillStyle = grad;
+      } else {
+        ctx.fillStyle = style.color.hex;
+      }
+      ctx.fill();
+    } else {
+      if (useGradient) {
+        const fillGrad = ctx.createLinearGradient(tail.x, tail.y, head.x, head.y);
+        fillGrad.addColorStop(0, `rgba(${style.color.r}, ${style.color.g}, ${style.color.b}, ${(style.fillOpacity * 0.1).toFixed(3)})`);
+        fillGrad.addColorStop(0.5, `rgba(${style.color.r}, ${style.color.g}, ${style.color.b}, ${(style.fillOpacity * 0.68).toFixed(3)})`);
+        fillGrad.addColorStop(1, `rgba(${style.color.r}, ${style.color.g}, ${style.color.b}, ${style.fillOpacity})`);
+        ctx.fillStyle = fillGrad;
+      } else {
+        ctx.fillStyle = `rgba(${style.color.r}, ${style.color.g}, ${style.color.b}, ${style.fillOpacity})`;
+      }
+      ctx.fill();
+      ctx.lineWidth = style.thickness;
+      if (useGradient) {
+        const strokeGrad = ctx.createLinearGradient(tail.x, tail.y, head.x, head.y);
+        strokeGrad.addColorStop(0, `rgba(${style.color.r}, ${style.color.g}, ${style.color.b}, 0.15)`);
+        strokeGrad.addColorStop(0.45, `rgba(${style.color.r}, ${style.color.g}, ${style.color.b}, 0.72)`);
+        strokeGrad.addColorStop(1, style.color.hex);
+        ctx.strokeStyle = strokeGrad;
+      } else {
+        ctx.strokeStyle = style.color.hex;
+      }
+      ctx.lineJoin = style.borderRadius > 0 ? 'round' : 'miter';
+      ctx.stroke();
+    }
+
+    ctx.restore();
+  }
+
+  /**
+   * 停止 Smear 動畫並清空 Canvas
+   */
+  private stopSmear(resetEngine: boolean): void {
+    if (this.smearRafId !== null) {
+      cancelAnimationFrame(this.smearRafId);
+      this.smearRafId = null;
+    }
+    if (this.smearCtx && this.smearCanvas.width > 0 && this.smearCanvas.height > 0) {
+      this.smearCtx.setTransform(1, 0, 0, 1, 0, 0);
+      this.smearCtx.clearRect(0, 0, this.smearCanvas.width, this.smearCanvas.height);
+    }
+    if (resetEngine) {
+      this.smearEngine.reset();
+    }
+  }
+
+  /**
+   * 啟動 Canvas 殘影特效 (雷射 / 星塵 / 速度線) 動畫迴圈
+   */
+  private startCanvasTrailEffectsLoop(): void {
+    if (this.trailEffectsRafId !== null) return;
+    this.trailEffectsLastTs = performance.now();
+
+    const tick = (now: number) => {
+      const dt = now - this.trailEffectsLastTs;
+      this.trailEffectsLastTs = now;
+
+      const ctx = this.smearCtx;
+      if (!ctx) {
+        this.stopCanvasTrailEffects();
+        return;
+      }
+
+      const dpr = window.devicePixelRatio || 1;
+      const viewW = window.innerWidth;
+      const viewH = window.innerHeight;
+      const targetCanvasW = Math.round(viewW * dpr);
+      const targetCanvasH = Math.round(viewH * dpr);
+      if (this.smearCanvas.width !== targetCanvasW || this.smearCanvas.height !== targetCanvasH) {
+        this.smearCanvas.width = targetCanvasW;
+        this.smearCanvas.height = targetCanvasH;
+      }
+
+      const active = this.canvasTrailEffects.stepAndDraw(ctx, dt, viewW, viewH, dpr);
+      if (active) {
+        this.trailEffectsRafId = requestAnimationFrame(tick);
+      } else {
+        this.trailEffectsRafId = null;
+      }
+    };
+
+    this.trailEffectsRafId = requestAnimationFrame(tick);
+  }
+
+  private stopCanvasTrailEffects(): void {
+    if (this.trailEffectsRafId !== null) {
+      cancelAnimationFrame(this.trailEffectsRafId);
+      this.trailEffectsRafId = null;
+    }
+    this.canvasTrailEffects.clear();
+    if (this.smearCtx && this.smearCanvas.width > 0 && this.smearCanvas.height > 0 && this.smearRafId === null) {
+      this.smearCtx.setTransform(1, 0, 0, 1, 0, 0);
+      this.smearCtx.clearRect(0, 0, this.smearCanvas.width, this.smearCanvas.height);
+    }
+  }
+
   public destroy(): void {
     if (this.settleTimer !== null) {
       clearTimeout(this.settleTimer);
@@ -1198,11 +1492,14 @@ export class VimCursorOverlay {
       this.keyupListener = null;
     }
     this.clearAllGhosts();
+    this.stopSmear(true);
+    this.stopCanvasTrailEffects();
     if (this.unsubscribe) {
       this.unsubscribe();
       this.unsubscribe = null;
     }
     document.documentElement.style.removeProperty('--muzen-selection-bg');
+    this.smearCanvas.remove();
     this.lineSweepElement.remove();
     this.container.remove();
     this.styleSheet.remove();

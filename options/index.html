@@ -53,7 +53,7 @@
       </button>
       <button type="button" class="tab-btn" data-tab="tab-effects">
         <span class="tab-num">3</span>
-        <span data-i18n="tabEffectsTitle">☄️ 特效與超頻</span>
+        <span data-i18n="tabEffectsTitle">☄️ 殘影與動能</span>
       </button>
       <button type="button" class="tab-btn" data-tab="tab-keybindings">
         <span class="tab-num">4</span>
@@ -444,6 +444,92 @@
 
         <!-- 標籤 3: 特效與超頻 (Effects & Overdrive) -->
         <div id="tab-effects" class="tab-pane hidden">
+          <!-- 模組 8: Smear Cursor 連續形變拖尾 -->
+          <div class="setting-group">
+            <div class="group-header">
+              <span class="group-icon">🌊</span>
+              <div class="group-title-wrap">
+                <h2 class="group-title" data-i18n="groupSmearTitle">液態拖尾物理引擎 (Liquid Smear)</h2>
+                <p class="group-desc" data-i18n="groupSmearDesc">四角獨立彈簧阻尼物理，移動時產生連續滑順的液態形變拉扯與漸層收尾</p>
+              </div>
+            </div>
+            <div class="group-grid">
+
+              <div class="field-card">
+                <div class="field-label-row">
+                  <label for="adv-smearStiffness" class="field-label" data-i18n="fieldSmearStiffness">前導角剛性 (Leading Stiffness)</label>
+                  <button type="button" class="btn-field-reset" data-key="smearStiffness" title="還原預設值">↺</button>
+                </div>
+                <p class="field-hint" data-i18n="hintSmearStiffness">朝向移動方向的前導頂點彈簧剛性，越高越迅速抵達目標 (0.1 - 1.0)</p>
+                <div class="input-with-unit">
+                  <input type="number" id="adv-smearStiffness" data-key="smearStiffness" min="0.1" max="1.0" step="0.05" value="0.85">
+                  <span class="unit">k</span>
+                </div>
+              </div>
+
+              <div class="field-card">
+                <div class="field-label-row">
+                  <label for="adv-smearTrailingStiffness" class="field-label" data-i18n="fieldSmearTrailingStiffness">拖尾角剛性 (Trailing Stiffness)</label>
+                  <button type="button" class="btn-field-reset" data-key="smearTrailingStiffness" title="還原預設值">↺</button>
+                </div>
+                <p class="field-hint" data-i18n="hintSmearTrailingStiffness">背對移動方向的拖尾頂點剛性，越低拖尾拉扯越長 (0.05 - 1.0)</p>
+                <div class="input-with-unit">
+                  <input type="number" id="adv-smearTrailingStiffness" data-key="smearTrailingStiffness" min="0.05" max="1.0" step="0.05" value="0.3">
+                  <span class="unit">k</span>
+                </div>
+              </div>
+
+              <div class="field-card">
+                <div class="field-label-row">
+                  <label for="adv-smearTrailingExponent" class="field-label" data-i18n="fieldSmearTrailingExponent">角度衰減指數 (Trailing Exponent)</label>
+                  <button type="button" class="btn-field-reset" data-key="smearTrailingExponent" title="還原預設值">↺</button>
+                </div>
+                <p class="field-hint" data-i18n="hintSmearTrailingExponent">控制對角線移動時側邊角的剛性過渡曲率，越高尖尾越銳利 (1.0 - 5.0)</p>
+                <div class="input-with-unit">
+                  <input type="number" id="adv-smearTrailingExponent" data-key="smearTrailingExponent" min="1.0" max="5.0" step="0.25" value="2.0">
+                  <span class="unit">^</span>
+                </div>
+              </div>
+
+              <div class="field-card">
+                <div class="field-label-row">
+                  <label for="adv-smearDamping" class="field-label" data-i18n="fieldSmearDamping">物理阻尼係數 (Damping)</label>
+                  <button type="button" class="btn-field-reset" data-key="smearDamping" title="還原預設值">↺</button>
+                </div>
+                <p class="field-hint" data-i18n="hintSmearDamping">控制收尾減速與微幅過衝感，越低越有彈性回彈 (0.1 - 0.99)</p>
+                <div class="input-with-unit">
+                  <input type="number" id="adv-smearDamping" data-key="smearDamping" min="0.1" max="0.99" step="0.02" value="0.82">
+                  <span class="unit">d</span>
+                </div>
+              </div>
+
+              <div class="field-card">
+                <div class="field-label-row">
+                  <label for="adv-smearDistanceStopAnimating" class="field-label" data-i18n="fieldSmearStopDistance">收斂停止閾值 (Stop Distance)</label>
+                  <button type="button" class="btn-field-reset" data-key="smearDistanceStopAnimating" title="還原預設值">↺</button>
+                </div>
+                <p class="field-hint" data-i18n="hintSmearStopDistance">四角距離目標小於此像素值時停止物理運算並歸位 (px)</p>
+                <div class="input-with-unit">
+                  <input type="number" id="adv-smearDistanceStopAnimating" data-key="smearDistanceStopAnimating" min="0.1" max="5.0" step="0.1" value="0.5">
+                  <span class="unit">px</span>
+                </div>
+              </div>
+
+              <div class="field-card">
+                <div class="field-label-row">
+                  <label for="adv-smearMaxLength" class="field-label" data-i18n="fieldSmearMaxLength">最大拖尾長度限制 (Max Length)</label>
+                  <button type="button" class="btn-field-reset" data-key="smearMaxLength" title="還原預設值">↺</button>
+                </div>
+                <p class="field-hint" data-i18n="hintSmearMaxLength">限制長距離跳轉時的最大拉伸長度；設為 0 表示不限制 (px)</p>
+                <div class="input-with-unit">
+                  <input type="number" id="adv-smearMaxLength" data-key="smearMaxLength" min="0" max="1000" step="20" value="0">
+                  <span class="unit">px</span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
           <!-- 模組 6: 流光殘影與動態拖尾 -->
           <div class="setting-group">
             <div class="group-header">
@@ -529,6 +615,68 @@
                     <span class="slider-small"></span>
                   </label>
                   <span style="font-size: 13px; color: var(--color-fg-muted, #7c6f64); margin-left: 8px;">鎖定 3D 梯形</span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- 模組 9: 雷射 / 星塵 / 速度線殘影參數 -->
+          <div class="setting-group">
+            <div class="group-header">
+              <span class="group-icon">✨</span>
+              <div class="group-title-wrap">
+                <h2 class="group-title" data-i18n="groupCanvasTrailTitle">雷射 / 星塵 / 速度線微調 (Canvas Effects)</h2>
+                <p class="group-desc" data-i18n="groupCanvasTrailDesc">調整雷射軌跡、星塵粒子與速度線三種 Canvas 殘影模式的持續時間與強度</p>
+              </div>
+            </div>
+            <div class="group-grid">
+
+              <div class="field-card">
+                <div class="field-label-row">
+                  <label for="adv-laserDurationMs" class="field-label" data-i18n="fieldLaserDurationMs">雷射持續時長 (Laser Duration)</label>
+                  <button type="button" class="btn-field-reset" data-key="laserDurationMs" title="還原預設值">↺</button>
+                </div>
+                <p class="field-hint" data-i18n="hintLaserDurationMs">雷射光束從發射到完全淡出的毫秒數 (ms)</p>
+                <div class="input-with-unit">
+                  <input type="number" id="adv-laserDurationMs" data-key="laserDurationMs" min="80" max="600" step="10" value="220">
+                  <span class="unit">ms</span>
+                </div>
+              </div>
+
+              <div class="field-card">
+                <div class="field-label-row">
+                  <label for="adv-laserWidth" class="field-label" data-i18n="fieldLaserWidth">雷射光束寬度 (Laser Width)</label>
+                  <button type="button" class="btn-field-reset" data-key="laserWidth" title="還原預設值">↺</button>
+                </div>
+                <p class="field-hint" data-i18n="hintLaserWidth">雷射光束核心的基礎線條粗細 (px)</p>
+                <div class="input-with-unit">
+                  <input type="number" id="adv-laserWidth" data-key="laserWidth" min="1.0" max="6.0" step="0.2" value="2.2">
+                  <span class="unit">px</span>
+                </div>
+              </div>
+
+              <div class="field-card">
+                <div class="field-label-row">
+                  <label for="adv-sparkleDensity" class="field-label" data-i18n="fieldSparkleDensity">星塵粒子密度 (Sparkle Density)</label>
+                  <button type="button" class="btn-field-reset" data-key="sparkleDensity" title="還原預設值">↺</button>
+                </div>
+                <p class="field-hint" data-i18n="hintSparkleDensity">移動時噴灑的星塵粒子數量倍率 (0.3 - 2.5)</p>
+                <div class="input-with-unit">
+                  <input type="number" id="adv-sparkleDensity" data-key="sparkleDensity" min="0.3" max="2.5" step="0.1" value="1.0">
+                  <span class="unit">×</span>
+                </div>
+              </div>
+
+              <div class="field-card">
+                <div class="field-label-row">
+                  <label for="adv-ribbonDurationMs" class="field-label" data-i18n="fieldRibbonDurationMs">速度線殘留時長 (Ribbon Duration)</label>
+                  <button type="button" class="btn-field-reset" data-key="ribbonDurationMs" title="還原預設值">↺</button>
+                </div>
+                <p class="field-hint" data-i18n="hintRibbonDurationMs">速度線上下緣雙軌跡的保留時間 (ms)</p>
+                <div class="input-with-unit">
+                  <input type="number" id="adv-ribbonDurationMs" data-key="ribbonDurationMs" min="80" max="600" step="10" value="220">
+                  <span class="unit">ms</span>
                 </div>
               </div>
 
@@ -731,6 +879,17 @@
                 <option value="block" data-i18n="shapeBlock">實心方塊 (Block)</option>
                 <option value="hollow" data-i18n="shapeHollow">空心外框 (Hollow)</option>
                 <option value="underline" data-i18n="shapeUnderline">閱讀底線 (Underline)</option>
+              </select>
+            </div>
+            <div class="control-row">
+              <span class="control-label" data-i18n="sandboxTrailStyleLabel">殘影模式：</span>
+              <select id="sandbox-trail-style" class="sandbox-select">
+                <option value="none" data-i18n="trailStyleNone">無</option>
+                <option value="smear" data-i18n="effectSmear" selected>液態拖尾</option>
+                <option value="trail" data-i18n="effectTrail">流光殘影</option>
+                <option value="laser" data-i18n="trailStyleLaser">雷射軌跡</option>
+                <option value="sparkle" data-i18n="trailStyleSparkle">星塵粒子</option>
+                <option value="ribbon" data-i18n="trailStyleRibbon">速度線</option>
               </select>
             </div>
             <div class="control-row">

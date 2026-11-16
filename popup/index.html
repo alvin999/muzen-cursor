@@ -174,10 +174,6 @@
             <span class="chip-label" data-i18n="effectSmoothScroll">平滑捲動</span>
           </label>
           <label class="effect-chip">
-            <input type="checkbox" id="effect-trail" checked>
-            <span class="chip-label" data-i18n="effectTrail">流光殘影</span>
-          </label>
-          <label class="effect-chip">
             <input type="checkbox" id="effect-charge" checked>
             <span class="chip-label" data-i18n="effectCharge">動能蓄力</span>
           </label>
@@ -186,11 +182,49 @@
             <span class="chip-label" data-i18n="effectRearviewMirror">捲動回顧</span>
           </label>
         </div>
+        <div id="motion-effects-hint" class="effect-hint-bar" data-i18n="hintMotionDefault">將游標移至選項上即可查看效果說明</div>
+        <div class="trail-preview-strip">
+          <canvas id="motion-preview-canvas"></canvas>
+        </div>
+      </section>
+
+      <section class="section">
+        <label class="section-label" data-i18n="trailStyleLabel">殘影模式 (單選)</label>
+        <div class="effects-group effects-grid-2rows" id="trail-style-group">
+          <label class="effect-chip">
+            <input type="radio" name="muzen-trail-style" id="trail-none" value="none">
+            <span class="chip-label" data-i18n="trailStyleNone">無</span>
+          </label>
+          <label class="effect-chip">
+            <input type="radio" name="muzen-trail-style" id="trail-smear" value="smear" checked>
+            <span class="chip-label" data-i18n="effectSmear">液態拖尾</span>
+          </label>
+          <label class="effect-chip">
+            <input type="radio" name="muzen-trail-style" id="trail-trail" value="trail">
+            <span class="chip-label" data-i18n="effectTrail">流光殘影</span>
+          </label>
+          <label class="effect-chip">
+            <input type="radio" name="muzen-trail-style" id="trail-laser" value="laser">
+            <span class="chip-label" data-i18n="trailStyleLaser">雷射軌跡</span>
+          </label>
+          <label class="effect-chip">
+            <input type="radio" name="muzen-trail-style" id="trail-sparkle" value="sparkle">
+            <span class="chip-label" data-i18n="trailStyleSparkle">星塵粒子</span>
+          </label>
+          <label class="effect-chip">
+            <input type="radio" name="muzen-trail-style" id="trail-ribbon" value="ribbon">
+            <span class="chip-label" data-i18n="trailStyleRibbon">速度線</span>
+          </label>
+        </div>
+        <div id="trail-style-hint" class="effect-hint-bar" data-i18n="hintTrailSmear">液態拖尾：四角彈簧連續形變拉扯，帶來滑順流暢的液態延伸感</div>
+        <div id="trail-preview-strip" class="trail-preview-strip">
+          <canvas id="trail-preview-canvas"></canvas>
+        </div>
       </section>
 
       <section class="section">
         <label class="section-label" data-i18n="pulseEffectLabel">靜態脈動 (單選)</label>
-        <div class="effects-group">
+        <div class="effects-group" id="pulse-effects-group">
           <label class="effect-chip">
             <input type="radio" name="muzen-pulse" id="pulse-none" value="none">
             <span class="chip-label" data-i18n="pulseNone">常駐微光</span>
@@ -203,6 +237,10 @@
             <input type="radio" name="muzen-pulse" id="pulse-breathe" value="breathe">
             <span class="chip-label" data-i18n="effectBreathe">禪意呼吸</span>
           </label>
+        </div>
+        <div id="pulse-effects-hint" class="effect-hint-bar" data-i18n="hintPulseBlink">游標靜止時以經典終端機節奏閃爍提示</div>
+        <div class="trail-preview-strip">
+          <canvas id="pulse-preview-canvas"></canvas>
         </div>
       </section>
 

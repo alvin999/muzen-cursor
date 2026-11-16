@@ -499,6 +499,42 @@ kbd {
   box-shadow: 0 0 8px color-mix(in srgb, var(--accent-orange) 28%, transparent);
 }
 
+/* 動態效果說明列 (方案 A：固定雙行高度避免行數變化造成畫面抖動) */
+.effect-hint-bar {
+  margin-top: 6px;
+  padding: 2px 4px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--fg-muted);
+  height: 34px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  transition: color 0.15s ease;
+}
+
+.effect-hint-bar.is-hovering {
+  color: var(--fg-color);
+}
+
+/* 迷你殘影即時示範軌道 (方案 C) */
+.trail-preview-strip {
+  margin-top: 6px;
+  width: 100%;
+  height: 28px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+}
+
+.trail-preview-strip canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
 /* 開關 Toggle Switch */
 .switch {
   position: relative;

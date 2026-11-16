@@ -5,6 +5,52 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [v0.1.15] - 2026-11-16
+
+### 繁體中文 (Traditional Chinese)
+#### ✨ 新增功能與體驗優化 (Features & Improvements)
+- **全新液態拖尾物理引擎 (Liquid Smear Cursor Physics)**：
+  - 實作四角獨立彈簧阻尼運動演算法，依移動向量自動區分前導角與拖尾角，並以指數曲線平滑過渡剛性。
+  - 導入凸包防交叉計算與彗星漸層透明度淡出渲染（尾端淡出、頭部飽和），呈現自然流暢的液態拉扯手感。
+  - 視窗捲動時自動靜默貼齊抑制拉尾，並於靜止收斂後無縫恢復游標經典呼吸/閃爍動畫。
+- **殘影模式獨立與多樣化特效 (Standalone Trail Modes)**：
+  - 將殘影從位移特效複選中獨立為專屬單選區塊，預設啟用「液態拖尾」。
+  - 新增三種全新 Canvas 殘影模式：
+    - **雷射軌跡 (Laser Beam)**：游標瞬間到位並於起終點射出發光能量光束。
+    - **星塵粒子 (Sparkle Dust)**：沿移動路徑灑落帶微幅重力漂浮的發光像素粒子。
+    - **速度線 (Speed Ribbon)**：追蹤游標上下緣近期節點，勾勒俐落收斂的雙線軌跡。
+- **Popup 動態說明列與迷你即時示範軌道 (Interactive Popup Guides)**：
+  - 為「位移特效」、「殘影模式」、「靜態脈動」三組控制項新增懸停動態說明列，並鎖定固定高度消除版面抖動。
+  - 嵌入即時 Canvas 動態示範軌道，滑鼠懸停或點選任一選項時立即左右跳動示範真實視覺效果。
+- **進階設定頁面強化 (Advanced Settings Enhancements)**：
+  - 頁籤更名為「☄️ 殘影與動能」，統一正體中文名詞為「液態拖尾」。
+  - 獨立暴露液態拖尾剛性、指數曲率、阻尼以及 Canvas 殘影時長、密度等微調參數。
+  - 沙盒快速控制條新增「殘影模式」切換器，支援即時測試與同步儲存。
+
+---
+
+### English
+#### ✨ Features & Improvements
+- **Liquid Smear Cursor Physics**:
+  - Implemented 4-corner independent spring-damper physics that dynamically differentiates leading and trailing corners with exponential stiffness falloff.
+  - Added convex hull triangulation safety and comet gradient fading (opaque head to translucent tail) for fluid cursor deformation.
+  - Quietly snaps on viewport scrolling without visual artifacts and seamlessly resumes idle pulse/blink animations upon convergence.
+- **Standalone Trail Modes & New Visual Effects**:
+  - Separated trails into a dedicated single-select group with "Liquid Smear" enabled by default.
+  - Introduced 3 new Canvas-rendered trail styles:
+    - **Laser Beam**: Snaps instantly while firing a vibrant, fading laser beam along the path.
+    - **Sparkle Dust**: Emits floating, glowing pixel particles along movement trajectories.
+    - **Speed Ribbon**: Traces clean, dual converging speed lines along the top and bottom cursor edges.
+- **Interactive Popup Hints & Real-Time Preview Strips**:
+  - Added fixed-height hover hint bars across all effect sections to prevent UI layout shifts.
+  - Embedded real-time Canvas preview strips that actively demonstrate motion, trail, and pulse effects on hover and selection.
+- **Advanced Options Enhancements**:
+  - Renamed the effects tab to "☄️ Trails & Kinetic" with standardized Traditional Chinese terminology.
+  - Exposed fine-tuning parameters for Liquid Smear and Canvas trail durations/densities.
+  - Added a Trail Mode switcher directly to the sandbox preview toolbar with automatic sync.
+
+---
+
 ## [v0.1.14] - 2026-11-09
 
 ### 繁體中文 (Traditional Chinese)

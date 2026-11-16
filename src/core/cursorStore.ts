@@ -25,15 +25,27 @@ export type CursorShape = 'block' | 'hollow' | 'underline';
 
 export type MotionDirection = 'left' | 'right' | 'up' | 'down' | 'jump' | 'none';
 
+export type TrailStyle = 'none' | 'smear' | 'trail' | 'laser' | 'sparkle' | 'ribbon';
+
 export interface CursorEffects {
   smooth: boolean;       // 平滑物理位移 (Smooth Transition)
   bounce: boolean;       // 彈性梯形形變 (Trapezoid Deformation Bounce)
   smoothScroll: boolean; // 平滑視窗捲動 (Smooth Page Scrolling)
   breathe: boolean;      // 禪意呼吸燈 (Breathing Pulse Glow)
   blink: boolean;        // 經典閃爍 (Terminal Blink)
-  trail?: boolean;       // 梯形透視殘影 (Trapezoid Motion Trail)
+  trailStyle?: TrailStyle; // 殘影/拖尾模式 ('none' | 'smear' | 'trail' | 'laser' | 'sparkle' | 'ribbon')
+  trail?: boolean;       // 梯形透視殘影 (向下相容旗標)
+  smear?: boolean;       // Smear Cursor 連續形變拖尾 (向下相容旗標)
   charge?: boolean;      // 動態輸入蓄力與超載特效 (Kinetic Charge Overdrive)
   rearviewMirror?: boolean; // 翻頁回溯後照鏡 HUD (Rearview Mirror HUD)
+}
+
+export function resolveTrailStyle(effects?: Partial<CursorEffects>): TrailStyle {
+  if (!effects) return 'smear';
+  if (effects.trailStyle) return effects.trailStyle;
+  if (effects.smear) return 'smear';
+  if (effects.trail) return 'trail';
+  return 'none';
 }
 
 export interface CursorRect {
@@ -93,6 +105,20 @@ export interface AdvancedConfig {
   chargeDecayMs: number;      // 蓄力散熱冷卻時長 (ms，預設 800)
   chargeMaxGlow: number;      // 滿蓄力超載光暈峰值 (px，預設 14)
   chargeTrailBoost: number;   // 滿蓄力殘影階數增加量 (預設 3)
+
+  // 8. Smear Cursor 連續形變物理引擎 (Neovide / smear-cursor.nvim)
+  smearStiffness: number;              // 前導角剛性 (0.1 ~ 1.0，預設 0.8)
+  smearTrailingStiffness: number;      // 拖尾角剛性 (0.05 ~ 1.0，預設 0.30)
+  smearTrailingExponent: number;       // 拖尾角度指數曲率 (1.0 ~ 5.0，預設 2.0)
+  smearDamping: number;                // 阻尼係數 (0.1 ~ 0.99，預設 0.82)
+  smearDistanceStopAnimating: number;  // 收斂停止閾值 (px，預設 0.5)
+  smearMaxLength: number;              // 最大拖尾長度限制 (px，0 表示無限制，預設 0)
+
+  // 9. 雷射 / 星塵 / 速度線殘影參數 (Canvas Trail Effects)
+  laserDurationMs: number;             // 雷射光束殘留時長 (ms，預設 220)
+  laserWidth: number;                  // 雷射光束基礎寬度 (px，預設 2.2)
+  sparkleDensity: number;              // 星塵粒子噴灑密度倍率 (0.3 ~ 2.5，預設 1.0)
+  ribbonDurationMs: number;            // 速度線軌跡殘留時長 (ms，預設 220)
 }
 
 export const DEFAULT_ADVANCED_CONFIG: AdvancedConfig = {
@@ -135,7 +161,19 @@ export const DEFAULT_ADVANCED_CONFIG: AdvancedConfig = {
   chargeThreshold: 0.70,
   chargeDecayMs: 800,
   chargeMaxGlow: 14,
-  chargeTrailBoost: 3
+  chargeTrailBoost: 3,
+
+  smearStiffness: 0.85,
+  smearTrailingStiffness: 0.30,
+  smearTrailingExponent: 2.0,
+  smearDamping: 0.82,
+  smearDistanceStopAnimating: 0.5,
+  smearMaxLength: 0,
+
+  laserDurationMs: 220,
+  laserWidth: 2.2,
+  sparkleDensity: 1.0,
+  ribbonDurationMs: 220
 };
 
 export type KeyActionId =
@@ -358,7 +396,9 @@ class CursorStore {
       smoothScroll: true,
       breathe: false,
       blink: true,
-      trail: true,
+      trailStyle: 'smear',
+      trail: false,
+      smear: true,
       charge: true,
       rearviewMirror: true
     },

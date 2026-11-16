@@ -63,7 +63,28 @@ export interface Translations {
   effectSmoothScroll: string;
   effectBreathe: string;
   effectBlink: string;
+  trailStyleLabel: string;
+  trailStyleNone: string;
+  effectSmear: string;
   effectTrail: string;
+  trailStyleLaser: string;
+  trailStyleSparkle: string;
+  trailStyleRibbon: string;
+  hintMotionDefault: string;
+  hintEffectSmooth: string;
+  hintEffectBounce: string;
+  hintEffectSmoothScroll: string;
+  hintEffectCharge: string;
+  hintEffectRearviewMirror: string;
+  hintTrailNone: string;
+  hintTrailSmear: string;
+  hintTrailTrail: string;
+  hintTrailLaser: string;
+  hintTrailSparkle: string;
+  hintTrailRibbon: string;
+  hintPulseNone: string;
+  hintPulseBlink: string;
+  hintPulseBreathe: string;
   effectCharge: string;
   effectRearviewMirror: string;
   statusBarSectionLabel: string;
@@ -183,6 +204,21 @@ export interface Translations {
   fieldViewportPaddingBottom: string;
   hintViewportPaddingBottom: string;
 
+  groupSmearTitle: string;
+  groupSmearDesc: string;
+  fieldSmearStiffness: string;
+  hintSmearStiffness: string;
+  fieldSmearTrailingStiffness: string;
+  hintSmearTrailingStiffness: string;
+  fieldSmearTrailingExponent: string;
+  hintSmearTrailingExponent: string;
+  fieldSmearDamping: string;
+  hintSmearDamping: string;
+  fieldSmearStopDistance: string;
+  hintSmearStopDistance: string;
+  fieldSmearMaxLength: string;
+  hintSmearMaxLength: string;
+
   groupTrailTitle: string;
   groupTrailDesc: string;
   fieldTrailMode: string;
@@ -199,6 +235,17 @@ export interface Translations {
   hintTrailMaxOpacity: string;
   fieldTrailPreserveTrapezoid: string;
   hintTrailPreserveTrapezoid: string;
+
+  groupCanvasTrailTitle: string;
+  groupCanvasTrailDesc: string;
+  fieldLaserDurationMs: string;
+  hintLaserDurationMs: string;
+  fieldLaserWidth: string;
+  hintLaserWidth: string;
+  fieldSparkleDensity: string;
+  hintSparkleDensity: string;
+  fieldRibbonDurationMs: string;
+  hintRibbonDurationMs: string;
 
   groupChargeTitle: string;
   groupChargeDesc: string;
@@ -218,6 +265,7 @@ export interface Translations {
   sandboxBgLight: string;
   sandboxThemeLabel: string;
   sandboxShapeLabel: string;
+  sandboxTrailStyleLabel: string;
   padUpBtn: string;
   padLeftBtn: string;
   padRightBtn: string;
@@ -422,7 +470,28 @@ export const LOCALES: Record<Locale, Translations> = {
     effectSmoothScroll: '平滑捲動',
     effectBreathe: '禪意呼吸',
     effectBlink: '經典閃爍',
+    trailStyleLabel: '殘影模式 (單選)',
+    trailStyleNone: '無',
+    effectSmear: '液態拖尾',
     effectTrail: '流光殘影',
+    trailStyleLaser: '雷射軌跡',
+    trailStyleSparkle: '星塵粒子',
+    trailStyleRibbon: '速度線',
+    hintMotionDefault: '將游標移至選項上即可查看效果說明',
+    hintEffectSmooth: '平滑位移：移動游標時套用流暢過渡動畫，避免生硬瞬移',
+    hintEffectBounce: '彈簧效果：移動時產生 3D 透視傾斜與微幅彈性回彈',
+    hintEffectSmoothScroll: '平滑捲動：跨螢幕或翻頁時採用柔和物理捲動跟隨',
+    hintEffectCharge: '動能蓄力：快速連按方向鍵時累積能量，強化光暈與特效強度',
+    hintEffectRearviewMirror: '捲動回顧：大距離翻頁時於角落短暫顯示出發位置後照鏡',
+    hintTrailNone: '關閉所有殘影與拖尾特效，維持最純淨的專注閱讀畫面',
+    hintTrailSmear: '液態拖尾：四角彈簧連續形變拉扯，帶來滑順流暢的液態延伸感',
+    hintTrailTrail: '流光殘影：移動後於後方留下多片漸淡的 3D 梯形殘影分身',
+    hintTrailLaser: '雷射軌跡：游標瞬間到位，起終點之間射出一道發光能量光束',
+    hintTrailSparkle: '星塵粒子：移動路徑沿途灑落帶微幅漂浮的發光像素粒子',
+    hintTrailRibbon: '速度線：追蹤游標上下緣近期軌跡，畫出極簡俐落的雙線條',
+    hintPulseNone: '常駐微光：游標靜止時保持穩定常亮不閃爍',
+    hintPulseBlink: '經典閃爍：游標靜止時以終端機節奏閃爍提示當前位置',
+    hintPulseBreathe: '禪意呼吸：游標靜止時以柔和緩慢的呼吸光暈律動',
     effectCharge: '動能蓄力',
     effectRearviewMirror: '捲動回顧',
     statusBarSectionLabel: '顯示底部狀態列',
@@ -535,6 +604,21 @@ export const LOCALES: Record<Locale, Translations> = {
     hintViewportPaddingTop: '游標向上接近頂部多少像素時自動推動頁面',
     fieldViewportPaddingBottom: '視窗底部安全邊距 (Padding Bottom)',
     hintViewportPaddingBottom: '游標向下接近底部多少像素時自動推動頁面',
+    groupSmearTitle: '液態拖尾物理引擎 (Liquid Smear)',
+    groupSmearDesc: '四角獨立彈簧阻尼物理，移動時產生連續滑順的液態形變拉扯與漸層收尾',
+    fieldSmearStiffness: '前導角剛性 (Leading Stiffness)',
+    hintSmearStiffness: '朝向移動方向的前導頂點彈簧剛性，越高越迅速抵達目標 (0.1 - 1.0)',
+    fieldSmearTrailingStiffness: '拖尾角剛性 (Trailing Stiffness)',
+    hintSmearTrailingStiffness: '背對移動方向的拖尾頂點剛性，越低拖尾拉扯越長 (0.05 - 1.0)',
+    fieldSmearTrailingExponent: '角度衰減指數 (Trailing Exponent)',
+    hintSmearTrailingExponent: '控制對角線移動時側邊角的剛性過渡曲率，越高尖尾越銳利 (1.0 - 5.0)',
+    fieldSmearDamping: '物理阻尼係數 (Damping)',
+    hintSmearDamping: '控制收尾減速與微幅過衝感，越低越有彈性回彈 (0.1 - 0.99)',
+    fieldSmearStopDistance: '收斂停止閾值 (Stop Distance)',
+    hintSmearStopDistance: '四角距離目標小於此像素值時停止物理運算並歸位 (px)',
+    fieldSmearMaxLength: '最大拖尾長度限制 (Max Length)',
+    hintSmearMaxLength: '限制長距離跳轉時的最大拉伸長度；設為 0 表示不限制 (px)',
+
     groupTrailTitle: '流光殘影與動態拖尾 (Motion Trail & Afterimage)',
     groupTrailDesc: '移動時留下由濃漸淡、且保持 3D 透視梯形角度的水墨流光拖尾',
     fieldTrailMode: '殘影軌跡模式 (Trail Mode)',
@@ -551,6 +635,17 @@ export const LOCALES: Record<Locale, Translations> = {
     hintTrailMaxOpacity: '最靠近主游標的殘影起始明亮程度 (0.1 ~ 1.0)',
     fieldTrailPreserveTrapezoid: '保持梯形透視 (Preserve Trapezoid)',
     hintTrailPreserveTrapezoid: '殘影淡出全程鎖定 3D 透視梯形形變角度',
+    groupCanvasTrailTitle: '雷射 / 星塵 / 速度線微調 (Canvas Effects)',
+    groupCanvasTrailDesc: '調整雷射軌跡、星塵粒子與速度線三種 Canvas 殘影模式的持續時間與強度',
+    fieldLaserDurationMs: '雷射持續時長 (Laser Duration)',
+    hintLaserDurationMs: '雷射光束從發射到完全淡出的毫秒數 (ms)',
+    fieldLaserWidth: '雷射光束寬度 (Laser Width)',
+    hintLaserWidth: '雷射光束核心的基礎線條粗細 (px)',
+    fieldSparkleDensity: '星塵粒子密度 (Sparkle Density)',
+    hintSparkleDensity: '移動時噴灑的星塵粒子數量倍率 (0.3 - 2.5)',
+    fieldRibbonDurationMs: '速度線殘留時長 (Ribbon Duration)',
+    hintRibbonDurationMs: '速度線上下緣雙軌跡的保留時間 (ms)',
+
     groupChargeTitle: '動能蓄力與過載超頻 (Kinetic Charge & Overdrive)',
     groupChargeDesc: '高速連續按鍵或長按時積蓄動能，升溫提升光澤與殘影，放開時平滑阻尼散熱',
     fieldChargeStepImpulse: '充能速率/單步衝量 (Step Impulse)',
@@ -568,6 +663,7 @@ export const LOCALES: Record<Locale, Translations> = {
     sandboxBgLight: '☀️ 模擬淺色',
     sandboxThemeLabel: '色彩主題：',
     sandboxShapeLabel: '游標形態：',
+    sandboxTrailStyleLabel: '殘影模式：',
     padUpBtn: '↑ k (上行)',
     padLeftBtn: '← h (左字)',
     padRightBtn: 'l (右字) →',
@@ -604,7 +700,7 @@ export const LOCALES: Record<Locale, Translations> = {
     popupTabShortcuts: '⌨️ 快捷支援',
     tabAppearanceTitle: '🎨 外觀與筆觸',
     tabPhysicsTitle: '⚡ 物理與動態',
-    tabEffectsTitle: '☄️ 特效與超頻',
+    tabEffectsTitle: '☄️ 殘影與動能',
     tabKeybindingsTitle: '⌨️ 按鍵與網站管理',
     keybindingsSectionTitle: '快捷鍵設定與防衝突機制',
     keybindingsSectionDesc: '自訂所有 Vim 導航按鍵，並靈活應對 YouTube、GitHub、Gmail 等網頁專屬快捷鍵',
@@ -767,7 +863,28 @@ export const LOCALES: Record<Locale, Translations> = {
     effectSmoothScroll: 'Smooth Scroll',
     effectBreathe: 'Zen Pulse',
     effectBlink: 'Classic Blink',
+    trailStyleLabel: 'Trail Mode (Single Select)',
+    trailStyleNone: 'None',
+    effectSmear: 'Smear Cursor',
     effectTrail: 'Motion Trail',
+    trailStyleLaser: 'Laser Beam',
+    trailStyleSparkle: 'Sparkle Dust',
+    trailStyleRibbon: 'Speed Ribbon',
+    hintMotionDefault: 'Hover any option above to see what it does',
+    hintEffectSmooth: 'Smooth Motion: Smoothly interpolates cursor transitions instead of snapping',
+    hintEffectBounce: 'Elastic Bounce: Adds 3D perspective tilt and subtle spring overshoot',
+    hintEffectSmoothScroll: 'Smooth Scroll: Glides the viewport smoothly during page/screen jumps',
+    hintEffectCharge: 'Kinetic Charge: Builds energy on rapid keystrokes to boost glow and trails',
+    hintEffectRearviewMirror: 'Rearview Mirror: Briefly previews your origin position on large page jumps',
+    hintTrailNone: 'Disables all trail and smear effects for a clean, distraction-free view',
+    hintTrailSmear: 'Smear Cursor: 4-corner spring physics creating a smooth, continuous liquid stretch',
+    hintTrailTrail: 'Motion Trail: Leaves fading 3D trapezoid afterimages along the path',
+    hintTrailLaser: 'Laser Beam: Cursor snaps instantly while firing a glowing beam behind',
+    hintTrailSparkle: 'Sparkle Dust: Scatters glowing pixel particles along your movement path',
+    hintTrailRibbon: 'Speed Ribbon: Traces clean, dual glowing lines along the cursor edges',
+    hintPulseNone: 'Static Glow: Keeps the cursor steadily lit without pulsing when idle',
+    hintPulseBlink: 'Classic Blink: Pulses the cursor in a classic terminal blink rhythm when idle',
+    hintPulseBreathe: 'Zen Breathe: Gently breathes with a soft ambient glow when idle',
     effectCharge: 'Kinetic Charge',
     effectRearviewMirror: 'Scroll Peek',
     statusBarSectionLabel: 'Show Status Bar',
@@ -880,6 +997,21 @@ export const LOCALES: Record<Locale, Translations> = {
     hintViewportPaddingTop: 'Minimum distance from top edge before page scrolls',
     fieldViewportPaddingBottom: 'Bottom Viewport Padding',
     hintViewportPaddingBottom: 'Minimum distance from bottom edge before page scrolls',
+    groupSmearTitle: 'Smear Cursor (Liquid Spring Physics)',
+    groupSmearDesc: '4-corner independent spring-damper physics for continuous, fluid cursor stretching',
+    fieldSmearStiffness: 'Leading Stiffness',
+    hintSmearStiffness: 'Spring stiffness for leading corners toward motion direction (0.1 - 1.0)',
+    fieldSmearTrailingStiffness: 'Trailing Stiffness',
+    hintSmearTrailingStiffness: 'Spring stiffness for trailing corners; lower produces longer smear tails (0.05 - 1.0)',
+    fieldSmearTrailingExponent: 'Trailing Exponent',
+    hintSmearTrailingExponent: 'Angular stiffness falloff curve on diagonal moves; higher gives sharper tails (1.0 - 5.0)',
+    fieldSmearDamping: 'Physics Damping',
+    hintSmearDamping: 'Controls deceleration and subtle spring overshoot (0.1 - 0.99)',
+    fieldSmearStopDistance: 'Stop Distance Threshold',
+    hintSmearStopDistance: 'Stop physics simulation and snap to target below this pixel distance (px)',
+    fieldSmearMaxLength: 'Max Smear Length',
+    hintSmearMaxLength: 'Maximum stretch length on long jumps; 0 means unlimited (px)',
+
     groupTrailTitle: 'Motion Trail & Afterimages',
     groupTrailDesc: 'Leave behind fading luminous echoes that preserve 3D trapezoid perspective',
     fieldTrailMode: 'Trail Motion Mode',
@@ -896,6 +1028,17 @@ export const LOCALES: Record<Locale, Translations> = {
     hintTrailMaxOpacity: 'Peak initial opacity for the ghost nearest to cursor (0.1 - 1.0)',
     fieldTrailPreserveTrapezoid: 'Preserve 3D Trapezoid',
     hintTrailPreserveTrapezoid: 'Lock 3D perspective trapezoid deformation throughout ghost dissolution',
+    groupCanvasTrailTitle: 'Laser / Sparkle / Ribbon (Canvas Effects)',
+    groupCanvasTrailDesc: 'Fine-tune duration and intensity for Laser Beam, Sparkle Dust, and Speed Ribbon trails',
+    fieldLaserDurationMs: 'Laser Duration',
+    hintLaserDurationMs: 'Duration in ms for the laser beam to fade out completely',
+    fieldLaserWidth: 'Laser Beam Width',
+    hintLaserWidth: 'Base stroke thickness of the laser core (px)',
+    fieldSparkleDensity: 'Sparkle Particle Density',
+    hintSparkleDensity: 'Multiplier for particle count spawned along motion (0.3 - 2.5)',
+    fieldRibbonDurationMs: 'Speed Ribbon Duration',
+    hintRibbonDurationMs: 'Retention time for dual speed-ribbon edge lines (ms)',
+
     groupChargeTitle: 'Kinetic Charge & Overdrive',
     groupChargeDesc: 'Accumulate kinetic momentum on rapid keystrokes or long presses, cool down with smooth damping',
     fieldChargeStepImpulse: 'Step Charge Impulse',
@@ -913,6 +1056,7 @@ export const LOCALES: Record<Locale, Translations> = {
     sandboxBgLight: '☀️ Light BG',
     sandboxThemeLabel: 'Theme:',
     sandboxShapeLabel: 'Cursor Shape:',
+    sandboxTrailStyleLabel: 'Trail Mode:',
     padUpBtn: '↑ k (Up)',
     padLeftBtn: '← h (Left)',
     padRightBtn: 'l (Right) →',
@@ -1112,7 +1256,28 @@ export const LOCALES: Record<Locale, Translations> = {
     effectSmoothScroll: 'スムーズスクロール',
     effectBreathe: '禅の呼吸',
     effectBlink: 'クラシック点滅',
+    trailStyleLabel: 'トレイルモード (単一選択)',
+    trailStyleNone: 'なし',
+    effectSmear: 'Smear カーソル',
     effectTrail: '流光残像',
+    trailStyleLaser: 'レーザー軌跡',
+    trailStyleSparkle: '星屑パーティクル',
+    trailStyleRibbon: 'スピードライン',
+    hintMotionDefault: '上の項目にカーソルを合わせると効果の説明が表示されます',
+    hintEffectSmooth: 'スムーズ移動：移動時に滑らかなトランジションアニメーションを適用します',
+    hintEffectBounce: 'バウンス効果：移動時に3Dパース傾斜と弾性オーバーシュートを加えます',
+    hintEffectSmoothScroll: 'スムーズスクロール：ページ送り時に画面を滑らかにスクロールします',
+    hintEffectCharge: 'キネティックチャージ：連打でエネルギーを蓄積し発光や軌跡を強化します',
+    hintEffectRearviewMirror: 'バックミラー：大きなジャンプ時に移動元の位置を隅にプレビュー表示します',
+    hintTrailNone: 'すべてのトレイル・残像効果をオフにしてシンプルな表示にします',
+    hintTrailSmear: 'Smearカーソル：4頂点バネ物理で滑らかな連続的伸びを実現します',
+    hintTrailTrail: '流光残像：移動経路に沿ってフェードアウトする3D台形の残像を残します',
+    hintTrailLaser: 'レーザー軌跡：始点と終点の間に発光するレーザービームを描画します',
+    hintTrailSparkle: '星屑パーティクル：移動経路に沿って光るピクセル粒子を散らします',
+    hintTrailRibbon: 'スピードライン：カーソル上下の軌跡を追うシャープな2本のラインを描画します',
+    hintPulseNone: '常時点灯：静止時に点滅せず安定した光を保ちます',
+    hintPulseBlink: 'クラシック点滅：静止時にターミナル風の点滅リズムで現在地を示します',
+    hintPulseBreathe: '呼吸パルス：静止時に柔らかな光の呼吸アニメーションを行います',
     effectCharge: '動能チャージ',
     effectRearviewMirror: 'スクロール回顧',
     statusBarSectionLabel: 'ステータスバーを表示',
@@ -1225,6 +1390,21 @@ export const LOCALES: Record<Locale, Translations> = {
     hintViewportPaddingTop: 'カーソルが上端に近づいた際に自動追従する距離',
     fieldViewportPaddingBottom: '視界下部マージン (Padding Bottom)',
     hintViewportPaddingBottom: 'カーソルが下端に近づいた際に自動追従する距離',
+    groupSmearTitle: 'Smear Cursor 連続変形トレイル (Liquid Physics)',
+    groupSmearDesc: '4頂点の独立したバネ・ダンパー物理演算により連続的で滑らかな伸びを描画します',
+    fieldSmearStiffness: '先端コーナー剛性 (Leading Stiffness)',
+    hintSmearStiffness: '進行方向側の頂点のバネ剛性。高いほど素早く目標に到達します (0.1 - 1.0)',
+    fieldSmearTrailingStiffness: '追従コーナー剛性 (Trailing Stiffness)',
+    hintSmearTrailingStiffness: '後方側の頂点のバネ剛性。低いほど長いトレイルになります (0.05 - 1.0)',
+    fieldSmearTrailingExponent: '角度減衰指数 (Trailing Exponent)',
+    hintSmearTrailingExponent: '斜め移動時の側面コーナー剛性カーブ。高いほど鋭い尾になります (1.0 - 5.0)',
+    fieldSmearDamping: '物理ダンピング係数 (Damping)',
+    hintSmearDamping: '減速とわずかなオーバーシュートを制御します (0.1 - 0.99)',
+    fieldSmearStopDistance: '収束停止しきい値 (Stop Distance)',
+    hintSmearStopDistance: '目標との距離がこのピクセル値未満になると演算を停止します (px)',
+    fieldSmearMaxLength: '最大トレイル長 (Max Length)',
+    hintSmearMaxLength: '長距離ジャンプ時の最大伸縮長を制限します。0で無制限 (px)',
+
     groupTrailTitle: '流光残像と動態トレイル (Motion Trail & Afterimage)',
     groupTrailDesc: '移動時に遠くほど薄れ、3D台形パースペクティブを保持した流麗な残像を生成',
     fieldTrailMode: '残像トレイルモード (Trail Mode)',
@@ -1241,6 +1421,17 @@ export const LOCALES: Record<Locale, Translations> = {
     hintTrailMaxOpacity: 'カーソルに最も近い残像の初期不透明度 (0.1 ~ 1.0)',
     fieldTrailPreserveTrapezoid: '3D台形パースを保持 (Preserve Trapezoid)',
     hintTrailPreserveTrapezoid: '残像が消えるまで台形の立体パースペクティブ傾斜角を固定保持',
+    groupCanvasTrailTitle: 'レーザー / 星屑 / スピードライン微調整 (Canvas Effects)',
+    groupCanvasTrailDesc: 'レーザー軌跡、星屑パーティクル、スピードラインの持続時間や強度を調整します',
+    fieldLaserDurationMs: 'レーザー持続時間 (Laser Duration)',
+    hintLaserDurationMs: 'レーザーが発射されてから完全に消えるまでの時間 (ms)',
+    fieldLaserWidth: 'レーザー光線幅 (Laser Width)',
+    hintLaserWidth: 'レーザー中心線の基本太さ (px)',
+    fieldSparkleDensity: '星屑パーティクル密度 (Sparkle Density)',
+    hintSparkleDensity: '移動時に放出されるパーティクル数の倍率 (0.3 - 2.5)',
+    fieldRibbonDurationMs: 'スピードライン残存時間 (Ribbon Duration)',
+    hintRibbonDurationMs: 'スピードラインの上下軌跡が残る時間 (ms)',
+
     groupChargeTitle: '動能チャージと過負荷オーバードライブ (Kinetic Charge & Overdrive)',
     groupChargeDesc: '高速連打や長押しでエネルギーを蓄積し、光沢と残像を強化。離すと滑らかに放熱',
     fieldChargeStepImpulse: 'チャージレート/ステップ衝量 (Step Impulse)',
@@ -1258,6 +1449,7 @@ export const LOCALES: Record<Locale, Translations> = {
     sandboxBgLight: '☀️ ライト背景',
     sandboxThemeLabel: 'カラースキーム：',
     sandboxShapeLabel: 'カーソル形状：',
+    sandboxTrailStyleLabel: 'トレイルモード：',
     padUpBtn: '↑ k (上行)',
     padLeftBtn: '← h (左字)',
     padRightBtn: 'l (右字) →',

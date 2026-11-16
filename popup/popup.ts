@@ -1,7 +1,9 @@
 import { LOCALES, Locale, Translations, detectDefaultLocale } from '../src/i18n/locales';
-import { formatKeyCombo, DEFAULT_KEYBINDINGS, KeybindingsConfig } from '../src/core/cursorStore';
+import { formatKeyCombo, DEFAULT_KEYBINDINGS, KeybindingsConfig, TrailStyle } from '../src/core/cursorStore';
 import { checkExtensionUpdate, getCurrentVersion, ReleaseInfo } from '../src/utils/updater';
 import { SmartThemePalette } from '../src/utils/themeDetector';
+import { SmearPhysicsEngine } from '../src/utils/smearPhysics';
+import { CanvasTrailEffects } from '../src/utils/canvasTrailEffects';
 
 /**
  * Popup 設定邏輯 (Vanilla TS)
@@ -49,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const effectSmooth = document.getElementById('effect-smooth') as HTMLInputElement | null;
   const effectBounce = document.getElementById('effect-bounce') as HTMLInputElement | null;
   const effectSmoothScroll = document.getElementById('effect-smooth-scroll') as HTMLInputElement | null;
-  const effectTrail = document.getElementById('effect-trail') as HTMLInputElement | null;
+  const trailStyleRadios = document.querySelectorAll<HTMLInputElement>('input[name="muzen-trail-style"]');
   const effectCharge = document.getElementById('effect-charge') as HTMLInputElement | null;
   const effectRearviewMirror = document.getElementById('effect-rearview-mirror') as HTMLInputElement | null;
   const pulseRadios = document.querySelectorAll<HTMLInputElement>('input[name="muzen-pulse"]');
@@ -522,7 +524,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (effectSmooth) effectSmooth.checked = data.muzen_effects.smooth !== undefined ? !!data.muzen_effects.smooth : true;
         if (effectBounce) effectBounce.checked = data.muzen_effects.bounce !== undefined ? !!data.muzen_effects.bounce : true;
         if (effectSmoothScroll) effectSmoothScroll.checked = data.muzen_effects.smoothScroll !== undefined ? !!data.muzen_effects.smoothScroll : true;
-        if (effectTrail) effectTrail.checked = data.muzen_effects.trail !== undefined ? !!data.muzen_effects.trail : true;
+        const hasTrail = data.muzen_effects.trail !== undefined ? !!data.muzen_effects.trail : false;
+        const hasSmear = data.muzen_effects.smear !== undefined ? !!data.muzen_effects.smear : !hasTrail;
+        const trailStyleVal = data.muzen_effects.trailStyle || (hasSmear ? 'smear' : hasTrail ? 'trail' : 'none');
+        trailStyleRadios.forEach((r) => { r.checked = r.value === trailStyleVal; });
         if (effectCharge) effectCharge.checked = data.muzen_effects.charge !== undefined ? !!data.muzen_effects.charge : true;
         if (effectRearviewMirror) effectRearviewMirror.checked = data.muzen_effects.rearviewMirror !== undefined ? !!data.muzen_effects.rearviewMirror : true;
         const pulseVal = data.muzen_effects.blink ? 'blink' : data.muzen_effects.breathe ? 'breathe' : 'none';
@@ -532,7 +537,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (effectSmooth) effectSmooth.checked = data.muzen_animation === 'smooth' || data.muzen_animation === 'breathe';
         if (effectBounce) effectBounce.checked = true;
         if (effectSmoothScroll) effectSmoothScroll.checked = true;
-        if (effectTrail) effectTrail.checked = true;
+        trailStyleRadios.forEach((r) => { r.checked = r.value === 'smear'; });
         if (effectCharge) effectCharge.checked = true;
         if (effectRearviewMirror) effectRearviewMirror.checked = true;
         const pulseVal = data.muzen_animation === 'breathe' ? 'breathe' : data.muzen_animation === 'blink' ? 'blink' : 'none';
@@ -817,11 +822,18 @@ document.addEventListener('DOMContentLoaded', () => {
       if (r.checked) activePulse = r.value;
     });
 
+    let activeTrailStyle = 'smear';
+    trailStyleRadios.forEach((r) => {
+      if (r.checked) activeTrailStyle = r.value;
+    });
+
     const effects = {
       smooth: effectSmooth ? effectSmooth.checked : true,
       bounce: effectBounce ? effectBounce.checked : true,
       smoothScroll: effectSmoothScroll ? effectSmoothScroll.checked : true,
-      trail: effectTrail ? effectTrail.checked : true,
+      trailStyle: activeTrailStyle,
+      smear: activeTrailStyle === 'smear',
+      trail: activeTrailStyle === 'trail',
       charge: effectCharge ? effectCharge.checked : true,
       rearviewMirror: effectRearviewMirror ? effectRearviewMirror.checked : true,
       breathe: activePulse === 'breathe',
@@ -837,10 +849,474 @@ document.addEventListener('DOMContentLoaded', () => {
   effectSmooth?.addEventListener('change', onEffectsChanged);
   effectBounce?.addEventListener('change', onEffectsChanged);
   effectSmoothScroll?.addEventListener('change', onEffectsChanged);
-  effectTrail?.addEventListener('change', onEffectsChanged);
+  trailStyleRadios.forEach((r) => r.addEventListener('change', onEffectsChanged));
   effectCharge?.addEventListener('change', onEffectsChanged);
   effectRearviewMirror?.addEventListener('change', onEffectsChanged);
   pulseRadios.forEach((r) => r.addEventListener('change', onEffectsChanged));
+
+  // 14.1 動態效果說明列 (方案 A) 與 迷你殘影即時示範軌道 (方案 C)
+  const motionHintEl = document.getElementById('motion-effects-hint');
+  const trailHintEl = document.getElementById('trail-style-hint');
+  const pulseHintEl = document.getElementById('pulse-effects-hint');
+  const trailStyleGroup = document.getElementById('trail-style-group');
+  const pulseGroup = document.getElementById('pulse-effects-group');
+
+  const MOTION_HINT_MAP: Record<string, keyof Translations> = {
+    'effect-smooth': 'hintEffectSmooth',
+    'effect-bounce': 'hintEffectBounce',
+    'effect-smooth-scroll': 'hintEffectSmoothScroll',
+    'effect-charge': 'hintEffectCharge',
+    'effect-rearview-mirror': 'hintEffectRearviewMirror'
+  };
+
+  const TRAIL_HINT_MAP: Record<TrailStyle, keyof Translations> = {
+    none: 'hintTrailNone',
+    smear: 'hintTrailSmear',
+    trail: 'hintTrailTrail',
+    laser: 'hintTrailLaser',
+    sparkle: 'hintTrailSparkle',
+    ribbon: 'hintTrailRibbon'
+  };
+
+  const PULSE_HINT_MAP: Record<string, keyof Translations> = {
+    none: 'hintPulseNone',
+    blink: 'hintPulseBlink',
+    breathe: 'hintPulseBreathe'
+  };
+
+  const getCheckedValue = (radios: NodeListOf<HTMLInputElement>, fallback: string): string => {
+    for (const r of Array.from(radios)) {
+      if (r.checked) return r.value;
+    }
+    return fallback;
+  };
+
+  const updateHintBars = (
+    hoverTrail?: TrailStyle,
+    hoverPulse?: string,
+    hoverMotionKey?: keyof Translations
+  ) => {
+    const dict = LOCALES[currentLocale] || LOCALES['zh-TW'];
+    if (motionHintEl) {
+      motionHintEl.textContent = hoverMotionKey ? dict[hoverMotionKey] : dict.hintMotionDefault;
+      motionHintEl.classList.toggle('is-hovering', !!hoverMotionKey);
+    }
+    if (trailHintEl) {
+      const activeTrail = (hoverTrail || getCheckedValue(trailStyleRadios, 'smear')) as TrailStyle;
+      const key = TRAIL_HINT_MAP[activeTrail] || 'hintTrailSmear';
+      trailHintEl.textContent = dict[key];
+      trailHintEl.classList.toggle('is-hovering', !!hoverTrail);
+    }
+    if (pulseHintEl) {
+      const activePulse = hoverPulse || getCheckedValue(pulseRadios, 'blink');
+      const key = PULSE_HINT_MAP[activePulse] || 'hintPulseBlink';
+      pulseHintEl.textContent = dict[key];
+      pulseHintEl.classList.toggle('is-hovering', !!hoverPulse);
+    }
+  };
+
+  // 迷你殘影即時示範軌道引擎
+  const previewCanvas = document.getElementById('trail-preview-canvas') as HTMLCanvasElement | null;
+  const previewCtx = previewCanvas?.getContext('2d') || null;
+  const previewSmear = new SmearPhysicsEngine();
+  const previewCanvasEffects = new CanvasTrailEffects();
+  let previewMode: TrailStyle = 'smear';
+  let previewAtRight = false;
+  let previewLastJumpTs = 0;
+  let previewLastFrameTs = performance.now();
+  let previewGhostTimer = 0;
+
+  const parseHexRgb = (hexStr: string) => {
+    const clean = hexStr.trim().replace('#', '');
+    if (clean.length === 6) {
+      const n = parseInt(clean, 16);
+      if (!Number.isNaN(n)) {
+        return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255, hex: `#${clean}` };
+      }
+    }
+    return { r: 254, g: 128, b: 25, hex: '#fe8019' };
+  };
+
+  const triggerPreviewJump = (mode: TrailStyle, forceReset = false) => {
+    if (!previewCanvas) return;
+    const w = previewCanvas.clientWidth || 280;
+    const h = previewCanvas.clientHeight || 28;
+    const boxW = 9;
+    const boxH = 16;
+    const y = Math.round((h - boxH) / 2);
+    const leftX = 16;
+    const rightX = Math.max(leftX + 40, w - 26);
+
+    if (forceReset) {
+      previewAtRight = false;
+      previewSmear.snapTo({ x: leftX, y, width: boxW, height: boxH });
+      previewCanvasEffects.clear();
+    }
+
+    const originX = previewAtRight ? rightX : leftX;
+    const targetX = previewAtRight ? leftX : rightX;
+    previewAtRight = !previewAtRight;
+    previewLastJumpTs = performance.now();
+    previewGhostTimer = 260;
+
+    const originRect = { x: originX, y, width: boxW, height: boxH };
+    const targetRect = { x: targetX, y, width: boxW, height: boxH };
+    const accentHex = getComputedStyle(document.documentElement).getPropertyValue('--accent-orange') || '#fe8019';
+    const color = parseHexRgb(accentHex);
+
+    if (mode === 'smear') {
+      previewSmear.setTarget(targetRect, {
+        stiffness: 0.85,
+        trailingStiffness: 0.30,
+        trailingExponent: 2.0,
+        damping: 0.82,
+        distanceStopAnimating: 0.4,
+        maxLength: 0
+      });
+    } else if (mode === 'laser' || mode === 'sparkle' || mode === 'ribbon') {
+      previewCanvasEffects.spawn(mode, originRect, targetRect, color, 0.45);
+    }
+  };
+
+  const renderPreviewLoop = (now: number) => {
+    const dt = now - previewLastFrameTs;
+    previewLastFrameTs = now;
+
+    if (previewCanvas && previewCtx) {
+      const w = previewCanvas.clientWidth || 280;
+      const h = previewCanvas.clientHeight || 28;
+      if (w > 0 && h > 0) {
+        const dpr = window.devicePixelRatio || 1;
+        const cw = Math.round(w * dpr);
+        const ch = Math.round(h * dpr);
+        if (previewCanvas.width !== cw || previewCanvas.height !== ch) {
+          previewCanvas.width = cw;
+          previewCanvas.height = ch;
+        }
+
+        if (now - previewLastJumpTs >= 950) {
+          triggerPreviewJump(previewMode);
+        }
+
+        const boxW = 9;
+        const boxH = 16;
+        const y = Math.round((h - boxH) / 2);
+        const leftX = 16;
+        const rightX = Math.max(leftX + 40, w - 26);
+        const curTargetX = previewAtRight ? rightX : leftX;
+        const curOriginX = previewAtRight ? leftX : rightX;
+        const accentHex = getComputedStyle(document.documentElement).getPropertyValue('--accent-orange') || '#fe8019';
+        const color = parseHexRgb(accentHex);
+
+        if (previewMode === 'smear') {
+          const active = previewSmear.step(dt, {
+            stiffness: 0.85,
+            trailingStiffness: 0.30,
+            trailingExponent: 2.0,
+            damping: 0.82,
+            distanceStopAnimating: 0.4,
+            maxLength: 0
+          });
+          previewCtx.save();
+          previewCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          previewCtx.clearRect(0, 0, w, h);
+
+          if (active) {
+            const poly = previewSmear.getPolygon();
+            const { tail, head } = previewSmear.getGradientAxis();
+            if (poly.length >= 3) {
+              previewCtx.beginPath();
+              previewCtx.moveTo(poly[0].x, poly[0].y);
+              for (let i = 1; i < poly.length; i++) previewCtx.lineTo(poly[i].x, poly[i].y);
+              previewCtx.closePath();
+              const grad = previewCtx.createLinearGradient(tail.x, tail.y, head.x, head.y);
+              grad.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, 0.08)`);
+              grad.addColorStop(1, color.hex);
+              previewCtx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, 0.28)`;
+              previewCtx.fill();
+              previewCtx.lineWidth = 1.5;
+              previewCtx.strokeStyle = grad;
+              previewCtx.stroke();
+            }
+          } else {
+            previewCtx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, 0.28)`;
+            previewCtx.strokeStyle = color.hex;
+            previewCtx.lineWidth = 1.5;
+            previewCtx.fillRect(curTargetX, y, boxW, boxH);
+            previewCtx.strokeRect(curTargetX, y, boxW, boxH);
+          }
+          previewCtx.restore();
+        } else if (previewMode === 'laser' || previewMode === 'sparkle' || previewMode === 'ribbon') {
+          previewCanvasEffects.stepAndDraw(previewCtx, dt, w, h, dpr);
+          previewCtx.save();
+          previewCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          previewCtx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, 0.28)`;
+          previewCtx.strokeStyle = color.hex;
+          previewCtx.lineWidth = 1.5;
+          previewCtx.fillRect(curTargetX, y, boxW, boxH);
+          previewCtx.strokeRect(curTargetX, y, boxW, boxH);
+          previewCtx.restore();
+        } else {
+          previewCtx.save();
+          previewCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          previewCtx.clearRect(0, 0, w, h);
+
+          if (previewMode === 'trail' && previewGhostTimer > 0) {
+            previewGhostTimer = Math.max(0, previewGhostTimer - dt);
+            const fade = previewGhostTimer / 260;
+            for (let g = 1; g <= 4; g++) {
+              const t = g / 5;
+              const gx = curOriginX + (curTargetX - curOriginX) * t;
+              const alpha = fade * (0.15 + 0.5 * t);
+              previewCtx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${(alpha * 0.25).toFixed(3)})`;
+              previewCtx.strokeStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha.toFixed(3)})`;
+              previewCtx.lineWidth = 1.2;
+              previewCtx.fillRect(gx, y, boxW, boxH);
+              previewCtx.strokeRect(gx, y, boxW, boxH);
+            }
+          }
+
+          previewCtx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, 0.28)`;
+          previewCtx.strokeStyle = color.hex;
+          previewCtx.lineWidth = 1.5;
+          previewCtx.fillRect(curTargetX, y, boxW, boxH);
+          previewCtx.strokeRect(curTargetX, y, boxW, boxH);
+          previewCtx.restore();
+        }
+      }
+    }
+
+    // 繪製 位移特效 預覽軌道 (#motion-preview-canvas)
+    const motionCanvas = document.getElementById('motion-preview-canvas') as HTMLCanvasElement | null;
+    const motionCtx = motionCanvas?.getContext('2d');
+    if (motionCanvas && motionCtx) {
+      const mw = motionCanvas.clientWidth || 280;
+      const mh = motionCanvas.clientHeight || 28;
+      if (mw > 0 && mh > 0) {
+        const dpr = window.devicePixelRatio || 1;
+        const cw = Math.round(mw * dpr);
+        const ch = Math.round(mh * dpr);
+        if (motionCanvas.width !== cw || motionCanvas.height !== ch) {
+          motionCanvas.width = cw;
+          motionCanvas.height = ch;
+        }
+        const accentHex = getComputedStyle(document.documentElement).getPropertyValue('--accent-orange') || '#fe8019';
+        const color = parseHexRgb(accentHex);
+
+        motionCtx.save();
+        motionCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        motionCtx.clearRect(0, 0, mw, mh);
+
+        const cycleMs = 1100;
+        const phase = (now % (cycleMs * 2)) / cycleMs; // 0..2
+        const forward = phase < 1;
+        const tRaw = forward ? phase : phase - 1;
+        const leftX = 16;
+        const rightX = Math.max(leftX + 40, mw - 26);
+        const boxW = 9;
+        const boxH = 16;
+        const baseY = Math.round((mh - boxH) / 2);
+
+        const focus = motionPreviewFocus;
+        const isSmooth = focus ? focus === 'effect-smooth' || focus === 'effect-bounce' : !!effectSmooth?.checked;
+        const isBounce = focus ? focus === 'effect-bounce' : !!effectBounce?.checked;
+
+        if (focus === 'effect-smooth-scroll') {
+          // 示範柔和捲動線條
+          const scrollOffset = Math.sin((now / 900) * Math.PI) * 8;
+          motionCtx.strokeStyle = `rgba(${color.r}, ${color.g}, ${color.b}, 0.35)`;
+          motionCtx.lineWidth = 2;
+          for (let line = -1; line <= 2; line++) {
+            const ly = Math.round(mh / 2 + line * 9 - scrollOffset);
+            if (ly >= 2 && ly <= mh - 2) {
+              motionCtx.beginPath();
+              motionCtx.moveTo(16, ly);
+              motionCtx.lineTo(mw - 16, ly);
+              motionCtx.stroke();
+            }
+          }
+          motionCtx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, 0.28)`;
+          motionCtx.strokeStyle = color.hex;
+          motionCtx.lineWidth = 1.5;
+          motionCtx.fillRect(Math.round(mw / 2 - boxW / 2), baseY, boxW, boxH);
+          motionCtx.strokeRect(Math.round(mw / 2 - boxW / 2), baseY, boxW, boxH);
+        } else if (focus === 'effect-rearview-mirror') {
+          // 示範大跳躍 + 右下角後照鏡 HUD 閃現
+          const cx = forward ? rightX : leftX;
+          motionCtx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, 0.28)`;
+          motionCtx.strokeStyle = color.hex;
+          motionCtx.lineWidth = 1.5;
+          motionCtx.fillRect(cx, baseY, boxW, boxH);
+          motionCtx.strokeRect(cx, baseY, boxW, boxH);
+
+          const hudAlpha = Math.max(0.15, 1 - tRaw * 1.1);
+          const hudW = 36;
+          const hudH = 16;
+          const hudX = Math.round(mw / 2 - hudW / 2);
+          const hudY = Math.round((mh - hudH) / 2);
+          motionCtx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${(hudAlpha * 0.2).toFixed(3)})`;
+          motionCtx.strokeStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${hudAlpha.toFixed(3)})`;
+          motionCtx.lineWidth = 1;
+          motionCtx.fillRect(hudX, hudY, hudW, hudH);
+          motionCtx.strokeRect(hudX, hudY, hudW, hudH);
+          motionCtx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${hudAlpha.toFixed(3)})`;
+          motionCtx.fillRect(hudX + 5, hudY + 6, hudW - 10, 4);
+        } else {
+          // smooth / bounce / charge 綜合移動示範
+          const moveT = Math.min(1, tRaw * 3.4);
+          let ease = 1;
+          if (isSmooth) {
+            if (isBounce) {
+              // 輕微彈性過衝
+              const c4 = (2 * Math.PI) / 3;
+              ease = moveT >= 1 ? 1 : 1 + Math.pow(2, -8 * moveT) * Math.sin((moveT * 10 - 0.75) * c4) * 0.25;
+            } else {
+              ease = 1 - Math.pow(1 - moveT, 3);
+            }
+          } else {
+            ease = moveT > 0.05 ? 1 : 0;
+          }
+          const startX = forward ? leftX : rightX;
+          const endX = forward ? rightX : leftX;
+          const cx = startX + (endX - startX) * ease;
+          const skew = isBounce && moveT < 0.8 ? (forward ? -0.22 : 0.22) * (1 - moveT) : 0;
+
+          const isCharge = focus === 'effect-charge' || (!focus && !!effectCharge?.checked);
+          const chargeGlow = isCharge ? 6 + Math.sin(now / 140) * 4 : 0;
+          if (chargeGlow > 0) {
+            motionCtx.shadowColor = color.hex;
+            motionCtx.shadowBlur = chargeGlow;
+          }
+          motionCtx.translate(cx + boxW / 2, baseY + boxH / 2);
+          motionCtx.transform(1, 0, skew, 1, 0, 0);
+          motionCtx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, 0.28)`;
+          motionCtx.strokeStyle = color.hex;
+          motionCtx.lineWidth = 1.5;
+          motionCtx.fillRect(-boxW / 2, -boxH / 2, boxW, boxH);
+          motionCtx.strokeRect(-boxW / 2, -boxH / 2, boxW, boxH);
+        }
+
+        motionCtx.restore();
+      }
+    }
+
+    // 繪製 靜態脈動 預覽軌道 (#pulse-preview-canvas)
+    const pulseCanvas = document.getElementById('pulse-preview-canvas') as HTMLCanvasElement | null;
+    const pulseCtx = pulseCanvas?.getContext('2d');
+    if (pulseCanvas && pulseCtx) {
+      const pw = pulseCanvas.clientWidth || 280;
+      const ph = pulseCanvas.clientHeight || 28;
+      if (pw > 0 && ph > 0) {
+        const dpr = window.devicePixelRatio || 1;
+        const cw = Math.round(pw * dpr);
+        const ch = Math.round(ph * dpr);
+        if (pulseCanvas.width !== cw || pulseCanvas.height !== ch) {
+          pulseCanvas.width = cw;
+          pulseCanvas.height = ch;
+        }
+        const accentHex = getComputedStyle(document.documentElement).getPropertyValue('--accent-orange') || '#fe8019';
+        const color = parseHexRgb(accentHex);
+
+        const activePulse = pulsePreviewFocus || getCheckedValue(pulseRadios, 'blink');
+        let alpha = 1.0;
+        let glow = 0;
+        if (activePulse === 'blink') {
+          const s = Math.sin((now / 550) * Math.PI);
+          alpha = s >= 0 ? 1.0 : 0.12;
+        } else if (activePulse === 'breathe') {
+          const wave = (Math.sin((now / 1200) * Math.PI) + 1) * 0.5;
+          alpha = 0.22 + wave * 0.78;
+          glow = 3 + wave * 8;
+        }
+
+        const boxW = 9;
+        const boxH = 16;
+        const cx = Math.round(pw / 2 - boxW / 2);
+        const cy = Math.round((ph - boxH) / 2);
+
+        pulseCtx.save();
+        pulseCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        pulseCtx.clearRect(0, 0, pw, ph);
+        if (glow > 0) {
+          pulseCtx.shadowColor = color.hex;
+          pulseCtx.shadowBlur = glow;
+        }
+        pulseCtx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${(0.28 * alpha).toFixed(3)})`;
+        pulseCtx.strokeStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha.toFixed(3)})`;
+        pulseCtx.lineWidth = 1.5;
+        pulseCtx.fillRect(cx, cy, boxW, boxH);
+        pulseCtx.strokeRect(cx, cy, boxW, boxH);
+        pulseCtx.restore();
+      }
+    }
+
+    requestAnimationFrame(renderPreviewLoop);
+  };
+
+  let motionPreviewFocus: string | null = null;
+  let pulsePreviewFocus: string | null = null;
+
+  // 綁定 Hover 動態提示與預覽切換
+  Object.entries(MOTION_HINT_MAP).forEach(([id, key]) => {
+    const input = document.getElementById(id);
+    const chip = input?.closest('.effect-chip');
+    chip?.addEventListener('mouseenter', () => {
+      motionPreviewFocus = id;
+      updateHintBars(undefined, undefined, key);
+    });
+  });
+  motionHintEl?.parentElement?.querySelector('.effects-group')?.addEventListener('mouseleave', () => {
+    motionPreviewFocus = null;
+    updateHintBars();
+  });
+
+  trailStyleRadios.forEach((radio) => {
+    const chip = radio.closest('.effect-chip');
+    const mode = radio.value as TrailStyle;
+    chip?.addEventListener('mouseenter', () => {
+      updateHintBars(mode);
+      if (previewMode !== mode) {
+        previewMode = mode;
+        triggerPreviewJump(previewMode, true);
+      }
+    });
+    radio.addEventListener('change', () => {
+      if (radio.checked) {
+        previewMode = mode;
+        updateHintBars();
+        triggerPreviewJump(previewMode, true);
+      }
+    });
+  });
+  trailStyleGroup?.addEventListener('mouseleave', () => {
+    const active = getCheckedValue(trailStyleRadios, 'smear') as TrailStyle;
+    updateHintBars();
+    if (previewMode !== active) {
+      previewMode = active;
+      triggerPreviewJump(previewMode, true);
+    }
+  });
+
+  pulseRadios.forEach((radio) => {
+    const chip = radio.closest('.effect-chip');
+    chip?.addEventListener('mouseenter', () => {
+      pulsePreviewFocus = radio.value;
+      updateHintBars(undefined, radio.value);
+    });
+    radio.addEventListener('change', () => updateHintBars());
+  });
+  pulseGroup?.addEventListener('mouseleave', () => {
+    pulsePreviewFocus = null;
+    updateHintBars();
+  });
+
+  // 啟動示範軌道
+  setTimeout(() => {
+    previewMode = getCheckedValue(trailStyleRadios, 'smear') as TrailStyle;
+    updateHintBars();
+    triggerPreviewJump(previewMode, true);
+    requestAnimationFrame(renderPreviewLoop);
+  }, 80);
 
   // 14.4 開啟按鍵與防衝突設定頁面
   btnOpenKeybindings?.addEventListener('click', () => {
@@ -918,7 +1394,9 @@ document.addEventListener('DOMContentLoaded', () => {
       smooth: true,
       bounce: true,
       smoothScroll: true,
-      trail: true,
+      trailStyle: 'smear',
+      smear: true,
+      trail: false,
       charge: true,
       rearviewMirror: true,
       breathe: false,
@@ -940,7 +1418,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (effectSmooth) effectSmooth.checked = true;
     if (effectBounce) effectBounce.checked = true;
     if (effectSmoothScroll) effectSmoothScroll.checked = true;
-    if (effectTrail) effectTrail.checked = true;
+    trailStyleRadios.forEach((r) => { r.checked = r.value === 'smear'; });
     if (effectCharge) effectCharge.checked = true;
     if (effectRearviewMirror) effectRearviewMirror.checked = true;
     pulseRadios.forEach((r) => { r.checked = r.value === 'blink'; });
