@@ -5,6 +5,40 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [v0.2.0] - 2026-11-16
+
+### 繁體中文 (Traditional Chinese)
+#### ✨ 新增功能與體驗優化 (Features & Improvements)
+- **全域標籤直達 (`f` / Hint Mode)**：
+  - 掃描視口內所有可見段落、標題、清單與各類浮動視窗／側欄文字，直接分配高對比單／雙碼跳轉標籤，免切換輸入法即可一鍵跨區直達。
+  - 支援在 Hint 模式中按下 `/` 即時切換為搜尋過濾模式。
+- **Flash 搜尋跳轉 (`s` / `flash.nvim` 風格)**：
+  - 按下 `s` 後輸入關鍵字即可即時過濾視口內所有相符文字並高亮匹配處，自動避開候選字詞的下一個可能字元分配無衝突標籤，支援 `Enter` 跳轉首項與 `Backspace` 退回修改。
+  - 跳轉前自動寫入 `jumpHistory`（可用 `''` / `` `` `` 返回原位），跳轉後自動更新 `activeScopeElement` 至目標所屬容器。
+- **Shadow DOM 標籤覆蓋層 (`VimFlashOverlay`)**：
+  - 於宿主 Shadow DOM 內獨立渲染跳轉標籤、搜尋底色高亮與右上角模式提示膠囊，完整跟隨當前主題調色盤。
+- **快捷鍵文件、Popup 與進階設定同步補齊**：
+  - 於進階設定（Options）的按鍵清單補上 `flashJump` (`f`) 與 `flashSearch` (`s`)。
+  - 更新 Popup 快捷鍵指引與 [README.md](README.md)，補齊 `f`、`s`、`''` / `` `` ``、`Enter` / `Ctrl+Enter`、`V`、`1–9` 次數前綴與 `Esc Esc` 說明，並支援 Popup 動態同步自訂按鍵。
+
+---
+
+### English
+#### ✨ Features & Improvements
+- **Global Visual Hint Jump (`f` / Hint Mode)**:
+  - Scans all visible paragraphs, headings, lists, and floating widgets/sidebars in the viewport to assign high-contrast labels for instant cross-region jumping without switching input methods.
+  - Press `/` inside Hint Mode to switch directly into search filtering.
+- **Flash Search Jump (`s` / `flash.nvim`-style)**:
+  - Type characters to filter all matching text in the viewport with live highlights and conflict-free jump labels (avoiding next-character collisions), supporting `Enter` to jump to the first match and `Backspace` to edit the query.
+  - Records jump history (`''` / `` `` `` to return) and automatically updates `activeScopeElement` to the target container.
+- **Shadow DOM Flash Overlay (`VimFlashOverlay`)**:
+  - Renders theme-aware jump badges, match highlights, and a top-right mode banner inside the host Shadow DOM.
+- **Keybinding Docs, Popup & Options Sync**:
+  - Added `flashJump` (`f`) and `flashSearch` (`s`) to Options keybinding customization.
+  - Updated Popup shortcut guide and [README.md](README.md) with `f`, `s`, `''` / `` `` ``, `Enter` / `Ctrl+Enter`, `V`, numeric count prefixes, and `Esc Esc`, with live custom keybinding sync in Popup.
+
+---
+
 ## [v0.1.15] - 2026-11-16
 
 ### 繁體中文 (Traditional Chinese)

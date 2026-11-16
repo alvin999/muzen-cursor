@@ -18,6 +18,7 @@ import {
   isValidReadableTextNode
 } from './navigation/spatialNavigator';
 import { VisualSelectionManager } from './navigation/selectionManager';
+import { collectFlashHints } from './navigation/flashNavigator';
 import { logger } from '../utils/logger';
 
 export interface CursorControllerOptions {
@@ -166,6 +167,9 @@ export class CursorController {
     // 視窗縮放與滾動時保持游標位置緊密貼合
     let ticking = false;
     const requestScrollUpdate = () => {
+      if (cursorStore.getState().isFlashMode) {
+        this.closeFlashMode();
+      }
       // 純滾動時保持 preferredX 鎖定，絕不清除水平記憶欄，避免換行與抖動
       if (!ticking) {
         window.requestAnimationFrame(() => {
@@ -239,6 +243,7 @@ export class CursorController {
       clearTimeout(this.realignTimer);
       this.realignTimer = null;
     }
+    this.closeFlashMode();
   }
 
   /**
@@ -246,6 +251,7 @@ export class CursorController {
    */
   private handleClick(e: MouseEvent): void {
     this.closeJumpMenu();
+    this.closeFlashMode();
     this.preferredX = null;
     const state = cursorStore.getState();
 
@@ -395,6 +401,16 @@ export class CursorController {
       const isDoubleEsc = now - this.lastEscTime < 500;
       this.lastEscTime = now;
 
+      // 若 Flash 跳轉模式開啟中，優先關閉 Flash 層，並重置 Esc 計時器避免誤觸深層關閉
+      if (state.isFlashMode) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        this.closeFlashMode();
+        this.lastEscTime = 0;
+        return;
+      }
+
       // 若浮動選單開啟中，優先關閉選單，並重置 Esc 計時器避免誤觸深層關閉
       if (state.isJumpMenuOpen) {
         e.preventDefault();
@@ -532,6 +548,12 @@ export class CursorController {
       }
       intercept();
       this.closeJumpMenu();
+      return;
+    }
+
+    // 0.2 若 Flash 全域視覺跳轉模式開啟中：優先處理標籤選擇與即時搜尋過濾
+    if (state.isFlashMode) {
+      this.handleFlashKey(e, intercept);
       return;
     }
 
@@ -793,6 +815,20 @@ export class CursorController {
       this.recordNavCharge(e.repeat);
       this.clearPendingKeys();
       this.jumpToDocumentEnd();
+      return;
+    }
+
+    if (matchesKeybinding(e, bindings.flashJump)) {
+      intercept();
+      this.clearPendingKeys();
+      this.openFlashMode('hint');
+      return;
+    }
+
+    if (matchesKeybinding(e, bindings.flashSearch)) {
+      intercept();
+      this.clearPendingKeys();
+      this.openFlashMode('search');
       return;
     }
 
@@ -1328,6 +1364,146 @@ export class CursorController {
       this.closeJumpMenu();
       this.restoreJumpPoint(item.point, exact);
     }
+  }
+
+  /**
+   * 開啟 Flash 全域視覺跳轉模式 (hint: 區塊標籤直達 / search: flash.nvim 搜尋過濾)
+   */
+  public openFlashMode(mode: 'hint' | 'search' = 'hint'): void {
+    this.closeJumpMenu();
+    if (mode === 'search') {
+      cursorStore.setState({
+        isFlashMode: true,
+        flashInputMode: 'search',
+        flashQuery: '',
+        flashHints: [],
+        pendingKeys: ''
+      });
+      return;
+    }
+
+    const hints = collectFlashHints(this.rootElement, '');
+    if (hints.length === 0) {
+      const dict = LOCALES[cursorStore.getState().locale || 'zh-TW'] || LOCALES['zh-TW'];
+      cursorStore.showStatusNotice(dict.noticeFlashEmpty, 1500);
+      return;
+    }
+    cursorStore.setState({
+      isFlashMode: true,
+      flashInputMode: 'hint',
+      flashQuery: '',
+      flashHints: hints,
+      pendingKeys: ''
+    });
+  }
+
+  /**
+   * 關閉 Flash 全域視覺跳轉模式
+   */
+  public closeFlashMode(): void {
+    const state = cursorStore.getState();
+    if (state.isFlashMode || state.flashQuery || state.flashHints.length > 0) {
+      cursorStore.setState({
+        isFlashMode: false,
+        flashInputMode: 'hint',
+        flashQuery: '',
+        flashHints: [],
+        pendingKeys: state.pendingKeys.startsWith('f:') ? '' : state.pendingKeys
+      });
+    }
+  }
+
+  private handleFlashKey(e: KeyboardEvent, intercept: () => void): void {
+    if (e.key === 'Shift' || e.key === 'Control' || e.key === 'Alt' || e.key === 'Meta' || e.isComposing) {
+      return;
+    }
+
+    intercept();
+    const state = cursorStore.getState();
+    const currentPrefix = state.pendingKeys.startsWith('f:') ? state.pendingKeys.slice(2) : '';
+
+    if (e.key === 'Backspace') {
+      if (currentPrefix.length > 0) {
+        cursorStore.setState({ pendingKeys: '' });
+        return;
+      }
+      if (state.flashInputMode === 'search' && state.flashQuery.length > 0) {
+        const nextQuery = state.flashQuery.slice(0, -1);
+        const hints = nextQuery ? collectFlashHints(this.rootElement, nextQuery) : [];
+        cursorStore.setState({ flashQuery: nextQuery, flashHints: hints, pendingKeys: '' });
+        return;
+      }
+      this.closeFlashMode();
+      return;
+    }
+
+    // 在 Hint 模式下按 '/' 切換為 Flash 搜尋過濾模式
+    if (state.flashInputMode === 'hint' && e.key === '/' && !currentPrefix) {
+      cursorStore.setState({
+        flashInputMode: 'search',
+        flashQuery: '',
+        flashHints: [],
+        pendingKeys: ''
+      });
+      return;
+    }
+
+    // 在 Flash 搜尋模式下按 Enter 直接跳至第一個符合結果
+    if (state.flashInputMode === 'search' && e.key === 'Enter' && state.flashHints.length > 0) {
+      this.jumpToFlashHint(state.flashHints[0]);
+      return;
+    }
+
+    if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+      const ch = e.key.toLowerCase();
+      const nextPrefix = currentPrefix + ch;
+
+      // 1. 若目前已有顯示標籤，優先比對跳轉標籤 (在 search 模式下，標籤已自動避開下一個可能輸入的搜尋字元)
+      if (state.flashHints.length > 0) {
+        const matchingHints = state.flashHints.filter((h) => h.label.startsWith(nextPrefix));
+        const exactHint = matchingHints.find((h) => h.label === nextPrefix);
+        if (exactHint && matchingHints.length === 1) {
+          this.jumpToFlashHint(exactHint);
+          return;
+        }
+        if (matchingHints.length > 0) {
+          cursorStore.setState({ pendingKeys: `f:${nextPrefix}` });
+          return;
+        }
+      }
+
+      // 2. 在 Flash 搜尋模式下，累加輸入字元進行即時過濾
+      if (state.flashInputMode === 'search' && !currentPrefix) {
+        const nextQuery = state.flashQuery + e.key;
+        const nextHints = collectFlashHints(this.rootElement, nextQuery);
+        if (nextHints.length === 0) {
+          const dict = LOCALES[state.locale || 'zh-TW'] || LOCALES['zh-TW'];
+          cursorStore.showStatusNotice(dict.noticeFlashNoMatch, 1200);
+          return;
+        }
+        cursorStore.setState({
+          flashQuery: nextQuery,
+          flashHints: nextHints,
+          pendingKeys: ''
+        });
+      }
+    }
+  }
+
+  private jumpToFlashHint(hint: { node: Text; offset: number }): void {
+    this.closeFlashMode();
+    if (!hint.node.isConnected) return;
+
+    // 記錄跳轉前位置，支援 '' / `` 隨時返回
+    this.pushJumpPoint();
+    this.preferredX = null;
+
+    this.currentTarget = {
+      node: hint.node,
+      offset: Math.min(hint.offset, Math.max(0, (hint.node.textContent?.length || 1) - 1))
+    };
+    this.updateActiveScope(hint.node);
+    this.updateCursorPosition(true, undefined, false, true);
   }
 
   /**

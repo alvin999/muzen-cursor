@@ -199,7 +199,17 @@ export type KeyActionId =
   | 'yank'
   | 'escapeDouble'
   | 'openLink'
-  | 'openLinkNewTab';
+  | 'openLinkNewTab'
+  | 'flashJump'
+  | 'flashSearch';
+
+export interface FlashHintItem {
+  label: string;
+  node: Text;
+  offset: number;
+  rect: CursorRect;
+  matchLength?: number;
+}
 
 export interface KeybindingDef {
   key: string;            // 例如 'v', 'Escape', 'ArrowLeft', 'g', 'G', '$'
@@ -252,7 +262,9 @@ export const DEFAULT_KEYBINDINGS: KeybindingsConfig = {
     visualLineMode: { key: 'V', shiftKey: true, enabled: true },
     yank: { key: 'y', enabled: true },
     openLink: { key: 'Enter', enabled: true },
-    openLinkNewTab: { key: 'Enter', ctrlKey: true, enabled: true }
+    openLinkNewTab: { key: 'Enter', ctrlKey: true, enabled: true },
+    flashJump: { key: 'f', enabled: true },
+    flashSearch: { key: 's', enabled: true }
   }
 };
 
@@ -360,6 +372,10 @@ export interface CursorState {
   charOffset: number;
   isJumpMenuOpen: boolean;
   jumpMenuItems: JumpMenuItem[];
+  isFlashMode: boolean;
+  flashInputMode: 'hint' | 'search';
+  flashQuery: string;
+  flashHints: FlashHintItem[];
   statusNotice?: string | null; // 底部狀態列臨時 Toast 提示訊息 (例如 yank 複製反饋)
   selectionStats?: { chars: number; lines: number } | null; // Visual 模式下即時選取字數與行數統計
   pendingKeys: string; // 按鍵緩衝區 (例如次數前綴 5_ 或雙鍵等待 g-)
@@ -416,6 +432,10 @@ class CursorStore {
     charOffset: 0,
     isJumpMenuOpen: false,
     jumpMenuItems: [],
+    isFlashMode: false,
+    flashInputMode: 'hint',
+    flashQuery: '',
+    flashHints: [],
     statusNotice: null,
     selectionStats: null,
     pendingKeys: '',

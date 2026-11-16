@@ -83,6 +83,8 @@ const KEY_GROUPS: KeyGroupDef[] = [
       { id: 'halfPageUp', nameKey: 'actionHalfPageUp', descKey: 'descHalfPageUp' },
       { id: 'docStart', nameKey: 'actionDocStart', descKey: 'descDocStart' },
       { id: 'docEnd', nameKey: 'actionDocEnd', descKey: 'descDocEnd' },
+      { id: 'flashJump', nameKey: 'actionFlashJump', descKey: 'descFlashJump' },
+      { id: 'flashSearch', nameKey: 'actionFlashSearch', descKey: 'descFlashSearch' },
       { id: 'jumpBackLine', nameKey: 'actionJumpBackLine', descKey: 'descJumpBackLine' },
       { id: 'jumpBackExact', nameKey: 'actionJumpBackExact', descKey: 'descJumpBackExact' }
     ]

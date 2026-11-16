@@ -19,6 +19,8 @@ export interface Translations {
   noticeWakeUp: string;
   noticePageBottom: string;
   noticeWidgetBottom: string;
+  noticeFlashNoMatch: string;
+  noticeFlashEmpty: string;
   languageLabel: string;
   autoThemeLabel: string;
   autoThemeDesc: string;
@@ -110,6 +112,9 @@ export interface Translations {
   shortcutDocBoundary: string;
   shortcutVisual: string;
   shortcutToggle: string;
+  shortcutFlash: string;
+  shortcutJumpBack: string;
+  shortcutOpenLink: string;
   shortcutEscape: string;
   shortcutEscapeDouble: string;
   footerTip: string;
@@ -387,6 +392,10 @@ export interface Translations {
   descOpenLink: string;
   actionOpenLinkNewTab: string;
   descOpenLinkNewTab: string;
+  actionFlashJump: string;
+  descFlashJump: string;
+  actionFlashSearch: string;
+  descFlashSearch: string;
   statusLinkBadge: string;
 
   recordKeyBtn: string;
@@ -426,6 +435,8 @@ export const LOCALES: Record<Locale, Translations> = {
     noticeWakeUp: '⚡ 已喚醒當前分頁游標',
     noticePageBottom: '已閱卷終 · 抵達底界',
     noticeWidgetBottom: '浮動元件已至邊界',
+    noticeFlashNoMatch: '⚡ Flash 無相符目標',
+    noticeFlashEmpty: '⚡ 畫面無可跳轉文字',
     languageLabel: '介面語言',
     autoThemeLabel: '智慧感應主題',
     autoThemeDesc: '智慧感應網頁深淺背景，自動演算最佳對比游標色彩',
@@ -519,6 +530,9 @@ export const LOCALES: Record<Locale, Translations> = {
     shortcutEscape: '淺層待命 / 退出選取',
     shortcutEscapeDouble: '單頁休眠 / 喚醒 (雙向)',
     shortcutToggle: '備用強制切換 (全域)',
+    shortcutFlash: '全域視覺跳轉 / Flash 搜尋',
+    shortcutJumpBack: '跳回前次位置 (行首 / 精確)',
+    shortcutOpenLink: '開啟超連結 / 新分頁開啟',
     footerTip: '點擊網頁文字即可立即錨定閱讀焦點',
     statusStartPrompt: '點擊文字或按 j 開始',
     statusCopiedChars: '✓ 已複製 {count} 個字元',
@@ -782,6 +796,10 @@ export const LOCALES: Record<Locale, Translations> = {
     descOpenLink: '當游標停在超連結文字上時開啟該連結',
     actionOpenLinkNewTab: '新分頁開啟超連結 (Open in New Tab)',
     descOpenLinkNewTab: '當游標停在超連結文字上時於背景新分頁開啟該連結',
+    actionFlashJump: '全域標籤直達 (Hint Mode)',
+    descFlashJump: '顯示視口內所有段落與浮動視窗的跳轉標籤，按標籤跨區直達（按 / 切換搜尋）',
+    actionFlashSearch: 'Flash 搜尋跳轉 (flash.nvim)',
+    descFlashSearch: '輸入關鍵字即時過濾畫面所有文字並自動分配無衝突跳轉標籤',
     statusLinkBadge: '連結',
 
     recordKeyBtn: '點擊錄製',
@@ -819,6 +837,8 @@ export const LOCALES: Record<Locale, Translations> = {
     noticeWakeUp: '⚡ Muzen Cursor Active',
     noticePageBottom: 'Reached the end of passage',
     noticeWidgetBottom: 'Reached boundary of widget',
+    noticeFlashNoMatch: '⚡ Flash: No match',
+    noticeFlashEmpty: '⚡ No jump targets in view',
     languageLabel: 'Language',
     autoThemeLabel: 'Smart Adaptive Theme',
     autoThemeDesc: 'Automatically detect web background and calculate optimal cursor contrast palette',
@@ -912,6 +932,9 @@ export const LOCALES: Record<Locale, Translations> = {
     shortcutEscape: 'Light Standby / Deselect',
     shortcutEscapeDouble: 'Tab Sleep / Wake Toggle',
     shortcutToggle: 'Fallback Global Switch',
+    shortcutFlash: 'Visual Hint Jump / Flash Search',
+    shortcutJumpBack: 'Jump Back (Line / Exact)',
+    shortcutOpenLink: 'Open Link / Open in New Tab',
     footerTip: 'Click any text on the page to anchor cursor',
     statusStartPrompt: 'Click text or press j to begin',
     statusCopiedChars: '✓ {count} chars yanked',
@@ -1175,6 +1198,10 @@ export const LOCALES: Record<Locale, Translations> = {
     descOpenLink: 'Open link when cursor is over an anchor element',
     actionOpenLinkNewTab: 'Open Link in New Tab',
     descOpenLinkNewTab: 'Open link in a background tab when cursor is over an anchor element',
+    actionFlashJump: 'Visual Hint Jump (Hint Mode)',
+    descFlashJump: 'Show jump labels on visible paragraphs and floating widgets (press / to search)',
+    actionFlashSearch: 'Flash Search Jump (flash.nvim)',
+    descFlashSearch: 'Type characters to filter visible text and jump with conflict-free labels',
     statusLinkBadge: 'Link',
 
     recordKeyBtn: 'Record Key',
@@ -1212,6 +1239,8 @@ export const LOCALES: Record<Locale, Translations> = {
     noticeWakeUp: '⚡ カーソルを復帰しました',
     noticePageBottom: '巻末に到達しました',
     noticeWidgetBottom: 'ウィジェットの境界に到達しました',
+    noticeFlashNoMatch: '⚡ Flash: 一致なし',
+    noticeFlashEmpty: '⚡ 画面内にジャンプ先がありません',
     languageLabel: '表示言語',
     autoThemeLabel: 'スマート感知テーマ',
     autoThemeDesc: 'ページの明暗背景を自動感知し、最適なコントラスト配色を演算します',
@@ -1305,6 +1334,9 @@ export const LOCALES: Record<Locale, Translations> = {
     shortcutEscape: '浅い待機 / 選択解除',
     shortcutEscapeDouble: 'このタブをスリープ / 復帰',
     shortcutToggle: '予備の主電源切替',
+    shortcutFlash: '画面ラベルジャンプ / Flash 検索',
+    shortcutJumpBack: '前の位置へ戻る (行頭 / 正確)',
+    shortcutOpenLink: 'リンクを開く / 新しいタブで開く',
     footerTip: 'テキストをクリックして読書アンカーを設定',
     statusStartPrompt: 'クリックまたは j で開始',
     statusCopiedChars: '✓ {count} 文字をコピーしました',
@@ -1568,6 +1600,10 @@ export const LOCALES: Record<Locale, Translations> = {
     descOpenLink: 'カーソルがリンク上にあるときリンクを開く',
     actionOpenLinkNewTab: '新しいタブでリンクを開く',
     descOpenLinkNewTab: 'カーソルがリンク上にあるとき新しいタブで開く',
+    actionFlashJump: '画面ラベルジャンプ (Hint Mode)',
+    descFlashJump: '表示中の段落やフローティング要素にラベルを表示し直接移動（/ で検索へ切替）',
+    actionFlashSearch: 'Flash 検索ジャンプ (flash.nvim)',
+    descFlashSearch: '文字を入力して画面内のテキストを絞り込み、衝突しないラベルで移動',
     statusLinkBadge: 'リンク',
 
     recordKeyBtn: 'キー割り当て',

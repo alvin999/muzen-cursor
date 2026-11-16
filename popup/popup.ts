@@ -146,6 +146,27 @@ document.addEventListener('DOMContentLoaded', () => {
       const lineStr = bindings.visualLineMode && bindings.visualLineMode.enabled ? ` / ${formatToKbds(bindings.visualLineMode)}` : '';
       visualEl.innerHTML = `${formatToKbds(bindings.visualMode)}${lineStr} / ${formatToKbds(bindings.yank)}`;
     }
+    const flashEl = document.getElementById('guide-flash');
+    if (flashEl && (bindings.flashJump || bindings.flashSearch)) {
+      const parts: string[] = [];
+      if (bindings.flashJump?.enabled) parts.push(formatToKbds(bindings.flashJump));
+      if (bindings.flashSearch?.enabled) parts.push(formatToKbds(bindings.flashSearch));
+      if (parts.length > 0) flashEl.innerHTML = parts.join(' / ');
+    }
+    const jumpBackEl = document.getElementById('guide-jumpback');
+    if (jumpBackEl && (bindings.jumpBackLine || bindings.jumpBackExact)) {
+      const parts: string[] = [];
+      if (bindings.jumpBackLine?.enabled) parts.push(formatToKbds(bindings.jumpBackLine));
+      if (bindings.jumpBackExact?.enabled) parts.push(formatToKbds(bindings.jumpBackExact));
+      if (parts.length > 0) jumpBackEl.innerHTML = parts.join(' / ');
+    }
+    const linkEl = document.getElementById('guide-link');
+    if (linkEl && (bindings.openLink || bindings.openLinkNewTab)) {
+      const parts: string[] = [];
+      if (bindings.openLink?.enabled) parts.push(formatToKbds(bindings.openLink));
+      if (bindings.openLinkNewTab?.enabled) parts.push(formatToKbds(bindings.openLinkNewTab));
+      if (parts.length > 0) linkEl.innerHTML = parts.join(' / ');
+    }
   };
 
   // 套用主題至 Popup 視窗
