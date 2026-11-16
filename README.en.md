@@ -138,10 +138,15 @@ During long-form reading, mouse wheel scrolling frequently causes readers to los
 | <kbd>$</kbd> | Jump to the end of the current visual line | Snaps to line end |
 | <kbd>g</kbd> <kbd>g</kbd> | Jump to the top of the document | Scrolls to top |
 | <kbd>G</kbd> | Jump to the end of the document | Scrolls to bottom |
-| <kbd>v</kbd> | Toggle **VISUAL selection mode** | High-contrast selection color, syncs with native selection |
+| <kbd>f</kbd> | Visual Hint Jump (Hint Mode) | Shows labels on visible paragraphs & floating widgets for direct jumps (press <kbd>/</kbd> to switch to search) |
+| <kbd>s</kbd> | Flash Search Jump (`flash.nvim`) | Type characters to filter visible text live and jump with conflict-free labels (<kbd>Enter</kbd> to pick first match) |
+| <kbd>'</kbd> <kbd>'</kbd> / <kbd>\`</kbd> <kbd>\`</kbd> | Jump back to previous position / Jump history menu | Returns to line start or exact character; hold to inspect recent jump list |
+| <kbd>1–9</kbd> + Action | Numeric count prefix execution | E.g. <kbd>5</kbd><kbd>j</kbd> moves down 5 lines, <kbd>3</kbd><kbd>w</kbd> jumps 3 words forward |
+| <kbd>v</kbd> / <kbd>V</kbd> | Toggle **VISUAL** character / line selection mode | High-contrast selection color, syncs with native selection |
 | <kbd>y</kbd> | Copy selected text (Yank) | Writes directly to operating system clipboard |
+| <kbd>Enter</kbd> / <kbd>Ctrl</kbd> + <kbd>Enter</kbd> | Open link / Open in background tab | Navigates directly when cursor is over anchor text |
 | <kbd>alt</kbd> + <kbd>v</kbd> | Global toggle (Activate / Freeze cursor) | Awaken or sleep cursor at any time |
-| <kbd>esc</kbd> | Clear selection / Hide cursor | Returns keys to page, restores pure reading view |
+| <kbd>esc</kbd> / <kbd>esc</kbd> <kbd>esc</kbd> | Clear selection & shallow standby / Tab-level deep sleep | Double <kbd>esc</kbd> completely releases keys and hides status bar (double-press again to wake) |
 
 > 💡 **Tip**: Click any text on the page with your mouse, and the cursor and status bar will immediately anchor to that character.
 
