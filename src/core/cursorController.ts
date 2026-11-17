@@ -77,6 +77,37 @@ export class CursorController {
   private cachedHeadingTitle = '';
   private cachedReadingMinutes = 0;
 
+  // 翻頁回溯後照鏡之背景快照快取 (0ms 零延遲)
+  private cachedSnapshotUrl: string | null = null;
+  private snapshotTimer: any = null;
+  private lastSnapshotTime = 0;
+
+  /**
+   * 預先在背景擷取當前視窗快照 (防抖 200ms)
+   */
+  private requestBackgroundSnapshot(): void {
+    if (this.snapshotTimer) {
+      clearTimeout(this.snapshotTimer);
+    }
+    this.snapshotTimer = setTimeout(() => {
+      this.snapshotTimer = null;
+      const now = Date.now();
+      if (now - this.lastSnapshotTime < 250) return;
+      try {
+        if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
+          chrome.runtime.sendMessage({ type: 'CAPTURE_TAB_SNAPSHOT' }, (resp) => {
+            if (resp && resp.success && resp.dataUrl) {
+              this.cachedSnapshotUrl = resp.dataUrl;
+              this.lastSnapshotTime = Date.now();
+            }
+          });
+        }
+      } catch {
+        // 忽略通訊例外
+      }
+    }, 200);
+  }
+
   private setPendingKeys(keys: string, timeoutMs: number = 0): void {
     if (this.pendingKeyTimer) {
       clearTimeout(this.pendingKeyTimer);
@@ -1792,7 +1823,7 @@ export class CursorController {
 
   /**
    * 觸發翻頁回溯後照鏡 (Rearview Mirror HUD)
-   * 擷取剛才出發點的句子上下文，供後照鏡 HUD 即時對齊閱讀記憶
+   * 擷取剛才出發點的真實畫面快照與游標座標，供後照鏡 HUD 即時對齊閱讀記憶
    */
   private triggerRearviewNotice(direction: 'up' | 'down'): void {
     if (!this.currentTarget) return;
@@ -1802,13 +1833,20 @@ export class CursorController {
 
     try {
       const snippet = this.extractSentenceSnippet(node, offset);
+      const curRect = cursorStore.getState().rect;
+      const snapshot = this.cachedSnapshotUrl;
+      const dpr = window.devicePixelRatio || 1;
+
       if (snippet && snippet.length > 0) {
         cursorStore.setState({
           rearviewNotice: {
             text: snippet,
             direction,
             sectionTitle: this.cachedHeadingTitle,
-            timestamp: performance.now()
+            timestamp: performance.now(),
+            snapshotUrl: snapshot || undefined,
+            cursorRect: curRect ? { ...curRect } : undefined,
+            devicePixelRatio: dpr
           }
         });
       }
@@ -2370,6 +2408,9 @@ export class CursorController {
       this.moveTimer = setTimeout(() => {
         cursorStore.setState({ isMoving: false, motionDirection: 'none' });
       }, settleDelay);
+
+      // 當游標移動停頓時，預先在背景非同步更新當前視窗快照 (以備翻頁回溯 0ms 呈現)
+      this.requestBackgroundSnapshot();
 
       cursorStore.setState({
         visible: forceVisible || isVisibleInViewport,

@@ -111,5 +111,21 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     })();
     return true; // 保持非同步通訊通道開放
   }
+
+  // 後照鏡功能：擷取可見視窗快照
+  if (message.type === 'CAPTURE_TAB_SNAPSHOT') {
+    try {
+      chrome.tabs.captureVisibleTab(null as any, { format: 'png' }, (dataUrl) => {
+        if (chrome.runtime.lastError || !dataUrl) {
+          sendResponse({ success: false, error: chrome.runtime.lastError?.message || '截圖失敗' });
+        } else {
+          sendResponse({ success: true, dataUrl });
+        }
+      });
+    } catch (err) {
+      sendResponse({ success: false, error: String(err) });
+    }
+    return true;
+  }
 });
 

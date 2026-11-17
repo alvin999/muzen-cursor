@@ -409,7 +409,10 @@ export interface CursorState {
     direction: 'up' | 'down';
     sectionTitle?: string;
     timestamp: number;
-  } | null; // 翻頁回溯後照鏡之剛才出發段落摘要與方向
+    snapshotUrl?: string; // 視窗真實畫面快照 (DataURL)
+    cursorRect?: CursorRect; // 剛才游標在視窗中的絕對座標
+    devicePixelRatio?: number; // 螢幕 DPR
+  } | null; // 翻頁回溯後照鏡之剛才出發段落畫面快照與方向
 }
 
 type Listener = (state: CursorState) => void;
