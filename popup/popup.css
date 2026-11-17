@@ -183,7 +183,7 @@ body[data-theme='smart-adaptive'].theme-light {
 }
 
 body {
-  width: 336px;
+  width: 360px;
   background-color: var(--bg-color);
   color: var(--fg-color);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;

@@ -1514,7 +1514,7 @@ export const LOCALES: Record<Locale, Translations> = {
     modalBtnGotIt: '了解',
 
     popupTabAppearance: '🎨 外観・動態',
-    popupTabFeatures: '🛠️ リーディング機能',
+    popupTabFeatures: '🛠️ 閲覧機能',
     popupTabShortcuts: '⌨️ ショートカット',
     tabAppearanceTitle: '🎨 外観と筆致',
     tabPhysicsTitle: '⚡ 物理とモーション',
