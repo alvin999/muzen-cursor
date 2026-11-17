@@ -1,10 +1,11 @@
 import { CursorRect, FlashHintItem } from '../cursorStore';
-import { isValidReadableTextNode } from './spatialNavigator';
+import { isValidReadableTextNode, isNavigableMediaElement } from './spatialNavigator';
 
 const DEFAULT_HINT_ALPHABET = 'asdfjklghqweruiopzxcvnm';
 
 interface RawCandidate {
-  node: Text;
+  node: Text | null;
+  element?: HTMLElement;
   offset: number;
   rect: CursorRect;
   matchLength?: number;
@@ -93,6 +94,7 @@ function assignLabels(candidates: RawCandidate[], forbiddenChars: Set<string>): 
     result.push({
       label: labels[i],
       node: c.node,
+      element: c.element,
       offset: c.offset,
       rect: c.rect,
       matchLength: c.matchLength
@@ -203,6 +205,38 @@ export function collectFlashHints(
     }
 
     current = walker.nextNode() as Text | null;
+  }
+
+  // 無搜尋關鍵字模式下，一併收集視口內大型圖片/媒體元素供快速跳轉
+  if (!isSearchMode && candidates.length < MAX_CANDIDATES) {
+    const mediaEls = rootElement.querySelectorAll('img, canvas, video, svg');
+    for (let i = 0; i < mediaEls.length && candidates.length < MAX_CANDIDATES; i++) {
+      const el = mediaEls[i];
+      if (!(el instanceof Element)) continue;
+      if (!isNavigableMediaElement(el, rootElement, false)) continue;
+
+      const domRect = el.getBoundingClientRect();
+      if (!isRectInViewport(domRect, vw, vh)) continue;
+
+      const hintX = Math.max(4, Math.min(vw - 28, domRect.left + 8));
+      const hintY = Math.max(4, Math.min(vh - 24, domRect.top + 8));
+      const tooClose = candidates.some(
+        (c) => Math.abs(c.rect.y - hintY) < 16 && Math.abs(c.rect.x - hintX) < 36
+      );
+      if (tooClose) continue;
+
+      candidates.push({
+        node: null,
+        element: el as HTMLElement,
+        offset: 0,
+        rect: {
+          x: hintX,
+          y: hintY,
+          width: 18,
+          height: 18
+        }
+      });
+    }
   }
 
   return assignLabels(candidates, isSearchMode ? forbiddenNextChars : new Set<string>());

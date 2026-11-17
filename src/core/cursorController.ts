@@ -1,4 +1,4 @@
-import { cursorStore, MotionDirection, CursorRect, matchesKeybinding, DEFAULT_KEYBINDINGS, JumpMenuItem } from './cursorStore';
+import { cursorStore, MotionDirection, CursorRect, matchesKeybinding, DEFAULT_KEYBINDINGS, JumpMenuItem, MediaTargetInfo } from './cursorStore';
 import { LOCALES } from '../i18n/locales';
 import { isTypingContext, detectReadingScope, isOutOfNormalFlowWidget, findCurrentSectionHeading, estimateReadingMinutes } from '../utils/domUtils';
 import { WordNavigator, TextTarget } from './wordNavigator';
@@ -15,10 +15,13 @@ import {
   searchUpwardPrevLine,
   computeWaypointsBetween,
   findVisualLineBoundary,
-  isValidReadableTextNode
+  isValidReadableTextNode,
+  findMediaBetweenVerticalRange,
+  findNextMediaAfter
 } from './navigation/spatialNavigator';
 import { VisualSelectionManager } from './navigation/selectionManager';
 import { collectFlashHints } from './navigation/flashNavigator';
+import { LightboxCommand } from '../components/VimImageLightbox';
 import { logger } from '../utils/logger';
 
 export interface CursorControllerOptions {
@@ -40,6 +43,9 @@ export class CursorController {
   private options?: CursorControllerOptions;
   private currentTarget: TextTarget | null = null;
   private previousTarget: TextTarget | null = null;
+  private currentMediaElement: Element | null = null;
+  private mediaEntryDirection: 'down' | 'up' | null = null;
+  private pendingTargetAfterMedia: TextTarget | null = null;
   private preferredX: number | null = null;
   private activeScopeElement: HTMLElement | null = null;
   private lastKeyTime = 0;
@@ -396,6 +402,14 @@ export class CursorController {
     }
 
     // 3. Esc 鍵處理：單按為淺層休眠 (保留狀態列)，連按為深層關閉 (關閉狀態列釋放按鍵)
+    if (state.lightboxImage) {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      this.handleLightboxKey(e);
+      return;
+    }
+
     if (isEscKey) {
       const now = Date.now();
       const isDoubleEsc = now - this.lastEscTime < 500;
@@ -704,6 +718,13 @@ export class CursorController {
 
       const openLinkDef = bindings.openLink;
       if (openLinkDef?.enabled && matchesKeybinding(e, openLinkDef)) {
+        // 若當前游標停駐於圖片上，按 Enter 開啟燈箱放大檢視
+        if (this.currentMediaElement && this.openCurrentImageLightbox()) {
+          intercept();
+          this.clearPendingKeys();
+          return;
+        }
+
         if (anchor) {
           intercept();
           this.clearPendingKeys();
@@ -931,6 +952,7 @@ export class CursorController {
    */
   public moveHorizontal(delta: number): void {
     this.preferredX = null;
+    this.clearMediaTarget();
     if (!this.currentTarget || !this.currentTarget.node.isConnected) {
       this.findInitialTarget();
       if (!this.currentTarget || !this.currentTarget.node.isConnected) return;
@@ -986,6 +1008,59 @@ export class CursorController {
     const isDownward = deltaRows > 0;
     const direction = isDownward ? 'down' : 'up';
 
+    // 若當前游標停駐於圖片/媒體元素上
+    if (this.currentMediaElement) {
+      if (this.handleMediaVerticalStep(direction, false, isRepeat)) {
+        return;
+      }
+
+      const prevMedia = this.currentMediaElement;
+      const prevEntryDir = this.mediaEntryDirection;
+      const pendingTarget = this.pendingTargetAfterMedia;
+      const prevRect = prevMedia.getBoundingClientRect();
+      this.clearMediaTarget();
+
+      // 同方向離開圖片：若有下一張相鄰媒體優先停駐，否則直接落地於圖片後方的文字行
+      const effRoot = this.getEffectiveRoot();
+      const allowOut = isOutOfNormalFlowWidget(prevMedia, effRoot);
+      const nextMedia = findNextMediaAfter(
+        isDownward ? prevRect.bottom : prevRect.top,
+        direction,
+        effRoot,
+        allowOut,
+        prevMedia
+      );
+
+      if (prevEntryDir === direction && pendingTarget && pendingTarget.node.isConnected) {
+        const pendingRect = getCharRectOfTarget(pendingTarget);
+        const mediaBetween = nextMedia ? nextMedia.getBoundingClientRect() : null;
+        const isMediaBeforePending = mediaBetween && pendingRect
+          ? (isDownward ? mediaBetween.top < pendingRect.y - 6 : mediaBetween.bottom > pendingRect.y + 6)
+          : false;
+
+        if (isMediaBeforePending && nextMedia) {
+          this.enterMediaTarget(nextMedia, direction, isRepeat, pendingTarget);
+          return;
+        }
+        this.currentTarget = pendingTarget;
+        this.updateActiveScope(pendingTarget.node);
+        this.updateCursorPosition(true, undefined, false, true, direction, isRepeat);
+        return;
+      }
+
+      // 反向按鍵（例如向下進入圖片後立刻按 k 回頭）：回到原本圖片前的文字行
+      if (prevEntryDir && prevEntryDir !== direction && this.currentTarget && this.currentTarget.node.isConnected) {
+        this.updateCursorPosition(true, undefined, false, true, direction, isRepeat);
+        return;
+      }
+
+      // 從 f 跳轉進入圖片後首次按 j/k：以圖片鄰近位置作為起點尋找文字或下一張圖片
+      if (nextMedia && Math.abs((isDownward ? nextMedia.getBoundingClientRect().top - prevRect.bottom : prevRect.top - nextMedia.getBoundingClientRect().bottom)) < 40) {
+        this.enterMediaTarget(nextMedia, direction, isRepeat);
+        return;
+      }
+    }
+
     if (!this.currentTarget || !this.currentTarget.node.isConnected) {
       this.findInitialTarget(direction);
       if (!this.currentTarget || !this.currentTarget.node.isConnected) return;
@@ -1038,6 +1113,23 @@ export class CursorController {
       }
 
       if (foundTarget) {
+        // 偵測從目前文字行到目標文字行之間是否有跨過大型可視圖片/媒體元素
+        const foundRect = getCharRectOfTarget(foundTarget);
+        if (foundRect && step === steps - 1) {
+          const allowOut = isOutOfNormalFlowWidget(node, effRoot);
+          const mediaBetween = findMediaBetweenVerticalRange(
+            isDownward ? (currentCharTop + charHeight * 0.5) : currentCharTop,
+            foundRect.y,
+            direction,
+            effRoot,
+            allowOut
+          );
+          if (mediaBetween) {
+            this.enterMediaTarget(mediaBetween, direction, isRepeat, foundTarget);
+            return;
+          }
+        }
+
         this.currentTarget = foundTarget;
         this.updateActiveScope(foundTarget.node);
 
@@ -1049,6 +1141,21 @@ export class CursorController {
           }
         }
       } else {
+        // 若無後續文字，檢查上方或下方是否還有大型圖片（例如純圖片區或文末大圖）
+        if (step === 0) {
+          const allowOut = isOutOfNormalFlowWidget(node, effRoot);
+          const trailingMedia = findNextMediaAfter(
+            isDownward ? (currentCharTop + charHeight) : currentCharTop,
+            direction,
+            effRoot,
+            allowOut
+          );
+          if (trailingMedia) {
+            this.enterMediaTarget(trailingMedia, direction, isRepeat, null);
+            return;
+          }
+        }
+
         // 邊界防護與提示：若往下移動且當前位置已無法再下移，觸發狀態列 Toast 提示
         if (isDownward && step === 0) {
           const now = Date.now();
@@ -1490,13 +1597,23 @@ export class CursorController {
     }
   }
 
-  private jumpToFlashHint(hint: { node: Text; offset: number }): void {
+  private jumpToFlashHint(hint: { node: Text | null; element?: HTMLElement; offset: number }): void {
     this.closeFlashMode();
-    if (!hint.node.isConnected) return;
+
+    // 若跳轉目標為大型圖片/媒體元素
+    if (hint.element && hint.element.isConnected) {
+      this.pushJumpPoint();
+      this.preferredX = null;
+      this.enterMediaTarget(hint.element, undefined, false);
+      return;
+    }
+
+    if (!hint.node || !hint.node.isConnected) return;
 
     // 記錄跳轉前位置，支援 '' / `` 隨時返回
     this.pushJumpPoint();
     this.preferredX = null;
+    this.clearMediaTarget();
 
     this.currentTarget = {
       node: hint.node,
@@ -1504,6 +1621,173 @@ export class CursorController {
     };
     this.updateActiveScope(hint.node);
     this.updateCursorPosition(true, undefined, false, true);
+  }
+
+  private dispatchLightboxCommand(command: LightboxCommand): void {
+    window.dispatchEvent(new CustomEvent('muzen-lightbox-command', { detail: { command } }));
+  }
+
+  private handleLightboxKey(e: KeyboardEvent): void {
+    const key = e.key;
+    if (key === 'Escape') {
+      this.dispatchLightboxCommand('close');
+      return;
+    }
+    const lower = key.toLowerCase();
+    if (lower === 'h' || key === 'ArrowLeft') {
+      this.dispatchLightboxCommand('panLeft');
+    } else if (lower === 'l' || key === 'ArrowRight') {
+      this.dispatchLightboxCommand('panRight');
+    } else if (lower === 'k' || key === 'ArrowUp') {
+      this.dispatchLightboxCommand('panUp');
+    } else if (lower === 'j' || key === 'ArrowDown') {
+      this.dispatchLightboxCommand('panDown');
+    } else if (lower === 'd' || key === '+' || key === '=') {
+      this.dispatchLightboxCommand('zoomIn');
+    } else if (lower === 'u' || key === '-') {
+      this.dispatchLightboxCommand('zoomOut');
+    }
+  }
+
+  private openCurrentImageLightbox(): boolean {
+    if (!this.currentMediaElement || !this.currentMediaElement.isConnected) return false;
+    if (this.currentMediaElement.tagName.toUpperCase() !== 'IMG') return false;
+
+    const img = this.currentMediaElement as HTMLImageElement;
+    const src = img.currentSrc || img.src;
+    if (!src) return false;
+
+    cursorStore.setState({
+      lightboxImage: {
+        src,
+        alt: img.alt || '',
+        naturalWidth: img.naturalWidth || Math.round(img.getBoundingClientRect().width),
+        naturalHeight: img.naturalHeight || Math.round(img.getBoundingClientRect().height)
+      }
+    });
+    return true;
+  }
+
+  private clearMediaTarget(): void {
+    this.currentMediaElement = null;
+    this.mediaEntryDirection = null;
+    this.pendingTargetAfterMedia = null;
+  }
+
+  private enterMediaTarget(
+    mediaEl: Element,
+    navDirection?: 'down' | 'up',
+    isRepeat: boolean = false,
+    pendingTarget?: TextTarget | null
+  ): void {
+    this.currentMediaElement = mediaEl;
+    this.mediaEntryDirection = navDirection || null;
+    this.pendingTargetAfterMedia = pendingTarget || null;
+    this.scrollMediaIntoView(mediaEl, navDirection, isRepeat);
+    this.updateCursorPosition(false, undefined, false, true, navDirection, isRepeat);
+  }
+
+  private scrollMediaIntoView(mediaEl: Element, navDirection?: 'down' | 'up', isRepeat: boolean = false): void {
+    const { scrollTarget, viewHeight, parentTop, currentScroll } = getViewportMetrics(mediaEl, this.options?.containerRoot);
+    if (!scrollTarget) return;
+
+    const rect = mediaEl.getBoundingClientRect();
+    const adv = cursorStore.getState().advanced;
+    const maxPad = Math.floor(viewHeight * 0.28);
+    const padTop = Math.min(maxPad, adv?.viewportPaddingTop ?? 120);
+    const padBottom = Math.min(maxPad, adv?.viewportPaddingBottom ?? 160);
+    const scrollDuration = isRepeat ? 80 : (adv?.scrollDurationMs ?? 360);
+
+    let delta = 0;
+    // 1. 若圖片未超過視窗高度，將圖片垂直置中
+    if (rect.height <= viewHeight * 0.86) {
+      const rectCenterY = (rect.top - parentTop) + rect.height / 2;
+      const viewCenterY = viewHeight / 2;
+      delta = rectCenterY - viewCenterY;
+    } else {
+      // 2. 若圖片超過視窗高度，對齊起點邊緣以便分段往下/往上瀏覽
+      if (navDirection === 'up') {
+        delta = (rect.bottom - parentTop) - (viewHeight - padBottom);
+      } else {
+        delta = (rect.top - parentTop) - padTop;
+      }
+    }
+
+    if (Math.abs(delta) > 6) {
+      if (isRepeat) {
+        cancelActiveScroll();
+        const isWin = scrollTarget === window || !(scrollTarget instanceof HTMLElement);
+        if (isWin) {
+          window.scrollBy({ top: delta, behavior: 'instant' as ScrollBehavior });
+        } else {
+          (scrollTarget as HTMLElement).scrollTop += delta;
+        }
+      } else {
+        animateScrollTo(scrollTarget, Math.max(0, currentScroll + delta), scrollDuration);
+      }
+    }
+  }
+
+  /**
+   * 當游標停駐在大圖上並按 j/k/d/u 時，若大圖尚未看完則在圖片內部平滑捲動；
+   * 若大圖已到達邊緣，回傳 false 讓控制器自然跨往下一個文字節點。
+   */
+  private handleMediaVerticalStep(direction: 'down' | 'up', isHalfPage: boolean, isRepeat: boolean): boolean {
+    if (!this.currentMediaElement || !this.currentMediaElement.isConnected) {
+      this.clearMediaTarget();
+      return false;
+    }
+
+    const mediaEl = this.currentMediaElement;
+    const rect = mediaEl.getBoundingClientRect();
+    const { scrollTarget, viewHeight, parentTop, currentScroll } = getViewportMetrics(mediaEl, this.options?.containerRoot);
+    if (!scrollTarget) return false;
+
+    const adv = cursorStore.getState().advanced;
+    const maxPad = Math.floor(viewHeight * 0.28);
+    const padTop = Math.min(maxPad, adv?.viewportPaddingTop ?? 120);
+    const padBottom = Math.min(maxPad, adv?.viewportPaddingBottom ?? 160);
+    const scrollDuration = isRepeat ? 80 : (adv?.scrollDurationMs ?? 320);
+
+    const stepSize = isHalfPage ? viewHeight * 0.5 : viewHeight * 0.28;
+
+    if (direction === 'down') {
+      const remaining = (rect.bottom - parentTop) - (viewHeight - padBottom);
+      if (remaining > 10) {
+        const delta = Math.min(stepSize, remaining);
+        if (isRepeat) {
+          cancelActiveScroll();
+          if (scrollTarget === window || !(scrollTarget instanceof HTMLElement)) {
+            window.scrollBy({ top: delta, behavior: 'instant' as ScrollBehavior });
+          } else {
+            (scrollTarget as HTMLElement).scrollTop += delta;
+          }
+        } else {
+          animateScrollTo(scrollTarget, Math.max(0, currentScroll + delta), scrollDuration);
+        }
+        this.updateCursorPosition(false, undefined, true, true, 'down', isRepeat);
+        return true;
+      }
+    } else {
+      const remaining = padTop - (rect.top - parentTop);
+      if (remaining > 10) {
+        const delta = Math.min(stepSize, remaining);
+        if (isRepeat) {
+          cancelActiveScroll();
+          if (scrollTarget === window || !(scrollTarget instanceof HTMLElement)) {
+            window.scrollBy({ top: -delta, behavior: 'instant' as ScrollBehavior });
+          } else {
+            (scrollTarget as HTMLElement).scrollTop -= delta;
+          }
+        } else {
+          animateScrollTo(scrollTarget, Math.max(0, currentScroll - delta), scrollDuration);
+        }
+        this.updateCursorPosition(false, undefined, true, true, 'up', isRepeat);
+        return true;
+      }
+    }
+
+    return false;
   }
 
   /**
@@ -1557,6 +1841,7 @@ export class CursorController {
    * 跳至文章頂部 (gg) - 排除頂部 fixed/sticky 導覽列與螢幕閱讀器隱藏元素，精準鎖定常態閱讀流首字元
    */
   public jumpToDocumentStart(): void {
+    this.clearMediaTarget();
     this.triggerRearviewNotice('up');
     this.pushJumpPoint();
 
@@ -1587,6 +1872,7 @@ export class CursorController {
    * 跳至文章底部 (G) - 排除底部浮動客服、Cookie 同意橫幅與不可見元素，精準鎖定常態閱讀流尾字元
    */
   public jumpToDocumentEnd(): void {
+    this.clearMediaTarget();
     this.triggerRearviewNotice('down');
     this.pushJumpPoint();
 
@@ -1813,6 +2099,65 @@ export class CursorController {
     navDirection?: 'down' | 'up',
     isRepeat: boolean = false
   ): void {
+    // 若當前停駐於大型圖片/媒體元素上，直接以元素外框作為游標位置
+    if (this.currentMediaElement && this.currentMediaElement.isConnected) {
+      const mediaEl = this.currentMediaElement;
+      const mediaRect = mediaEl.getBoundingClientRect();
+      const scrollY = window.scrollY || window.pageYOffset;
+      const viewportH = window.visualViewport?.height ?? window.innerHeight;
+      const totalHeight = Math.max(
+        document.body.scrollHeight,
+        document.documentElement.scrollHeight
+      ) - viewportH;
+      const progress = totalHeight > 0 ? Math.min(100, Math.max(0, (scrollY / totalHeight) * 100)) : 100;
+      const isVisibleInViewport = forceVisible || (mediaRect.bottom >= -80 && mediaRect.top <= viewportH + 80);
+
+      const tag = mediaEl.tagName.toUpperCase();
+      const mediaInfo: MediaTargetInfo = {
+        tagName: tag,
+        width: Math.round(mediaRect.width),
+        height: Math.round(mediaRect.height)
+      };
+      if (tag === 'IMG') {
+        const img = mediaEl as HTMLImageElement;
+        mediaInfo.naturalWidth = img.naturalWidth;
+        mediaInfo.naturalHeight = img.naturalHeight;
+        mediaInfo.alt = img.alt || '';
+        mediaInfo.src = img.currentSrc || img.src || '';
+      }
+
+      const prevState = cursorStore.getState();
+      if (!isScrollUpdate) {
+        const settleDelay = prevState.advanced?.moveSettleDelayMs ?? 400;
+        if (this.moveTimer) clearTimeout(this.moveTimer);
+        this.moveTimer = setTimeout(() => {
+          cursorStore.setState({ isMoving: false, motionDirection: 'none' });
+        }, settleDelay);
+      }
+
+      cursorStore.setState({
+        visible: isVisibleInViewport,
+        isMoving: isScrollUpdate ? isSmoothScrolling() : true,
+        motionDirection: isScrollUpdate ? 'none' : 'jump',
+        motionSequence: isScrollUpdate ? prevState.motionSequence : (prevState.motionSequence || 0) + 1,
+        isScrollUpdate,
+        isMediaTarget: true,
+        mediaInfo,
+        hoveredLinkUrl: null,
+        rect: {
+          x: mediaRect.left,
+          y: mediaRect.top,
+          width: Math.max(8, mediaRect.width),
+          height: Math.max(8, mediaRect.height)
+        },
+        trailWaypoints: undefined,
+        readingProgress: progress
+      });
+      return;
+    } else if (this.currentMediaElement) {
+      this.clearMediaTarget();
+    }
+
     if (!this.currentTarget || !this.currentTarget.node.isConnected) {
       if (this.isRecoveringTarget) return;
       this.isRecoveringTarget = true;
@@ -1969,6 +2314,8 @@ export class CursorController {
           isMoving: nextMoving,
           motionDirection: nextMoving ? cursorStore.getState().motionDirection : 'none',
           isScrollUpdate: true,
+          isMediaTarget: false,
+          mediaInfo: null,
           rect: {
             x: rect.left,
             y: rect.top,
@@ -2031,6 +2378,8 @@ export class CursorController {
         motionSequence: (prevState.motionSequence || 0) + 1,
         chargeLevel: this.currentCharge,
         isScrollUpdate: false,
+        isMediaTarget: false,
+        mediaInfo: null,
         hoveredLinkUrl: this.getHoveredAnchor(this.currentTarget)?.href || null,
         rect: {
           x: rect.left,
@@ -2243,6 +2592,20 @@ export class CursorController {
    * 半頁跳轉 (d 向下 / u 向上) - 保證實體翻動 50% 視窗高度並精準重錨定目標行
    */
   public moveHalfPage(isDownward: boolean, isRepeat: boolean = false): void {
+    const direction = isDownward ? 'down' : 'up';
+    if (this.currentMediaElement) {
+      if (this.handleMediaVerticalStep(direction, true, isRepeat)) {
+        return;
+      }
+      const prevEntryDir = this.mediaEntryDirection;
+      const pendingTarget = this.pendingTargetAfterMedia;
+      this.clearMediaTarget();
+      if (prevEntryDir === direction && pendingTarget && pendingTarget.node.isConnected) {
+        this.currentTarget = pendingTarget;
+        this.updateActiveScope(pendingTarget.node);
+      }
+    }
+
     if (!this.currentTarget) {
       this.findInitialTarget();
       return;

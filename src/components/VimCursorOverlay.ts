@@ -600,7 +600,8 @@ export class VimCursorOverlay {
     }
 
     // 2. 依據游標形態 (Shape)、粗細 (Thickness) 與進階幾何微調參數
-    const shape = state.shape || 'block';
+    // 若當前停駐於圖片/媒體元素上，強制採用不遮擋內容的透明聚焦外框
+    const shape = state.isMediaTarget ? 'media' : (state.shape || 'block');
     const thickness = typeof state.thickness === 'number' ? Math.max(0.5, state.thickness) : 1.5;
     const borderRadius = typeof adv.borderRadius === 'number' ? Math.max(0, adv.borderRadius) : 1.5;
     const outlineOffset = typeof adv.outlineOffset === 'number' ? adv.outlineOffset : -1;
@@ -613,6 +614,17 @@ export class VimCursorOverlay {
     let targetH = state.rect.height;
 
     switch (shape) {
+      case 'media': { // 圖片/媒體聚焦外框：完全透明不遮擋影像，邊框略加粗並帶柔和光暈
+        const mediaBorderWidth = Math.max(2.5, thickness);
+        this.element.style.background = 'transparent';
+        this.element.style.border = `${mediaBorderWidth}px solid ${color.hex}`;
+        this.element.style.outline = '1px solid rgba(0, 0, 0, 0.35)';
+        this.element.style.outlineOffset = '0px';
+        this.element.style.borderRadius = `${Math.max(4, borderRadius)}px`;
+        this.element.style.boxShadow = `0 0 ${Math.max(10, glow)}px rgba(${color.r}, ${color.g}, ${color.b}, 0.55)`;
+        break;
+      }
+
       case 'hollow': // 空心外框：文字完全清晰可見，高對比外框錨定
         this.element.style.background = `rgba(${color.r}, ${color.g}, ${color.b}, ${hollowBgOpacity})`;
         this.element.style.outline = 'none';

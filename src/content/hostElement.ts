@@ -3,6 +3,7 @@ import { VimStatusBar } from '../components/VimStatusBar';
 import { VimJumpMenu } from '../components/VimJumpMenu';
 import { VimRearviewMirror } from '../components/VimRearviewMirror';
 import { VimFlashOverlay } from '../components/VimFlashOverlay';
+import { VimImageLightbox } from '../components/VimImageLightbox';
 
 /**
  * 宿主網頁注入容器 (使用原生 div + Shadow DOM，不依賴 customElements)
@@ -16,6 +17,7 @@ export class MuzenCursorHost {
   private jumpMenu: VimJumpMenu;
   private rearviewMirror: VimRearviewMirror;
   private flashOverlay: VimFlashOverlay;
+  private imageLightbox: VimImageLightbox;
 
   constructor() {
     this.hostElement = document.createElement('div');
@@ -54,6 +56,7 @@ export class MuzenCursorHost {
     this.jumpMenu = new VimJumpMenu();
     this.rearviewMirror = new VimRearviewMirror();
     this.flashOverlay = new VimFlashOverlay();
+    this.imageLightbox = new VimImageLightbox();
 
     this.shadow.appendChild(this.overlay.getStyleSheet());
     this.shadow.appendChild(this.overlay.getElement());
@@ -61,6 +64,7 @@ export class MuzenCursorHost {
     this.shadow.appendChild(this.jumpMenu.getElement());
     this.shadow.appendChild(this.rearviewMirror.getElement());
     this.shadow.appendChild(this.flashOverlay.getElement());
+    this.shadow.appendChild(this.imageLightbox.getElement());
   }
 
   public getHostElement(): HTMLElement {
@@ -78,6 +82,7 @@ export class MuzenCursorHost {
     this.jumpMenu.destroy();
     this.rearviewMirror.destroy();
     this.flashOverlay.destroy();
+    this.imageLightbox.destroy();
     this.hostElement.remove();
   }
 }

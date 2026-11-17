@@ -260,8 +260,18 @@ export class VimStatusBar {
 
     const dict = LOCALES[state.locale || 'zh-TW'] || LOCALES['zh-TW'];
 
-    // 游標停留在超連結時呈現連結提示微章
-    if (state.hoveredLinkUrl) {
+    // 游標停留在圖片/媒體或超連結時呈現對應提示微章
+    if (state.isMediaTarget && state.mediaInfo) {
+      this.linkEl.style.display = 'inline-block';
+      const w = state.mediaInfo.naturalWidth || state.mediaInfo.width;
+      const h = state.mediaInfo.naturalHeight || state.mediaInfo.height;
+      const dim = w > 0 && h > 0 ? ` ${w}×${h}` : '';
+      const hasZoom = state.mediaInfo.tagName === 'IMG' && !!state.mediaInfo.src;
+      this.linkEl.textContent = `🖼 ${state.mediaInfo.tagName}${dim}${hasZoom ? ' · Enter 放大' : ''}`;
+      this.linkEl.title = state.mediaInfo.alt ? `${state.mediaInfo.alt}\n[Enter: 放大檢視]` : '[Enter: 放大檢視]';
+      this.linkEl.style.color = '#d3869b';
+      this.linkEl.style.backgroundColor = isLight ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.14)';
+    } else if (state.hoveredLinkUrl) {
       this.linkEl.style.display = 'inline-block';
       this.linkEl.textContent = `🔗 ${dict.statusLinkBadge || 'Link'}`;
       this.linkEl.title = `${state.hoveredLinkUrl}\n[Enter: 開啟 | Ctrl+Enter: 新分頁]`;

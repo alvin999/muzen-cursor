@@ -629,3 +629,133 @@ export function findVisualLineBoundary(
     return target;
   }
 }
+
+
+const MIN_MEDIA_WIDTH = 120;
+const MIN_MEDIA_HEIGHT = 80;
+
+/**
+ * 判斷元素是否為適合游標停駐的大型可視圖片/媒體元素
+ * 過濾掉裝飾性小圖示、按鈕 icon、隱藏元素或側欄懸浮掛件
+ */
+export function isNavigableMediaElement(
+  el: Element,
+  rootElement: HTMLElement,
+  allowOutOfFlow: boolean = false
+): boolean {
+  if (!el.isConnected) return false;
+  if (el.closest('#muzen-cursor-host-root')) return false;
+
+  const tag = el.tagName.toUpperCase();
+  if (tag !== 'IMG' && tag !== 'CANVAS' && tag !== 'VIDEO' && tag !== 'SVG') {
+    return false;
+  }
+
+  // 避免抓到按鈕或導航列裡的小 SVG 圖示
+  if (tag === 'SVG' && el.closest('button, [role="button"], nav, header')) {
+    return false;
+  }
+
+  if (el instanceof HTMLElement && (el.hidden || isVisuallyHiddenElement(el))) return false;
+  if (el.closest(A11Y_HIDDEN_SELECTORS)) return false;
+
+  try {
+    const style = window.getComputedStyle(el);
+    if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
+      return false;
+    }
+    if (!allowOutOfFlow && isOutOfNormalFlowWidget(el, rootElement)) {
+      return false;
+    }
+  } catch {
+    return false;
+  }
+
+  if (tag === 'IMG') {
+    const img = el as HTMLImageElement;
+    if (img.complete && img.naturalWidth === 0) return false;
+  }
+
+  const rect = el.getBoundingClientRect();
+  if (isOffScreenOrZeroSize(rect)) return false;
+  if (rect.width < MIN_MEDIA_WIDTH || rect.height < MIN_MEDIA_HEIGHT) return false;
+
+  return true;
+}
+
+/**
+ * 在指定的垂直座標區間內尋找下一個應停駐的大型媒體元素
+ */
+export function findMediaBetweenVerticalRange(
+  fromEdge: number,
+  toEdge: number,
+  direction: 'down' | 'up',
+  rootElement: HTMLElement,
+  allowOutOfFlow: boolean,
+  excludeEl?: Element | null
+): Element | null {
+  const candidates = rootElement.querySelectorAll('img, canvas, video, svg');
+  let best: Element | null = null;
+  let bestEdge = direction === 'down' ? Infinity : -Infinity;
+
+  for (let i = 0; i < candidates.length; i++) {
+    const el = candidates[i];
+    if (el === excludeEl) continue;
+    if (!isNavigableMediaElement(el, rootElement, allowOutOfFlow)) continue;
+
+    const rect = el.getBoundingClientRect();
+    if (direction === 'down') {
+      if (rect.top >= fromEdge - 6 && rect.top < toEdge - 6) {
+        if (rect.top < bestEdge) {
+          bestEdge = rect.top;
+          best = el;
+        }
+      }
+    } else {
+      if (rect.bottom <= fromEdge + 6 && rect.bottom > toEdge + 6) {
+        if (rect.bottom > bestEdge) {
+          bestEdge = rect.bottom;
+          best = el;
+        }
+      }
+    }
+  }
+
+  return best;
+}
+
+/**
+ * 在沒有後續文字節點時，尋找指定位置之後（或之前）的第一個大型媒體元素
+ */
+export function findNextMediaAfter(
+  anchorEdge: number,
+  direction: 'down' | 'up',
+  rootElement: HTMLElement,
+  allowOutOfFlow: boolean,
+  excludeEl?: Element | null
+): Element | null {
+  const candidates = rootElement.querySelectorAll('img, canvas, video, svg');
+  let best: Element | null = null;
+  let bestEdge = direction === 'down' ? Infinity : -Infinity;
+
+  for (let i = 0; i < candidates.length; i++) {
+    const el = candidates[i];
+    if (el === excludeEl) continue;
+    if (!isNavigableMediaElement(el, rootElement, allowOutOfFlow)) continue;
+
+    const rect = el.getBoundingClientRect();
+    if (direction === 'down') {
+      if (rect.top >= anchorEdge - 6 && rect.top < bestEdge) {
+        bestEdge = rect.top;
+        best = el;
+      }
+    } else {
+      if (rect.bottom <= anchorEdge + 6 && rect.bottom > bestEdge) {
+        bestEdge = rect.bottom;
+        best = el;
+      }
+    }
+  }
+
+  return best;
+}

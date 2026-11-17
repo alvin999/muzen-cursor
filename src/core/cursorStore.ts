@@ -205,10 +205,28 @@ export type KeyActionId =
 
 export interface FlashHintItem {
   label: string;
-  node: Text;
+  node: Text | null;
+  element?: HTMLElement;
   offset: number;
   rect: CursorRect;
   matchLength?: number;
+}
+
+export interface MediaTargetInfo {
+  tagName: string;
+  width: number;
+  height: number;
+  naturalWidth?: number;
+  naturalHeight?: number;
+  alt?: string;
+  src?: string;
+}
+
+export interface LightboxImageState {
+  src: string;
+  alt?: string;
+  naturalWidth: number;
+  naturalHeight: number;
 }
 
 export interface KeybindingDef {
@@ -383,6 +401,9 @@ export interface CursorState {
   estimatedMinutesLeft?: number; // 預估剩餘閱讀時間 (分鐘數)
   chargeLevel?: number; // 當前動能蓄力等級 (0.0 ~ 1.0)
   hoveredLinkUrl?: string | null; // 當前游標所處之超連結目標網址 (若位於 <a> 標籤內)
+  isMediaTarget?: boolean; // 當前游標是否停駐於圖片/媒體元素上
+  mediaInfo?: MediaTargetInfo | null; // 當前停駐媒體元素之中繼資訊
+  lightboxImage?: LightboxImageState | null; // 圖片燈箱檢視器狀態
   rearviewNotice?: {
     text: string;
     direction: 'up' | 'down';
@@ -441,6 +462,9 @@ class CursorStore {
     pendingKeys: '',
     currentSectionTitle: '',
     estimatedMinutesLeft: undefined,
+    isMediaTarget: false,
+    mediaInfo: null,
+    lightboxImage: null,
     rearviewNotice: null
   };
 
