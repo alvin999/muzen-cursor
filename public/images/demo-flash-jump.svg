@@ -1,0 +1,386 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="880" height="480" viewBox="0 0 880 480" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="window-shadow-fj" x="0" y="0" width="880" height="480" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="16" stdDeviation="20" flood-color="#000000" flood-opacity="0.6"/>
+    </filter>
+    <filter id="anchor-glow-orange" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#fe8019" flood-opacity="0.8"/>
+    </filter>
+    <filter id="anchor-glow-yellow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#fabd2f" flood-opacity="0.9"/>
+    </filter>
+    <filter id="badge-glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#fabd2f" flood-opacity="0.9"/>
+    </filter>
+
+    <style>
+      /* 游標位移與躍進動畫 (8s 循環) */
+      @keyframes cursorFlight {
+        0%, 18%  { transform: translate(0px, 0px); opacity: 1; }
+        20%, 38% { transform: translate(24px, 0px); opacity: 1; } /* 游標微調，準備起跳 */
+        40%, 54% { transform: translate(182px, 34px); opacity: 1; } /* f -> d 瞬間跨區飛躍至右下卡片 */
+        56%, 76% { transform: translate(240px, 34px); opacity: 1; } /* 到達目標後按 w 順暢推進 */
+        80%, 94% { transform: translate(240px, 34px); opacity: 0.2; }
+        96%, 100%{ transform: translate(0px, 0px); opacity: 1; }
+      }
+
+      /* 跨區飛躍光軌引導線 */
+      @keyframes leapTrailAnim {
+        0%, 36%  { stroke-dashoffset: 260; opacity: 0; }
+        38%, 46% { stroke-dashoffset: 0; opacity: 0.9; }
+        50%, 60% { stroke-dashoffset: -260; opacity: 0; }
+        61%, 100%{ opacity: 0; }
+      }
+
+      /* 標籤徽章淡入彈出動畫 */
+      @keyframes hintBadgesPop {
+        0%, 19.9% { opacity: 0; transform: scale(0.6); visibility: hidden; }
+        20%, 39%  { opacity: 1; transform: scale(1); visibility: visible; }
+        42%, 100% { opacity: 0; transform: scale(0.8); visibility: hidden; }
+      }
+
+      /* 目標標籤 [d] 命中高亮特寫 */
+      @keyframes targetBadgeHit {
+        0%, 19.9% { opacity: 0; transform: scale(0.6); }
+        20%, 37%  { opacity: 1; transform: scale(1); fill: #fe8019; }
+        38%, 41%  { opacity: 1; transform: scale(1.22); fill: #fabd2f; filter: url(#badge-glow); }
+        44%, 100% { opacity: 0; transform: scale(0.8); }
+      }
+
+      /* 狀態列模式標籤切換 */
+      @keyframes modeNormalToggle {
+        0%, 19.9% { opacity: 1; }
+        20%, 41.9%{ opacity: 0; }
+        42%, 100% { opacity: 1; }
+      }
+      @keyframes modeHintToggle {
+        0%, 19.9% { opacity: 0; }
+        20%, 41.9%{ opacity: 1; }
+        42%, 100% { opacity: 0; }
+      }
+
+      /* 按鍵 [ f ] 動態反饋 */
+      @keyframes keyPressF {
+        0%, 18%  { fill: #3c3836; stroke: #504945; transform: scale(1); }
+        19%, 24% { fill: #fabd2f; stroke: #fabd2f; transform: scale(0.93); }
+        25%, 100%{ fill: #3c3836; stroke: #504945; transform: scale(1); }
+      }
+      @keyframes keyTextF {
+        0%, 18%  { fill: #ebdbb2; }
+        19%, 24% { fill: #1d2021; font-weight: 800; }
+        25%, 100%{ fill: #ebdbb2; }
+      }
+
+      /* 按鍵 [ d ] 目標直達鍵動態反饋 */
+      @keyframes keyPressD {
+        0%, 36%  { fill: #3c3836; stroke: #504945; transform: scale(1); }
+        37%, 43% { fill: #fe8019; stroke: #fe8019; transform: scale(0.93); }
+        44%, 100%{ fill: #3c3836; stroke: #504945; transform: scale(1); }
+      }
+      @keyframes keyTextD {
+        0%, 36%  { fill: #ebdbb2; }
+        37%, 43% { fill: #1d2021; font-weight: 800; }
+        44%, 100%{ fill: #ebdbb2; }
+      }
+
+      /* 右側 HUD 膠囊文字切換 */
+      @keyframes hudPhaseNormal {
+        0%, 18.9% { opacity: 1; }
+        19%, 100% { opacity: 0; }
+      }
+      @keyframes hudPhaseHint {
+        0%, 18.9% { opacity: 0; }
+        19%, 36.9%{ opacity: 1; }
+        37%, 100% { opacity: 0; }
+      }
+      @keyframes hudPhaseJump {
+        0%, 36.9% { opacity: 0; }
+        37%, 75%  { opacity: 1; }
+        76%, 100% { opacity: 0; }
+      }
+
+      .anim-cursor {
+        animation: cursorFlight 8s cubic-bezier(0.2, 0.9, 0.3, 1) infinite;
+      }
+      .anim-leap-trail {
+        stroke-dasharray: 260;
+        animation: leapTrailAnim 8s ease-in-out infinite;
+      }
+      .anim-hint-pop {
+        animation: hintBadgesPop 8s ease-out infinite;
+        transform-origin: center;
+      }
+      .anim-target-badge {
+        animation: targetBadgeHit 8s ease-out infinite;
+        transform-origin: center;
+      }
+      .anim-mode-normal {
+        animation: modeNormalToggle 8s steps(1) infinite;
+      }
+      .anim-mode-hint {
+        animation: modeHintToggle 8s steps(1) infinite;
+      }
+      .anim-key-rect-f {
+        animation: keyPressF 8s ease-in-out infinite;
+        transform-origin: center;
+      }
+      .anim-key-text-f {
+        animation: keyTextF 8s ease-in-out infinite;
+      }
+      .anim-key-rect-d {
+        animation: keyPressD 8s ease-in-out infinite;
+        transform-origin: center;
+      }
+      .anim-key-text-d {
+        animation: keyTextD 8s ease-in-out infinite;
+      }
+      .anim-hud-normal {
+        animation: hudPhaseNormal 8s steps(1) infinite;
+      }
+      .anim-hud-hint {
+        animation: hudPhaseHint 8s steps(1) infinite;
+      }
+      .anim-hud-jump {
+        animation: hudPhaseJump 8s steps(1) infinite;
+      }
+    </style>
+  </defs>
+
+  <!-- 視窗底色與外框陰影 -->
+  <rect x="10" y="10" width="860" height="460" rx="14" fill="#1d2021" stroke="#3c3836" stroke-width="1.5" filter="url(#window-shadow-fj)" />
+
+  <!-- 視窗標題列 -->
+  <rect x="10" y="10" width="860" height="44" rx="14" fill="#282828" />
+  <rect x="10" y="40" width="860" height="14" fill="#282828" />
+  <line x1="10" y1="54" x2="870" y2="54" stroke="#3c3836" stroke-width="1" />
+
+  <!-- macOS 紅黃綠三圓點 -->
+  <circle cx="36" cy="32" r="6" fill="#fb4934" />
+  <circle cx="56" cy="32" r="6" fill="#fabd2f" />
+  <circle cx="76" cy="32" r="6" fill="#b8bb26" />
+
+  <!-- 模擬網址列 -->
+  <rect x="110" y="20" width="640" height="24" rx="6" fill="#1d2021" stroke="#504945" stroke-width="1" />
+  <text x="125" y="36" fill="#a89984" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace" font-size="11">🔒 https://muzen.dev/guide/flash-jump</text>
+
+  <!-- 視窗右側外觀標籤 -->
+  <rect x="765" y="22" width="95" height="20" rx="4" fill="#3c3836" />
+  <text x="812" y="36" fill="#d5c4a1" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif" font-size="11" text-anchor="middle" font-weight="600">MUZEN VIM</text>
+
+  <!-- 內容區 -->
+  <g transform="translate(48, 80)">
+    <!-- 文章標題與說明 -->
+    <text x="0" y="24" fill="#ebdbb2" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif" font-size="22" font-weight="700">Global Flash Jump: Instant Viewport Navigation</text>
+    <text x="0" y="46" fill="#83a598" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif" font-size="13">Flash &amp; Hint: [f] Viewport Hints • [a-z] Direct Leap • [/] Instant Search Filter</text>
+    <line x1="0" y1="58" x2="784" y2="58" stroke="#3c3836" stroke-width="1" />
+
+    <!-- 左側：情境介紹與跨欄直達展示卡片 -->
+    <g transform="translate(0, 72)">
+      <text x="0" y="16" fill="#d5c4a1" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif" font-size="14.5" letter-spacing="0.2">
+        面對側邊欄、雙欄文檔或大片留白時，純靠 hjkl 常陷入「無處可去」的爬行瓶頸。
+      </text>
+      <text x="0" y="38" fill="#d5c4a1" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif" font-size="14.5" letter-spacing="0.2">
+        按下 <tspan fill="#fabd2f" font-weight="700">f</tspan> 即刻點亮視口所有區塊與浮動框標籤，敲擊標籤碼瞬間光速直達：
+      </text>
+
+      <!-- 核心多欄展示卡片 -->
+      <g transform="translate(0, 56)">
+        <rect x="0" y="0" width="510" height="124" rx="8" fill="#1d2021" stroke="#504945" stroke-width="1.2" />
+
+        <!-- 卡片頂部資訊標籤與狀態切換 -->
+        <rect x="0" y="0" width="510" height="30" rx="8" fill="#282828" />
+        <rect x="0" y="20" width="510" height="10" fill="#282828" />
+        <line x1="0" y1="30" x2="510" y2="30" stroke="#3c3836" stroke-width="1" />
+
+        <circle cx="16" cy="15" r="4" fill="#fabd2f" />
+        <text x="26" y="19" fill="#fabd2f" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif" font-size="11" font-weight="700">視口即時標籤直達 (VIEWPORT HINT MAPPING)</text>
+
+        <!-- 模式徽章：NORMAL vs ⚡ HINT -->
+        <g class="anim-mode-normal">
+          <rect x="408" y="6" width="90" height="18" rx="4" fill="#3c3836" />
+          <text x="453" y="19" fill="#a89984" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="10" font-weight="700" text-anchor="middle">VIM NORMAL</text>
+        </g>
+        <g class="anim-mode-hint">
+          <rect x="398" y="6" width="102" height="18" rx="4" fill="#fe8019" />
+          <text x="449" y="19" fill="#1d2021" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="10" font-weight="800" text-anchor="middle">⚡ HINT MODE</text>
+        </g>
+
+        <!-- 模擬多欄結構：左側導航欄 vs 右側主文章區 -->
+        <!-- 垂直欄位分隔線 -->
+        <line x1="150" y1="30" x2="150" y2="124" stroke="#3c3836" stroke-width="1" />
+
+        <!-- 左欄內容 (目錄側邊欄) -->
+        <g transform="translate(16, 40)">
+          <!-- 項目 1 (游標起點) -->
+          <g transform="translate(0, 16)">
+            <text x="0" y="0" fill="#ebdbb2" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" font-weight="600">1. Overview</text>
+            <!-- 標籤徽章 [a] -->
+            <g class="anim-hint-pop" transform="translate(-4, -14)">
+              <rect x="0" y="0" width="14" height="13" rx="2.5" fill="#fe8019" />
+              <text x="7" y="10" fill="#1d2021" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9.5" font-weight="800" text-anchor="middle">a</text>
+            </g>
+          </g>
+
+          <!-- 項目 2 -->
+          <g transform="translate(0, 42)">
+            <text x="0" y="0" fill="#a89984" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12">2. Keybindings</text>
+            <!-- 標籤徽章 [s] -->
+            <g class="anim-hint-pop" transform="translate(-4, -14)">
+              <rect x="0" y="0" width="14" height="13" rx="2.5" fill="#fe8019" />
+              <text x="7" y="10" fill="#1d2021" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9.5" font-weight="800" text-anchor="middle">s</text>
+            </g>
+          </g>
+
+          <!-- 項目 3 -->
+          <g transform="translate(0, 66)">
+            <text x="0" y="0" fill="#a89984" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12">3. Settings</text>
+            <!-- 標籤徽章 [g] -->
+            <g class="anim-hint-pop" transform="translate(-4, -14)">
+              <rect x="0" y="0" width="14" height="13" rx="2.5" fill="#fe8019" />
+              <text x="7" y="10" fill="#1d2021" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9.5" font-weight="800" text-anchor="middle">g</text>
+            </g>
+          </g>
+        </g>
+
+        <!-- 右欄內容 (主閱讀區與浮動提示方塊) -->
+        <g transform="translate(166, 40)">
+          <!-- 右側普通文字段落 -->
+          <g transform="translate(0, 16)">
+            <text x="0" y="0" fill="#d5c4a1" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif" font-size="12.5">
+              長文排版常具備非連續性多欄與浮動元件。
+            </text>
+            <!-- 標籤徽章 [k] -->
+            <g class="anim-hint-pop" transform="translate(-4, -14)">
+              <rect x="0" y="0" width="14" height="13" rx="2.5" fill="#fe8019" />
+              <text x="7" y="10" fill="#1d2021" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9.5" font-weight="800" text-anchor="middle">k</text>
+            </g>
+          </g>
+
+          <!-- 右側重點聚焦浮動卡片 (跳轉目標) -->
+          <g transform="translate(0, 28)">
+            <rect x="0" y="0" width="330" height="46" rx="6" fill="#282828" stroke="#504945" stroke-width="1" />
+            <text x="12" y="18" fill="#fabd2f" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5" font-weight="700">🎯 Jump Target (Card Block):</text>
+            <text x="12" y="34" fill="#ebdbb2" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5">
+              Press [d] to leap directly across the gap!
+            </text>
+
+            <!-- 目標標籤徽章 [d] (特寫命中動態) -->
+            <g class="anim-target-badge" transform="translate(6, -10)">
+              <rect x="0" y="0" width="16" height="15" rx="3" fill="#fabd2f" />
+              <text x="8" y="11.5" fill="#1d2021" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10.5" font-weight="800" text-anchor="middle">d</text>
+            </g>
+          </g>
+        </g>
+
+        <!-- 跨區跳躍虛線光軌 (從左側 1. Overview 飛向右側卡片目標) -->
+        <path class="anim-leap-trail" d="M 98 56 C 140 40, 160 84, 192 90" fill="none" stroke="#fabd2f" stroke-width="2" stroke-linecap="round" />
+
+        <!-- 動態幾何方塊游標 -->
+        <g class="anim-cursor" transform="translate(14, 44)">
+          <rect x="0" y="0" width="10" height="15" rx="2" fill="#fe8019" fill-opacity="0.38" stroke="#fe8019" stroke-width="1.8" filter="url(#anchor-glow-orange)" />
+        </g>
+      </g>
+
+      <!-- 卡片下方補充說明 -->
+      <text x="0" y="200" fill="#ebdbb2" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif" font-size="13.5">
+        • 按 <tspan fill="#fabd2f" font-weight="700">f</tspan> 進入 Hint 模式；按下目標對應字母（如 <tspan fill="#fe8019" font-weight="700">d</tspan>）瞬間直達跨區詞首。
+      </text>
+      <text x="0" y="222" fill="#a89984" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif" font-size="12.5">
+        • 按 <tspan fill="#83a598" font-weight="700">/</tspan> 可切換關鍵字搜尋（flash.nvim）；按 <tspan fill="#83a598" font-weight="700">''</tspan> 隨時精確回跳前次落點。
+      </text>
+    </g>
+
+    <!-- 中間立體垂直分隔線 -->
+    <line x1="535" y1="72" x2="535" y2="300" stroke="#3c3836" stroke-width="1" />
+
+    <!-- 右側：HUD 即時按鍵動態與功能特性 -->
+    <g transform="translate(555, 72)">
+      <!-- 鍵盤即時動態卡 -->
+      <rect x="0" y="0" width="225" height="106" rx="8" fill="#282828" stroke="#504945" stroke-width="1" />
+      <text x="14" y="22" fill="#928374" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif" font-size="11" font-weight="600">LIVE KEYBOARD DYNAMICS</text>
+
+      <!-- [ f ] 按鍵 -->
+      <g transform="translate(18, 32)">
+        <rect class="anim-key-rect-f" x="0" y="0" width="40" height="34" rx="5" fill="#3c3836" stroke="#504945" stroke-width="1.2" />
+        <text class="anim-key-text-f" x="20" y="22" fill="#ebdbb2" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="16" font-weight="700" text-anchor="middle">f</text>
+        <text x="20" y="44" fill="#a89984" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif" font-size="10" text-anchor="middle">標籤 ⚡</text>
+      </g>
+
+      <!-- [ d ] 按鍵 -->
+      <g transform="translate(74, 32)">
+        <rect class="anim-key-rect-d" x="0" y="0" width="40" height="34" rx="5" fill="#3c3836" stroke="#504945" stroke-width="1.2" />
+        <text class="anim-key-text-d" x="20" y="22" fill="#ebdbb2" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="16" font-weight="700" text-anchor="middle">d</text>
+        <text x="20" y="44" fill="#a89984" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif" font-size="10" text-anchor="middle">直達 🎯</text>
+      </g>
+
+      <!-- 動態指示狀態膠囊 -->
+      <rect x="122" y="38" width="94" height="24" rx="4" fill="#1d2021" stroke="#3c3836" stroke-width="1" />
+      <g class="anim-hud-normal">
+        <text x="169" y="54" fill="#a89984" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif" font-size="10" font-weight="600" text-anchor="middle">⏸ 待命中 (Vim)</text>
+      </g>
+      <g class="anim-hud-hint">
+        <text x="169" y="54" fill="#fabd2f" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif" font-size="10" font-weight="700" text-anchor="middle">⚡ 點亮標籤 (f)</text>
+      </g>
+      <g class="anim-hud-jump">
+        <text x="169" y="54" fill="#fe8019" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif" font-size="10" font-weight="700" text-anchor="middle">🎯 光速瞬移 (d)</text>
+      </g>
+
+      <text x="14" y="96" fill="#83a598" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="10.5">標籤分配: Prefix-free 零衝突</text>
+
+      <!-- 下方: 3 大直達核心特性卡 -->
+      <text x="0" y="132" fill="#fabd2f" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif" font-size="12" font-weight="700">3 大全域跳轉優勢</text>
+
+      <!-- 特性 1: 跨欄與區塊直達 -->
+      <g transform="translate(0, 142)">
+        <rect x="0" y="0" width="225" height="30" rx="5" fill="#1d2021" stroke="#fe8019" stroke-width="1" />
+        <text x="10" y="20" fill="#fe8019" font-size="12">⚡</text>
+        <text x="28" y="20" fill="#ebdbb2" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif" font-size="11" font-weight="600">突破 hjkl 逐格移動隔離</text>
+      </g>
+
+      <!-- 特性 2: 零輸入法衝突 -->
+      <g transform="translate(0, 178)">
+        <rect x="0" y="0" width="225" height="30" rx="5" fill="#1d2021" stroke="#3c3836" stroke-width="1" />
+        <text x="10" y="20" fill="#7aa2f7" font-size="12">🀄</text>
+        <text x="28" y="20" fill="#ebdbb2" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif" font-size="11" font-weight="600">純英數鍵直達・免切輸入法</text>
+      </g>
+
+      <!-- 特性 3: / 鍵搜尋聯動 -->
+      <g transform="translate(0, 214)">
+        <rect x="0" y="0" width="225" height="30" rx="5" fill="#1d2021" stroke="#3c3836" stroke-width="1" />
+        <text x="10" y="20" fill="#b8bb26" font-size="12">🔍</text>
+        <text x="28" y="20" fill="#ebdbb2" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif" font-size="11" font-weight="600">按 / 切換 flash.nvim 即搜即跳</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- 底部操作提示導引 (Action Banner) -->
+  <g transform="translate(48, 420)">
+    <rect x="0" y="0" width="784" height="40" rx="8" fill="#282828" stroke="#3c3836" stroke-width="1" />
+
+    <!-- 按鍵指引 1: f 全域標籤 -->
+    <rect class="anim-key-rect-f" x="14" y="8" width="28" height="24" rx="4" fill="#3c3836" stroke="#504945" stroke-width="1" />
+    <text class="anim-key-text-f" x="28" y="24" fill="#fabd2f" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="13" font-weight="700" text-anchor="middle">f</text>
+    <text x="48" y="24" fill="#ebdbb2" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif" font-size="12.5" font-weight="600">全域標籤直達</text>
+
+    <text x="146" y="24" fill="#665c54" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif" font-size="14">|</text>
+
+    <!-- 按鍵指引 2: / 搜尋切換 -->
+    <rect x="160" y="8" width="28" height="24" rx="4" fill="#3c3836" stroke="#504945" stroke-width="1" />
+    <text x="174" y="24" fill="#fe8019" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="13" font-weight="700" text-anchor="middle">/</text>
+    <text x="194" y="24" fill="#ebdbb2" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif" font-size="12.5" font-weight="600">即時搜尋過濾</text>
+
+    <text x="292" y="24" fill="#665c54" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif" font-size="14">|</text>
+
+    <!-- 按鍵指引 3: '' 瞬移返回 -->
+    <rect x="306" y="8" width="38" height="24" rx="4" fill="#3c3836" stroke="#504945" stroke-width="1" />
+    <text x="325" y="24" fill="#83a598" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="13" font-weight="700" text-anchor="middle">''</text>
+    <text x="350" y="24" fill="#ebdbb2" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif" font-size="12.5">精確返回原處</text>
+
+    <text x="450" y="24" fill="#665c54" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif" font-size="14">|</text>
+
+    <!-- 標語 -->
+    <text x="466" y="24" fill="#b8bb26" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif" font-size="12.5" font-weight="600">⚡ 告別無處可去</text>
+    <text x="575" y="24" fill="#928374" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif" font-size="11.5">視線所及按下標籤一鍵即達</text>
+  </g>
+</svg>

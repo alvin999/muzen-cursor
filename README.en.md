@@ -55,12 +55,13 @@ This bidirectional palindrome symbolizes: **Beginning by dispelling the fog of w
 
 ---
 
-## 💡 Why Muzen Cursor? (Three Core Reading Revolutions)
+## 💡 Why Muzen Cursor? (Four Core Reading Revolutions)
 
 In the era of information explosion, we read vast amounts of technical documentation, academic papers, and foreign texts in browsers daily. Traditional mouse-driven reading presents recurring pain points:
 - **Disruptive word lookups**: Looking up unfamiliar foreign words requires repeatedly moving hands between keyboard and mouse; double-clicking often accidentally selects spaces or punctuation.
 - **Cumbersome text collection**: Mouse dragging often overshoots or slips, abruptly breaking your train of thought.
 - **Disorientation in dense text**: Rapid scrolling or dense dual-column layouts easily cause line-skipping and eye fatigue.
+- **Tedious roaming across zones**: Facing sidebars, multi-column articles, or wide whitespace, relying strictly on `hjkl` crawling often leads to feeling "nowhere to go."
 
 **Muzen Cursor deeply fuses authentic Vim keyboard dynamics with modern web reading:**
 
@@ -103,6 +104,20 @@ In the era of information explosion, we read vast amounts of technical documenta
 
 * **Three Geometric Anchor Shapes**: Supports **Solid Block** (maximum visual focus), **Hollow Outline** (zero text occlusion), and **Reading Underline** (speed-reading guide).
 * **Deep PDF Paper Support**: Seamlessly hooks into Mozilla PDF.js `TextLayer`; navigate dual-column academic papers line-by-line as smoothly as in your favorite code editor.
+
+---
+
+### 4. ⚡ `f` Key Global Hint Jump × Shatter Layout Barriers
+> **"Say goodbye to crawling with hjkl into dead ends—leap directly anywhere you see with zero friction."**
+
+<p align="center">
+  <img src="public/images/demo-flash-jump.en.svg" alt="f Key Global Hint Jump Demo" width="100%" />
+</p>
+
+* **Three-Step Global Leap Flow**:
+  1. Press <kbd>f</kbd> to activate **Hint Mode**; non-conflicting labels (`a–z`) immediately light up across all paragraphs, sidebars, and cards.
+  2. Tap the target key (e.g. <kbd>d</kbd>) to leap directly across columns and whitespace straight to the target word start; or press <kbd>/</kbd> for dynamic keyword filtering (`flash.nvim` mode).
+  3. Press <kbd>'</kbd><kbd>'</kbd> anytime to return to your previous origin, gliding effortlessly between macro leaps and micro reading.
 
 ---
 
