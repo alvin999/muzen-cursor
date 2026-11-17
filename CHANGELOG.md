@@ -5,6 +5,46 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [v0.2.1] - 2026-11-17
+
+### 繁體中文 (Traditional Chinese)
+#### ✨ 新增功能與體驗優化 (Features & Improvements)
+- **大圖與多媒體停駐導航 (Media Target Navigation)**：
+  - 垂直移動導航（`j` / `k`）支援智慧識別大型可視圖片與媒體元素（`<img>`、`<canvas>`、`<video>` 與大型 `<svg>`），跨越圖片時不再直接跳過，自然流暢停駐。
+  - 當圖片高度未超過可視視窗時，游標停駐時自動將圖片平滑垂直置中，大幅提升閱讀對齊體驗。
+- **超長圖片分段捲動 (Segmental Image Scrolling)**：
+  - 遇到高度超過可視視窗的長圖（長截圖、漫畫、架構圖）時，游標停駐於圖片上繼續按 `j` / `k` 或 `d` / `u`，會在圖片內部依步長平滑推進瀏覽，直到圖片底部或頂部進入安全視野後，下一次移動才離開圖片接續文字。
+- **透明外框聚焦與狀態列提示**：
+  - 游標停駐於媒體元素時自動切換為無遮蔽的透明發光外框，並於狀態列顯示圖片標籤、解析度尺寸與「Enter 放大」操作提示。
+- **原生鍵盤驅動圖片燈箱 (Vim-Style Image Lightbox)**：
+  - 停駐在圖片上按下 `Enter` 即可開啟 Shadow DOM 圖片檢視燈箱，完全沿用 Vim 操作習慣：
+    - `d` / `u`（或 `+` / `-`）：縮放（適應螢幕大小與放大檢視切換）。
+    - `h` / `j` / `k` / `l`（或方向鍵）：放大時上下左右平移檢視細節。
+    - `Esc`：關閉燈箱並回到原圖片游標位置。
+- **Flash Jump 媒體直達支援**：
+  - 在 `f`（Hint Mode）無搜尋關鍵字模式下，一併為視口內的大型媒體元素分配跳轉標籤，可直接按鍵跳轉至目標圖片並置中。
+
+---
+
+### English
+#### ✨ Features & Improvements
+- **Media Target Navigation**:
+  - Vertical navigation (`j` / `k`) intelligently identifies visible large images and media elements (`<img>`, `<canvas>`, `<video>`, large `<svg>`), docking smoothly on media instead of skipping them.
+  - Automatically vertically centers images that fit within the viewport height upon arrival for optimal reading alignment.
+- **Segmental Image Scrolling**:
+  - When encountering images taller than the viewport (tall screenshots, comics, architectural diagrams), pressing `j` / `k` or `d` / `u` smoothly scrolls within the image step-by-step before continuing to subsequent text.
+- **Transparent Focus Frame & Status Bar Hints**:
+  - Switches to a non-obscuring transparent glowing outline when focused on media, with status bar indicators for tag name, dimensions, and Enter zoom hints.
+- **Vim-Style Image Lightbox**:
+  - Press `Enter` on images to open a keyboard-driven Shadow DOM lightbox without memorizing new shortcuts:
+    - `d` / `u` (or `+` / `-`): Zoom between screen-fit and expanded detail.
+    - `h` / `j` / `k` / `l` (or arrow keys): Pan smoothly in 4 directions when zoomed.
+    - `Esc`: Close lightbox and return to the image cursor.
+- **Flash Jump Media Support**:
+  - In `f` (Hint Mode), viewport-visible large media elements are assigned quick-jump hint labels for direct landing and auto-centering.
+
+---
+
 ## [v0.2.0] - 2026-11-16
 
 ### 繁體中文 (Traditional Chinese)
