@@ -235,8 +235,44 @@ export class SmearPhysicsEngine {
   }
 
   public getPolygon(): Point2D[] {
-    if (!this.currentCorners) return [];
-    return computeConvexHull(this.currentCorners);
+    if (!this.currentCorners || !this.targetCorners) return [];
+
+    // 找出距離目標中心最遠的兩個拖尾角，將尾端收窄成彗星錐形
+    // 避免長按 j/k 遇到大距離左右跨度時，四角在空間中張開成畸形四邊形
+    const ranked = this.currentCorners
+      .map(c => ({
+        pt: c,
+        dist: Math.hypot(c.x - this.targetCenter.x, c.y - this.targetCenter.y)
+      }))
+      .sort((a, b) => b.dist - a.dist);
+
+    const farA = ranked[0].pt;
+    const farB = ranked[1].pt;
+    const tailCenter: Point2D = {
+      x: (farA.x + farB.x) / 2,
+      y: (farA.y + farB.y) / 2
+    };
+    const tailDist = Math.hypot(
+      tailCenter.x - this.targetCenter.x,
+      tailCenter.y - this.targetCenter.y
+    );
+
+    if (tailDist < 3) {
+      return computeConvexHull(this.currentCorners);
+    }
+
+    // 距離越長，尾端適度收窄（保留約 40% 寬度，兼顧方正厚實感與避免畸形四邊形）
+    const taper = Math.max(0.40, 1 - Math.min(0.60, tailDist / 100));
+    const tailA: Point2D = {
+      x: tailCenter.x + (farA.x - tailCenter.x) * taper,
+      y: tailCenter.y + (farA.y - tailCenter.y) * taper
+    };
+    const tailB: Point2D = {
+      x: tailCenter.x + (farB.x - tailCenter.x) * taper,
+      y: tailCenter.y + (farB.y - tailCenter.y) * taper
+    };
+
+    return computeConvexHull([...this.targetCorners, tailA, tailB]);
   }
 
   public getTargetCenter(): Point2D {
