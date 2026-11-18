@@ -148,6 +148,13 @@ export class SmearPhysicsEngine {
       }
     }
 
+    // 長距離移動動態加長：短距離 (<=80px) 保持俐落，長距離 (>80px) 平滑壓低拖尾剛性以拉出更明顯的殘影
+    const longJumpRatio = Math.min(1, Math.max(0, (moveDist - 80) / 420));
+    const effectiveTrailingStiffness = Math.max(
+      0.05,
+      config.trailingStiffness * (1 - 0.55 * longJumpRatio)
+    );
+
     // 依各頂點與移動方向的點積區分前導角 (Leading) 與拖尾角 (Trailing)
     for (let i = 0; i < 4; i++) {
       const offX = newTargetCorners[i].x - newCenter.x;
@@ -156,11 +163,11 @@ export class SmearPhysicsEngine {
       const dot = (offX / offLen) * dirX + (offY / offLen) * dirY;
 
       // 依指數曲率平滑過渡前導角與拖尾角剛性 (smear-cursor.nvim trailing_exponent)
-      const exponent = Math.max(1.0, config.trailingExponent || 2.0);
+      const exponent = Math.max(1.0, config.trailingExponent || 3.0);
       const t = Math.max(0, Math.min(1, (dot + 1) * 0.5));
       const factor = Math.pow(t, exponent);
       this.cornerStiffnesses[i] =
-        config.trailingStiffness + (config.stiffness - config.trailingStiffness) * factor;
+        effectiveTrailingStiffness + (config.stiffness - effectiveTrailingStiffness) * factor;
     }
 
     this.targetCorners = newTargetCorners;

@@ -789,9 +789,9 @@ export class VimCursorOverlay {
 
         const smearConfig: SmearConfig = {
           stiffness: typeof adv.smearStiffness === 'number' ? adv.smearStiffness : 0.85,
-          trailingStiffness: typeof adv.smearTrailingStiffness === 'number' ? adv.smearTrailingStiffness : 0.30,
-          trailingExponent: typeof adv.smearTrailingExponent === 'number' ? adv.smearTrailingExponent : 2.0,
-          damping: typeof adv.smearDamping === 'number' ? adv.smearDamping : 0.82,
+          trailingStiffness: typeof adv.smearTrailingStiffness === 'number' ? adv.smearTrailingStiffness : 0.18,
+          trailingExponent: typeof adv.smearTrailingExponent === 'number' ? adv.smearTrailingExponent : 3.0,
+          damping: typeof adv.smearDamping === 'number' ? adv.smearDamping : 0.68,
           distanceStopAnimating: typeof adv.smearDistanceStopAnimating === 'number' ? adv.smearDistanceStopAnimating : 0.5,
           maxLength: typeof adv.smearMaxLength === 'number' ? adv.smearMaxLength : 0
         };
@@ -1387,8 +1387,8 @@ export class VimCursorOverlay {
     if (style.shape === 'underline') {
       if (useGradient) {
         const grad = ctx.createLinearGradient(tail.x, tail.y, head.x, head.y);
-        grad.addColorStop(0, `rgba(${style.color.r}, ${style.color.g}, ${style.color.b}, 0.12)`);
-        grad.addColorStop(0.55, `rgba(${style.color.r}, ${style.color.g}, ${style.color.b}, 0.78)`);
+        grad.addColorStop(0, `rgba(${style.color.r}, ${style.color.g}, ${style.color.b}, 0.38)`);
+        grad.addColorStop(0.45, `rgba(${style.color.r}, ${style.color.g}, ${style.color.b}, 0.85)`);
         grad.addColorStop(1, style.color.hex);
         ctx.fillStyle = grad;
       } else {
@@ -1398,8 +1398,8 @@ export class VimCursorOverlay {
     } else {
       if (useGradient) {
         const fillGrad = ctx.createLinearGradient(tail.x, tail.y, head.x, head.y);
-        fillGrad.addColorStop(0, `rgba(${style.color.r}, ${style.color.g}, ${style.color.b}, ${(style.fillOpacity * 0.1).toFixed(3)})`);
-        fillGrad.addColorStop(0.5, `rgba(${style.color.r}, ${style.color.g}, ${style.color.b}, ${(style.fillOpacity * 0.68).toFixed(3)})`);
+        fillGrad.addColorStop(0, `rgba(${style.color.r}, ${style.color.g}, ${style.color.b}, ${(style.fillOpacity * 0.38).toFixed(3)})`);
+        fillGrad.addColorStop(0.45, `rgba(${style.color.r}, ${style.color.g}, ${style.color.b}, ${(style.fillOpacity * 0.82).toFixed(3)})`);
         fillGrad.addColorStop(1, `rgba(${style.color.r}, ${style.color.g}, ${style.color.b}, ${style.fillOpacity})`);
         ctx.fillStyle = fillGrad;
       } else {
@@ -1409,8 +1409,8 @@ export class VimCursorOverlay {
       ctx.lineWidth = style.thickness;
       if (useGradient) {
         const strokeGrad = ctx.createLinearGradient(tail.x, tail.y, head.x, head.y);
-        strokeGrad.addColorStop(0, `rgba(${style.color.r}, ${style.color.g}, ${style.color.b}, 0.15)`);
-        strokeGrad.addColorStop(0.45, `rgba(${style.color.r}, ${style.color.g}, ${style.color.b}, 0.72)`);
+        strokeGrad.addColorStop(0, `rgba(${style.color.r}, ${style.color.g}, ${style.color.b}, 0.42)`);
+        strokeGrad.addColorStop(0.45, `rgba(${style.color.r}, ${style.color.g}, ${style.color.b}, 0.86)`);
         strokeGrad.addColorStop(1, style.color.hex);
         ctx.strokeStyle = strokeGrad;
       } else {

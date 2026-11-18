@@ -107,10 +107,10 @@ export interface AdvancedConfig {
   chargeTrailBoost: number;   // 滿蓄力殘影階數增加量 (預設 3)
 
   // 8. Smear Cursor 連續形變物理引擎 (Neovide / smear-cursor.nvim)
-  smearStiffness: number;              // 前導角剛性 (0.1 ~ 1.0，預設 0.8)
-  smearTrailingStiffness: number;      // 拖尾角剛性 (0.05 ~ 1.0，預設 0.30)
-  smearTrailingExponent: number;       // 拖尾角度指數曲率 (1.0 ~ 5.0，預設 2.0)
-  smearDamping: number;                // 阻尼係數 (0.1 ~ 0.99，預設 0.82)
+  smearStiffness: number;              // 前導角剛性 (0.1 ~ 1.0，預設 0.85)
+  smearTrailingStiffness: number;      // 拖尾角剛性 (0.05 ~ 1.0，預設 0.18)
+  smearTrailingExponent: number;       // 拖尾角度指數曲率 (1.0 ~ 5.0，預設 3.0)
+  smearDamping: number;                // 阻尼係數 (0.1 ~ 0.99，預設 0.68)
   smearDistanceStopAnimating: number;  // 收斂停止閾值 (px，預設 0.5)
   smearMaxLength: number;              // 最大拖尾長度限制 (px，0 表示無限制，預設 0)
 
@@ -164,9 +164,9 @@ export const DEFAULT_ADVANCED_CONFIG: AdvancedConfig = {
   chargeTrailBoost: 3,
 
   smearStiffness: 0.85,
-  smearTrailingStiffness: 0.30,
-  smearTrailingExponent: 2.0,
-  smearDamping: 0.82,
+  smearTrailingStiffness: 0.18,
+  smearTrailingExponent: 3.0,
+  smearDamping: 0.68,
   smearDistanceStopAnimating: 0.5,
   smearMaxLength: 0,
 

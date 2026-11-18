@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [v0.2.2] - 2026-11-18
+
+### 繁體中文 (Traditional Chinese)
+#### ✨ 新增功能與體驗優化 (Features & Improvements)
+- **Smear Cursor 長距離動態拖尾強化 (Dynamic Long-Distance Smear Tail)**：
+  - 增強 Smear 物理引擎，加入位移動態判定：短距離移動（<= 80px）維持俐落，長距離跳躍（> 80px）平滑下調拖尾角剛性（最多降低 55%），大幅延長殘影拖曳長度與持續感。
+  - 優化 Smear 預設物理參數：`smearTrailingStiffness` 調整為 `0.18`、`smearTrailingExponent` 提升為 `3.0`、`smearDamping` 調整為 `0.68`，營造厚實且連貫的流體變形手感。
+  - 提高 Canvas 漸層淡出尾端與中段的不透明度（描邊、底線與填充底色），徹底解決長距離移動時尾端過淡難以察覺的問題。
+
+---
+
+### English
+#### ✨ Features & Improvements
+- **Dynamic Long-Distance Smear Tail Enhancement**:
+  - Enhanced the Smear physics engine with dynamic travel-distance scaling: preserves snappy response for short hops (<= 80px) while smoothly lowering trailing corner stiffness (up to 55%) for long-distance jumps (> 80px) to produce a much more noticeable and elongated smear trail.
+  - Refined default Smear physics parameters: `smearTrailingStiffness` set to `0.18`, `smearTrailingExponent` set to `3.0`, and `smearDamping` set to `0.68` for fuller deformation and persistent fluidity.
+  - Boosted tail and mid-section gradient opacities across strokes, underlines, and fills in Canvas rendering to prevent long-distance smear trails from dissolving prematurely.
+
+---
+
 ## [v0.2.1] - 2026-11-17
 
 ### 繁體中文 (Traditional Chinese)
