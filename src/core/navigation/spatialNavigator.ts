@@ -297,6 +297,7 @@ export function searchDownwardNextLine(
       let low = scanStart;
       let high = len - 1;
       let firstNextLineIdx = -1;
+      let abortedEarly = false;
 
       while (low <= high) {
         const mid = (low + high) >>> 1;
@@ -317,11 +318,12 @@ export function searchDownwardNextLine(
             low = probe + 1;
           }
         } else {
+          abortedEarly = true;
           break;
         }
       }
 
-      if (firstNextLineIdx > scanStart) {
+      if (!abortedEarly && firstNextLineIdx > scanStart) {
         // 退回安全緩衝字元數以確保完整收集目標視覺行首字元
         scanStart = Math.max(scanStart, firstNextLineIdx - 8);
       }
@@ -347,6 +349,14 @@ export function searchDownwardNextLine(
       } else {
         // 階段 2：收集屬於該視覺行的所有字元（允許跨越 inline 標籤）
         const diffFromTarget = rect.top - targetLineTop;
+        // 若先前提早鎖定到 DOM 錯位的浮動標籤，而後續出現更接近起點行的合法視覺行，則改鎖定較近行
+        if (targetLineTop - rect.top > targetCharHeight * 0.7 && rect.top - currentCharTop > lineThreshold) {
+          targetLineTop = rect.top;
+          targetCharHeight = rect.height > 0 ? rect.height : charHeight;
+          lineCandidates.length = 0;
+          lineCandidates.push({ node: currentNode, offset: i, rect });
+          continue;
+        }
         // 若明顯進入再下一行（下下行），表示目標行已完整收集結束
         if (diffFromTarget > targetCharHeight * 0.7) {
           return pickBestCandidate(lineCandidates, targetX);
@@ -407,6 +417,7 @@ export function searchUpwardPrevLine(
         let low = 0;
         let high = startFrom;
         let lastPrevLineIdx = -1;
+        let abortedEarly = false;
 
         while (low <= high) {
           const mid = (low + high) >>> 1;
@@ -426,11 +437,12 @@ export function searchUpwardPrevLine(
               high = probe - 1;
             }
           } else {
+            abortedEarly = true;
             break;
           }
         }
 
-        if (lastPrevLineIdx >= 0 && lastPrevLineIdx < startFrom) {
+        if (!abortedEarly && lastPrevLineIdx >= 0 && lastPrevLineIdx < startFrom) {
           // 保留安全緩衝字元數以確保完整收集目標視覺行尾端字元
           startFrom = Math.min(startFrom, lastPrevLineIdx + 8);
         }
@@ -457,6 +469,17 @@ export function searchUpwardPrevLine(
       } else {
         // 階段 2：逆向收集屬於該視覺行的所有字元
         const diffFromTarget = targetLineTop - rect.top;
+        // 若先前提早鎖定到 DOM 錯位的絕對定位標籤（例如 code 區塊右上角的語言標籤），改鎖定更接近起點行的實際視覺行
+        if (rect.top - targetLineTop > targetCharHeight * 0.7 && currentCharTop - rect.top > lineThreshold) {
+          const isInFixedHeader = !isStartOutOfFlow && !!currentNode.parentElement?.closest('[role="banner"], header');
+          if (!isInFixedHeader) {
+            targetLineTop = rect.top;
+            targetCharHeight = rect.height > 0 ? rect.height : charHeight;
+            lineCandidates.length = 0;
+            lineCandidates.push({ node: currentNode, offset: i, rect });
+            continue;
+          }
+        }
         if (diffFromTarget > targetCharHeight * 0.7) {
           return pickBestCandidate(lineCandidates, targetX);
         }

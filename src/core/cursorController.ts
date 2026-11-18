@@ -1115,13 +1115,21 @@ export class CursorController {
       baseRange.setEnd(node, Math.min(safeFrom + 1, len));
       const baseRect = baseRange.getBoundingClientRect();
 
-      const currentCharTop = charRect ? charRect.y : (baseRect.height > 0 ? baseRect.top : 0);
-      const charHeight = charRect ? charRect.height : (baseRect.height > 0 ? baseRect.height : 22);
+      const storedRect = cursorStore.getState().rect;
+      const hasValidBaseRect = baseRect.height > 0 && (baseRect.left !== 0 || baseRect.top !== 0);
+      const currentCharTop = charRect
+        ? charRect.y
+        : (hasValidBaseRect ? baseRect.top : (storedRect?.y ?? 0));
+      const charHeight = charRect
+        ? charRect.height
+        : (baseRect.height > 0 ? baseRect.height : (storedRect?.height > 0 ? storedRect.height : 22));
       const lineThreshold = charHeight * 0.65;
 
       // 2. 鎖定或保持基準水平 X 座標 (Vim 經典行為)
       if (this.preferredX === null) {
-        this.preferredX = charRect ? charRect.x : (baseRect.width > 0 ? baseRect.left : 0);
+        this.preferredX = charRect
+          ? charRect.x
+          : (baseRect.width > 0 ? baseRect.left : (storedRect?.x ?? 0));
       }
       const targetX = this.preferredX;
 
@@ -2127,6 +2135,143 @@ export class CursorController {
   }
 
   /**
+   * 當單字元 Range 回傳寬度或高度為 0（常見於 <pre><code> 中的換行符 \n 或零寬節點）時，
+   * 依序以瀏覽器已定位座標、同節點相鄰字元、前一個文字節點末尾來推算正確矩形，
+   * 避免在 safeOffset === 0 時誤退回容器（如 <code>/<pre>）左上角導致游標與 Smear 特效瞬移。
+   */
+  private resolveZeroSizeCharRect(
+    node: Text,
+    safeOffset: number,
+    rawRect: DOMRect,
+    range: Range
+  ): DOMRect {
+    const fallbackH = 20;
+    const makeRect = (left: number, top: number, width: number, height: number): DOMRect =>
+      ({
+        x: left,
+        y: top,
+        left,
+        top,
+        width,
+        height,
+        right: left + width,
+        bottom: top + height
+      }) as DOMRect;
+
+    const hasNonZeroOrigin = rawRect.left !== 0 || rawRect.top !== 0;
+    if (rawRect.height > 0 && hasNonZeroOrigin) {
+      return makeRect(rawRect.left, rawRect.top, Math.max(8, rawRect.width), rawRect.height);
+    }
+    if (rawRect.width > 0 && hasNonZeroOrigin) {
+      return makeRect(rawRect.left, rawRect.top, rawRect.width, fallbackH);
+    }
+
+    const text = node.textContent || '';
+    const textLen = text.length;
+    const parent = node.parentElement;
+    const parentRect = parent ? parent.getBoundingClientRect() : null;
+
+    const measureChar = (targetNode: Text, idx: number): DOMRect | null => {
+      try {
+        range.setStart(targetNode, idx);
+        range.setEnd(targetNode, idx + 1);
+        const r = range.getBoundingClientRect();
+        if (r.height > 0 && (r.width > 0 || r.left !== 0 || r.top !== 0)) {
+          return r;
+        }
+      } catch {}
+      return null;
+    };
+
+    // 情況 1：游標在換行符號之後（新行開頭）
+    if (safeOffset > 0 && text[safeOffset - 1] === '\n') {
+      if (safeOffset < textLen && text[safeOffset] !== '\n') {
+        const nextRect = measureChar(node, safeOffset);
+        if (nextRect) {
+          return makeRect(nextRect.left, nextRect.top, 8, nextRect.height || fallbackH);
+        }
+      }
+      // 空行：往回找同節點內最近的非換行字元，依經過的換行數推算 Y 軸
+      let newlines = 0;
+      for (let i = safeOffset - 1; i >= 0; i--) {
+        if (text[i] === '\n') {
+          newlines++;
+          continue;
+        }
+        const prevRect = measureChar(node, i);
+        if (prevRect) {
+          const lineH = prevRect.height || fallbackH;
+          const left = parentRect ? parentRect.left + 8 : prevRect.left;
+          return makeRect(left, prevRect.top + newlines * lineH, 8, lineH);
+        }
+      }
+    } else if (safeOffset > 0) {
+      // 情況 2：游標在同節點某個字元之後（例如停在行尾 \n 上）
+      for (let i = safeOffset - 1; i >= 0; i--) {
+        if (text[i] === '\n') continue;
+        const prevRect = measureChar(node, i);
+        if (prevRect) {
+          const charH = prevRect.height || fallbackH;
+          return makeRect(prevRect.right, prevRect.top, 8, charH);
+        }
+      }
+    }
+
+    // 情況 3：safeOffset === 0（如獨立 "\n" 節點）或同節點前無可視字元，往回追溯前一個文字節點末尾
+    const effectiveRoot = this.getEffectiveRoot();
+    const isOutOfFlow = isOutOfNormalFlowWidget(node, effectiveRoot);
+    let cursorNode: Text | null = node;
+    let extraNewlines = 0;
+
+    for (let step = 0; step < 5; step++) {
+      const prevNode = findPrevTextNode(cursorNode, effectiveRoot, isOutOfFlow);
+      if (!prevNode) break;
+      const prevText = prevNode.textContent || '';
+      let foundNonNewline = false;
+
+      for (let i = prevText.length - 1; i >= 0; i--) {
+        if (prevText[i] === '\n') {
+          extraNewlines++;
+          continue;
+        }
+        const prevCharRect = measureChar(prevNode, i);
+        if (prevCharRect) {
+          const lineH = prevCharRect.height || fallbackH;
+          if (extraNewlines === 0) {
+            return makeRect(prevCharRect.right, prevCharRect.top, 8, lineH);
+          }
+          const left = parentRect ? parentRect.left + 8 : prevCharRect.left;
+          return makeRect(left, prevCharRect.top + extraNewlines * lineH, 8, lineH);
+        }
+        foundNonNewline = true;
+      }
+
+      if (foundNonNewline) break;
+      cursorNode = prevNode;
+    }
+
+    // 情況 4：若前方無可參考節點，嘗試同節點後續可視字元或上一刻合法游標座標
+    for (let i = safeOffset; i < textLen; i++) {
+      if (text[i] === '\n') continue;
+      const nextRect = measureChar(node, i);
+      if (nextRect) {
+        return makeRect(nextRect.left, nextRect.top, 8, nextRect.height || fallbackH);
+      }
+    }
+
+    const storedRect = cursorStore.getState().rect;
+    if (storedRect && (storedRect.x !== 0 || storedRect.y !== 0)) {
+      return makeRect(storedRect.x, storedRect.y, storedRect.width || 8, storedRect.height || fallbackH);
+    }
+
+    if (parentRect) {
+      return makeRect(parentRect.left, parentRect.top, 8, fallbackH);
+    }
+
+    return rawRect;
+  }
+
+  /**
    * 計算螢幕座標與微調游標
    */
   private updateCursorPosition(
@@ -2220,72 +2365,7 @@ export class CursorController {
       let rect = range.getBoundingClientRect();
 
       if (rect.width === 0 || rect.height === 0) {
-        const text = node.textContent || '';
-        const parent = node.parentElement;
-        const parentRect = parent ? parent.getBoundingClientRect() : null;
-        const fallbackH = 20;
-
-        // 若當前游標在換行符號之後（即新一行的開頭）
-        if (safeOffset > 0 && text[safeOffset - 1] === '\n') {
-          // 若本行有可視字元，取後續字元的 top
-          if (safeOffset < textLen && text[safeOffset] !== '\n') {
-            range.setStart(node, safeOffset);
-            range.setEnd(node, safeOffset + 1);
-            const nextRect = range.getBoundingClientRect();
-            rect = {
-              x: nextRect.left,
-              y: nextRect.top,
-              left: nextRect.left,
-              top: nextRect.top,
-              width: 8,
-              height: nextRect.height > 0 ? nextRect.height : fallbackH,
-              right: nextRect.left + 8,
-              bottom: nextRect.top + fallbackH
-            } as DOMRect;
-          } else if (parentRect) {
-            // 空行：Y 軸依據上一字元遞增
-            range.setStart(node, safeOffset - 1);
-            range.setEnd(node, safeOffset);
-            const prevRect = range.getBoundingClientRect();
-            const newTop = prevRect.top > 0 ? prevRect.top + fallbackH : parentRect.top;
-            rect = {
-              x: parentRect.left + 8,
-              y: newTop,
-              left: parentRect.left + 8,
-              top: newTop,
-              width: 8,
-              height: fallbackH,
-              right: parentRect.left + 16,
-              bottom: newTop + fallbackH
-            } as DOMRect;
-          }
-        } else if (safeOffset > 0) {
-          range.setStart(node, safeOffset - 1);
-          range.setEnd(node, safeOffset);
-          const prevRect = range.getBoundingClientRect();
-          const charH = prevRect.height > 0 ? prevRect.height : fallbackH;
-          rect = {
-            x: prevRect.right,
-            left: prevRect.right,
-            y: prevRect.top,
-            top: prevRect.top,
-            right: prevRect.right + 8,
-            bottom: prevRect.bottom > 0 ? prevRect.bottom : prevRect.top + charH,
-            width: 8,
-            height: charH
-          } as DOMRect;
-        } else if (parentRect) {
-          rect = {
-            x: parentRect.left,
-            y: parentRect.top,
-            width: 8,
-            height: fallbackH,
-            top: parentRect.top,
-            left: parentRect.left,
-            right: parentRect.left + 8,
-            bottom: parentRect.top + fallbackH
-          } as DOMRect;
-        }
+        rect = this.resolveZeroSizeCharRect(node, safeOffset, rect, range);
       }
 
       // 幾何異常防禦：若計算出的座標為 (0,0) 且長寬為 0，嚴格阻絕游標飛向螢幕最左上方
