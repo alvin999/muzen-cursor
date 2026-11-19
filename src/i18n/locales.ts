@@ -417,6 +417,70 @@ export interface Translations {
   reloadExtensionBtn: string;
   updateCheckFailed: string;
   updateTipSideload: string;
+
+  // AI 調參助手與 BYOK (AI Assistant & BYOK)
+  tabAiAssistantTitle: string;
+  aiByokSectionTitle: string;
+  aiByokSectionDesc: string;
+  aiPrivacyNotice: string;
+  aiProviderLabel: string;
+  aiModelLabel: string;
+  aiModelPlaceholder: string;
+  aiBaseUrlLabel: string;
+  aiBaseUrlPlaceholder: string;
+  aiApiKeyLabel: string;
+  aiApiKeyPlaceholder: string;
+  aiApiKeyOptionalPlaceholder: string;
+  aiEncryptionModeLabel: string;
+  aiEncryptionTransparent: string;
+  aiEncryptionPassphrase: string;
+  aiPassphraseLabel: string;
+  aiPassphrasePlaceholder: string;
+  aiUnlockBannerText: string;
+  aiUnlockBtn: string;
+  aiLockBtn: string;
+  aiSaveByokBtn: string;
+  aiTestConnBtn: string;
+  aiClearKeyBtn: string;
+  aiClearKeyConfirmTitle: string;
+  aiClearKeyConfirmMsg: string;
+  aiStatusNotConfigured: string;
+  aiStatusSavedTransparent: string;
+  aiStatusSavedPassphraseUnlocked: string;
+  aiStatusLocked: string;
+  aiStatusOptionalNoKey: string;
+  aiMsgByokSaved: string;
+  aiMsgTestingConn: string;
+  aiMsgConnOk: string;
+  aiMsgConnFail: string;
+  aiMsgKeyCleared: string;
+  aiMsgUnlocked: string;
+  aiMsgUnlockFailed: string;
+  aiMsgLocked: string;
+  aiMsgPassphraseRequired: string;
+  aiMsgUnlockBeforeSwitch: string;
+  aiChatSectionTitle: string;
+  aiChatSectionDesc: string;
+  aiChatWelcome: string;
+  aiChatInputPlaceholder: string;
+  aiSendBtn: string;
+  aiCancelBtn: string;
+  aiUndoBtn: string;
+  aiClearChatBtn: string;
+  aiApplyPatchBtn: string;
+  aiAppliedPatchBtn: string;
+  aiDiffHeader: string;
+  aiDiffNoChanges: string;
+  aiThinkingText: string;
+  aiToastApplied: string;
+  aiToastUndone: string;
+  aiErrVaultLocked: string;
+  aiErrApiKeyMissing: string;
+  aiErrRequestFailed: string;
+  aiChipSnappy: string;
+  aiChipCalm: string;
+  aiChipBouncy: string;
+  aiChipMinimal: string;
 }
 
 export const LOCALES: Record<Locale, Translations> = {
@@ -820,7 +884,71 @@ export const LOCALES: Record<Locale, Translations> = {
     downloadUpdateBtn: '⬇️ 一鍵下載最新版',
     reloadExtensionBtn: '🔄 重新載入套件',
     updateCheckFailed: '無法取得更新資訊',
-    updateTipSideload: '下載解壓縮覆蓋原資料夾後，點擊「重新載入套件」即可立即生效。'
+    updateTipSideload: '下載解壓縮覆蓋原資料夾後，點擊「重新載入套件」即可立即生效。',
+
+    // AI 調參助手與 BYOK (AI Assistant & BYOK)
+    tabAiAssistantTitle: '✨ AI 調參助手',
+    aiByokSectionTitle: 'BYOK 連線與金鑰保險箱',
+    aiByokSectionDesc: '使用您自己的 API Key，以口語對話調整進階物理與視覺參數',
+    aiPrivacyNotice: 'API Key 僅加密儲存於本機瀏覽器，絕不同步至雲端，亦不會包含於匯出的 JSON 設定檔中。',
+    aiProviderLabel: 'AI 服務商 (Provider)',
+    aiModelLabel: '模型名稱 (Model)',
+    aiModelPlaceholder: '輸入或選擇模型 ID',
+    aiBaseUrlLabel: '自訂 Base URL',
+    aiBaseUrlPlaceholder: '例如 http://localhost:11434/v1',
+    aiApiKeyLabel: 'API Key（留空則維持已存金鑰）',
+    aiApiKeyPlaceholder: '輸入新的 API Key 以儲存或覆寫',
+    aiApiKeyOptionalPlaceholder: '選填（Ollama 等本機服務可留空）',
+    aiEncryptionModeLabel: '本機金鑰加密模式',
+    aiEncryptionTransparent: '本機透明加密（免每次輸入密碼）',
+    aiEncryptionPassphrase: '主密碼加密（重開瀏覽器需解鎖）',
+    aiPassphraseLabel: '主密碼 (Passphrase)',
+    aiPassphrasePlaceholder: '設定或輸入主密碼',
+    aiUnlockBannerText: '金鑰保險箱已鎖定，請輸入主密碼以解鎖使用 AI 對話：',
+    aiUnlockBtn: '🔓 解鎖',
+    aiLockBtn: '🔒 鎖定',
+    aiSaveByokBtn: '💾 儲存設定與金鑰',
+    aiTestConnBtn: '⚡ 測試連線',
+    aiClearKeyBtn: '🗑️ 清除金鑰',
+    aiClearKeyConfirmTitle: '清除已儲存的金鑰',
+    aiClearKeyConfirmMsg: '確定要移除目前服務商在本機加密儲存的 API Key 嗎？',
+    aiStatusNotConfigured: '尚未設定金鑰',
+    aiStatusSavedTransparent: '已本機透明加密',
+    aiStatusSavedPassphraseUnlocked: '主密碼已解鎖',
+    aiStatusLocked: '保險箱已鎖定',
+    aiStatusOptionalNoKey: '免金鑰（可選填）',
+    aiMsgByokSaved: '✓ 已儲存連線設定與加密金鑰',
+    aiMsgTestingConn: '正在測試連線...',
+    aiMsgConnOk: '✓ 連線成功！模型回應正常',
+    aiMsgConnFail: '✗ 連線失敗：',
+    aiMsgKeyCleared: '✓ 已清除該服務商的本機金鑰',
+    aiMsgUnlocked: '✓ 金鑰保險箱已解鎖',
+    aiMsgUnlockFailed: '✗ 主密碼錯誤，無法解鎖',
+    aiMsgLocked: '🔒 已鎖定金鑰保險箱',
+    aiMsgPassphraseRequired: '請輸入主密碼以啟用主密碼加密模式',
+    aiMsgUnlockBeforeSwitch: '請先解鎖保險箱，再切換回本機透明加密模式',
+    aiChatSectionTitle: '口語化 AI 調參對話',
+    aiChatSectionDesc: '用自然語言描述您想要的游標手感、殘影風格或閱讀氛圍，AI 會產出可預覽套用的參數變更',
+    aiChatWelcome: '你好！請用口語告訴我你想要的游標手感（例如「想要更 Q 彈果凍感」、「滑動更俐落低延遲」或「把殘影改得低調一點」），我會幫你調整細節並讓你預覽套用。',
+    aiChatInputPlaceholder: '輸入想要的游標手感或微調需求（Enter 送出，Shift+Enter 換行）...',
+    aiSendBtn: '送出',
+    aiCancelBtn: '停止',
+    aiUndoBtn: '↩ 復原上一版',
+    aiClearChatBtn: '清除對話',
+    aiApplyPatchBtn: '套用變更',
+    aiAppliedPatchBtn: '✓ 已套用',
+    aiDiffHeader: '建議調整的參數',
+    aiDiffNoChanges: '目前設定已符合需求，無須變更數值。',
+    aiThinkingText: 'AI 正在推算物理與視覺參數...',
+    aiToastApplied: '✓ 已套用 AI 建議參數並同步至沙盒',
+    aiToastUndone: '↩ 已復原至上一個設定快照',
+    aiErrVaultLocked: '金鑰保險箱目前已鎖定，請先於上方輸入主密碼解鎖。',
+    aiErrApiKeyMissing: '尚未設定此服務商的 API Key，請先於上方填寫並儲存。',
+    aiErrRequestFailed: '請求失敗：',
+    aiChipSnappy: '幫我調成俐落跟手、低延遲的手感',
+    aiChipCalm: '調成柔和護眼、帶點禪意呼吸燈的閱讀感',
+    aiChipBouncy: '讓游標更有 Q 彈果凍感，拖尾滑順但不要太長',
+    aiChipMinimal: '關閉多餘殘影與蓄力過載，保持極簡專注'
   },
   'en': {
     appName: 'Muzen Cursor',
@@ -1222,7 +1350,71 @@ export const LOCALES: Record<Locale, Translations> = {
     downloadUpdateBtn: '⬇️ Download Latest (ZIP)',
     reloadExtensionBtn: '🔄 Reload Extension',
     updateCheckFailed: 'Failed to fetch update',
-    updateTipSideload: 'After extracting and overwriting the folder, click Reload Extension to apply.'
+    updateTipSideload: 'After extracting and overwriting the folder, click Reload Extension to apply.',
+
+    // AI Assistant & BYOK
+    tabAiAssistantTitle: '✨ AI Assistant',
+    aiByokSectionTitle: 'BYOK Connection & Key Vault',
+    aiByokSectionDesc: 'Use your own API key to tune physics and visual settings conversationally',
+    aiPrivacyNotice: 'API keys are encrypted locally in this browser only, never synced to the cloud, and excluded from JSON exports.',
+    aiProviderLabel: 'AI Provider',
+    aiModelLabel: 'Model ID',
+    aiModelPlaceholder: 'Enter or select a model ID',
+    aiBaseUrlLabel: 'Custom Base URL',
+    aiBaseUrlPlaceholder: 'e.g. http://localhost:11434/v1',
+    aiApiKeyLabel: 'API Key (leave blank to keep saved key)',
+    aiApiKeyPlaceholder: 'Enter a new API key to save or overwrite',
+    aiApiKeyOptionalPlaceholder: 'Optional (can be left blank for local Ollama)',
+    aiEncryptionModeLabel: 'Local Encryption Mode',
+    aiEncryptionTransparent: 'Transparent Local Encryption (no prompt)',
+    aiEncryptionPassphrase: 'Passphrase Encryption (unlock per browser session)',
+    aiPassphraseLabel: 'Passphrase',
+    aiPassphrasePlaceholder: 'Set or enter passphrase',
+    aiUnlockBannerText: 'Key vault is locked. Enter your passphrase to unlock AI chat:',
+    aiUnlockBtn: '🔓 Unlock',
+    aiLockBtn: '🔒 Lock',
+    aiSaveByokBtn: '💾 Save Config & Key',
+    aiTestConnBtn: '⚡ Test Connection',
+    aiClearKeyBtn: '🗑️ Clear Key',
+    aiClearKeyConfirmTitle: 'Clear Saved API Key',
+    aiClearKeyConfirmMsg: 'Remove the locally encrypted API key for the current provider?',
+    aiStatusNotConfigured: 'No Key Saved',
+    aiStatusSavedTransparent: 'Encrypted Locally',
+    aiStatusSavedPassphraseUnlocked: 'Unlocked (Passphrase)',
+    aiStatusLocked: 'Vault Locked',
+    aiStatusOptionalNoKey: 'Key Optional',
+    aiMsgByokSaved: '✓ Connection config and encrypted key saved',
+    aiMsgTestingConn: 'Testing connection...',
+    aiMsgConnOk: '✓ Connection succeeded! Model responded normally',
+    aiMsgConnFail: '✗ Connection failed: ',
+    aiMsgKeyCleared: '✓ Cleared saved key for this provider',
+    aiMsgUnlocked: '✓ Key vault unlocked',
+    aiMsgUnlockFailed: '✗ Incorrect passphrase, failed to unlock',
+    aiMsgLocked: '🔒 Key vault locked',
+    aiMsgPassphraseRequired: 'Please enter a passphrase to enable passphrase encryption',
+    aiMsgUnlockBeforeSwitch: 'Please unlock the vault before switching back to transparent encryption',
+    aiChatSectionTitle: 'Conversational AI Tuning',
+    aiChatSectionDesc: 'Describe your desired cursor feel, trail style, or reading vibe in plain words to preview and apply patches',
+    aiChatWelcome: 'Hi! Tell me how you want the cursor to feel (e.g., "snappier with less delay", "soft zen breathing for late-night reading", or "bouncy jelly smear without a long tail") and I will suggest exact parameter tweaks.',
+    aiChatInputPlaceholder: 'Describe your desired cursor feel or adjustment (Enter to send, Shift+Enter for newline)...',
+    aiSendBtn: 'Send',
+    aiCancelBtn: 'Stop',
+    aiUndoBtn: '↩ Undo',
+    aiClearChatBtn: 'Clear Chat',
+    aiApplyPatchBtn: 'Apply Changes',
+    aiAppliedPatchBtn: '✓ Applied',
+    aiDiffHeader: 'Suggested Parameter Changes',
+    aiDiffNoChanges: 'Current settings already match your request; no numeric changes needed.',
+    aiThinkingText: 'Calculating physics and visual adjustments...',
+    aiToastApplied: '✓ Applied AI patch and synced to sandbox',
+    aiToastUndone: '↩ Restored previous configuration snapshot',
+    aiErrVaultLocked: 'Key vault is locked. Please enter your passphrase above to unlock.',
+    aiErrApiKeyMissing: 'No API key configured for this provider. Please enter and save one above.',
+    aiErrRequestFailed: 'Request failed: ',
+    aiChipSnappy: 'Make the cursor snappy and responsive with low latency',
+    aiChipCalm: 'Tune for soft eye-friendly reading with a gentle zen breathing pulse',
+    aiChipBouncy: 'Make it bouncy and jelly-like with a smooth but shorter smear tail',
+    aiChipMinimal: 'Turn off extra trails and kinetic charge for minimal distraction-free focus'
   },
   'ja': {
     appName: 'Muzen Cursor',
@@ -1624,7 +1816,71 @@ export const LOCALES: Record<Locale, Translations> = {
     downloadUpdateBtn: '⬇️ 最新版をダウンロード',
     reloadExtensionBtn: '🔄 拡張機能を再読み込み',
     updateCheckFailed: '更新情報の取得に失敗しました',
-    updateTipSideload: 'ZIPを展開して既存フォルダに上書き後、「拡張機能を再読み込み」をクリックしてください。'
+    updateTipSideload: 'ZIPを展開して既存フォルダに上書き後、「拡張機能を再読み込み」をクリックしてください。',
+
+    // AI アシスタント & BYOK
+    tabAiAssistantTitle: '✨ AI チューニング',
+    aiByokSectionTitle: 'BYOK 接続とキー保管庫',
+    aiByokSectionDesc: '独自の API キーで物理・視覚設定を対話的に調整できます',
+    aiPrivacyNotice: 'API キーはこのブラウザ内に暗号化保存され、クラウド同期や JSON 書き出しには含まれません。',
+    aiProviderLabel: 'AI プロバイダー',
+    aiModelLabel: 'モデル名 (Model)',
+    aiModelPlaceholder: 'モデル ID を入力または選択',
+    aiBaseUrlLabel: 'カスタム Base URL',
+    aiBaseUrlPlaceholder: '例: http://localhost:11434/v1',
+    aiApiKeyLabel: 'API キー（空欄のままなら保存済みキーを維持）',
+    aiApiKeyPlaceholder: '新しい API キーを入力して保存・上書き',
+    aiApiKeyOptionalPlaceholder: '任意（Ollama などのローカル環境は空欄可）',
+    aiEncryptionModeLabel: 'ローカル暗号化モード',
+    aiEncryptionTransparent: 'ローカル透過暗号化（パスフレーズ入力不要）',
+    aiEncryptionPassphrase: 'パスフレーズ暗号化（ブラウザ再起動ごとに解除）',
+    aiPassphraseLabel: 'パスフレーズ',
+    aiPassphrasePlaceholder: 'パスフレーズを設定または入力',
+    aiUnlockBannerText: 'キー保管庫はロックされています。AI 対話を使うにはパスフレーズを入力してください：',
+    aiUnlockBtn: '🔓 ロック解除',
+    aiLockBtn: '🔒 ロック',
+    aiSaveByokBtn: '💾 設定とキーを保存',
+    aiTestConnBtn: '⚡ 接続テスト',
+    aiClearKeyBtn: '🗑️ キーを削除',
+    aiClearKeyConfirmTitle: '保存済み API キーの削除',
+    aiClearKeyConfirmMsg: '現在のプロバイダー用に暗号化保存された API キーを削除しますか？',
+    aiStatusNotConfigured: 'キー未設定',
+    aiStatusSavedTransparent: 'ローカル暗号化済み',
+    aiStatusSavedPassphraseUnlocked: '解除済み（パスフレーズ）',
+    aiStatusLocked: 'ロック中',
+    aiStatusOptionalNoKey: 'キー任意',
+    aiMsgByokSaved: '✓ 接続設定と暗号化キーを保存しました',
+    aiMsgTestingConn: '接続をテスト中...',
+    aiMsgConnOk: '✓ 接続成功！モデルは正常に応答しました',
+    aiMsgConnFail: '✗ 接続失敗：',
+    aiMsgKeyCleared: '✓ このプロバイダーのキーを削除しました',
+    aiMsgUnlocked: '✓ キー保管庫を解除しました',
+    aiMsgUnlockFailed: '✗ パスフレーズが正しくありません',
+    aiMsgLocked: '🔒 キー保管庫をロックしました',
+    aiMsgPassphraseRequired: 'パスフレーズ暗号化を有効にするにはパスフレーズを入力してください',
+    aiMsgUnlockBeforeSwitch: '透過暗号化へ戻す前に、まず保管庫をロック解除してください',
+    aiChatSectionTitle: '対話型 AI チューニング',
+    aiChatSectionDesc: '好みの操作感や残像スタイルを自然な言葉で伝えると、プレビュー可能な設定パッチを提案します',
+    aiChatWelcome: 'こんにちは！「もっとキビキビ低遅延にしたい」「夜間の読書向けに優しい呼吸アニメーションにしたい」「ゼリーのような弾力で短めの残像にしたい」など、お好みの操作感を教えてください。',
+    aiChatInputPlaceholder: '希望のカーソル操作感や微調整内容を入力（Enterで送信、Shift+Enterで改行）...',
+    aiSendBtn: '送信',
+    aiCancelBtn: '停止',
+    aiUndoBtn: '↩ 元に戻す',
+    aiClearChatBtn: '履歴をクリア',
+    aiApplyPatchBtn: '変更を適用',
+    aiAppliedPatchBtn: '✓ 適用済み',
+    aiDiffHeader: '提案されたパラメーター変更',
+    aiDiffNoChanges: '現在の設定がすでに希望に沿っているため、数値変更はありません。',
+    aiThinkingText: '物理・視覚パラメーターを計算中...',
+    aiToastApplied: '✓ AI 提案を適用しサンドボックスに反映しました',
+    aiToastUndone: '↩ 直前の設定スナップショットに戻しました',
+    aiErrVaultLocked: 'キー保管庫がロックされています。上でパスフレーズを入力して解除してください。',
+    aiErrApiKeyMissing: 'このプロバイダーの API キーが未設定です。上で入力・保存してください。',
+    aiErrRequestFailed: 'リクエスト失敗：',
+    aiChipSnappy: '反応が速く低遅延でキビキビした操作感にしたい',
+    aiChipCalm: '目に優しい穏やかな読書向けと落ち着いた呼吸エフェクトにしたい',
+    aiChipBouncy: 'ゼリーのような弾力があり、長すぎない滑らかな残像にしたい',
+    aiChipMinimal: '余計な残像やチャージ効果をオフにしてシンプルな集中モードにしたい'
   }
 };
 

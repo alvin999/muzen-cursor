@@ -59,6 +59,10 @@
         <span class="tab-num">4</span>
         <span data-i18n="tabKeybindingsTitle">⌨️ 按鍵與網站管理</span>
       </button>
+      <button type="button" class="tab-btn" data-tab="tab-ai-assistant">
+        <span class="tab-num">5</span>
+        <span data-i18n="tabAiAssistantTitle">✨ AI 調參助手</span>
+      </button>
     </nav>
 
     <!-- 主體雙欄工作區 -->
@@ -837,6 +841,168 @@
           </div>
 
         </div><!-- 結束 tab-keybindings -->
+
+        <!-- 標籤 5: AI 調參助手與 BYOK (AI Assistant & BYOK) -->
+        <div id="tab-ai-assistant" class="tab-pane hidden">
+
+          <!-- 區塊 A: BYOK 與金鑰保險箱 (可折疊) -->
+          <details id="ai-byok-details" class="setting-group ai-byok-card" open>
+            <summary class="ai-byok-summary">
+              <div class="group-header">
+                <span class="group-icon">🔐</span>
+                <div class="group-title-wrap">
+                  <h2 class="group-title" data-i18n="aiByokSectionTitle">BYOK 連線與金鑰保險箱</h2>
+                  <p class="group-desc" data-i18n="aiByokSectionDesc">使用您自己的 API Key，以口語對話調整進階物理與視覺參數</p>
+                </div>
+              </div>
+              <div class="ai-summary-meta">
+                <span id="ai-header-badge" class="ai-badge ai-badge-warn" data-i18n="aiStatusNotConfigured">尚未設定金鑰</span>
+                <span class="ai-chevron">▾</span>
+              </div>
+            </summary>
+
+            <div class="ai-byok-body">
+              <div class="ai-byok-grid">
+                <div class="ai-field">
+                  <label for="ai-provider-select" class="field-label" data-i18n="aiProviderLabel">AI 服務商 (Provider)</label>
+                  <select id="ai-provider-select" class="sandbox-select ai-input">
+                    <option value="gemini">Google Gemini</option>
+                    <option value="openai">OpenAI</option>
+                    <option value="openrouter">OpenRouter</option>
+                    <option value="groq">Groq</option>
+                    <option value="claude">Anthropic Claude</option>
+                    <option value="openai-compatible">OpenAI Compatible (Ollama / Custom)</option>
+                  </select>
+                </div>
+
+                <div class="ai-field">
+                  <label for="ai-model-input" class="field-label" data-i18n="aiModelLabel">模型名稱 (Model)</label>
+                  <input
+                    type="text"
+                    id="ai-model-input"
+                    class="ai-input"
+                    list="ai-model-suggestions"
+                    autocomplete="off"
+                    data-i18n-placeholder="aiModelPlaceholder"
+                    placeholder="輸入或選擇模型 ID"
+                  >
+                  <datalist id="ai-model-suggestions"></datalist>
+                </div>
+
+                <div id="ai-base-url-group" class="ai-field ai-field-full hidden">
+                  <label for="ai-base-url-input" class="field-label" data-i18n="aiBaseUrlLabel">自訂 Base URL</label>
+                  <input
+                    type="url"
+                    id="ai-base-url-input"
+                    class="ai-input"
+                    autocomplete="off"
+                    data-i18n-placeholder="aiBaseUrlPlaceholder"
+                    placeholder="例如 http://localhost:11434/v1"
+                  >
+                </div>
+
+                <div class="ai-field ai-field-full">
+                  <div class="field-label-row">
+                    <label for="ai-api-key-input" class="field-label" data-i18n="aiApiKeyLabel">API Key（留空則維持已存金鑰）</label>
+                    <span id="ai-key-status-badge" class="ai-badge ai-badge-warn" data-i18n="aiStatusNotConfigured">尚未設定金鑰</span>
+                  </div>
+                  <input
+                    type="password"
+                    id="ai-api-key-input"
+                    class="ai-input"
+                    autocomplete="off"
+                    data-i18n-placeholder="aiApiKeyPlaceholder"
+                    placeholder="輸入新的 API Key 以儲存或覆寫"
+                  >
+                </div>
+
+                <div class="ai-field">
+                  <label for="ai-encryption-mode" class="field-label" data-i18n="aiEncryptionModeLabel">本機金鑰加密模式</label>
+                  <select id="ai-encryption-mode" class="sandbox-select ai-input">
+                    <option value="transparent" data-i18n="aiEncryptionTransparent">本機透明加密（免每次輸入密碼）</option>
+                    <option value="passphrase" data-i18n="aiEncryptionPassphrase">主密碼加密（重開瀏覽器需解鎖）</option>
+                  </select>
+                </div>
+
+                <div id="ai-passphrase-group" class="ai-field hidden">
+                  <label for="ai-passphrase-input" class="field-label" data-i18n="aiPassphraseLabel">主密碼 (Passphrase)</label>
+                  <input
+                    type="password"
+                    id="ai-passphrase-input"
+                    class="ai-input"
+                    autocomplete="off"
+                    data-i18n-placeholder="aiPassphrasePlaceholder"
+                    placeholder="設定或輸入主密碼"
+                  >
+                </div>
+              </div>
+
+              <div class="ai-actions-row">
+                <button type="button" id="ai-btn-save-byok" class="btn btn-primary" data-i18n="aiSaveByokBtn">💾 儲存設定與金鑰</button>
+                <button type="button" id="ai-btn-test-conn" class="btn btn-secondary" data-i18n="aiTestConnBtn">⚡ 測試連線</button>
+                <button type="button" id="ai-btn-lock-vault" class="btn btn-secondary hidden" data-i18n="aiLockBtn">🔒 鎖定</button>
+                <button type="button" id="ai-btn-clear-key" class="btn btn-danger" data-i18n="aiClearKeyBtn">🗑️ 清除金鑰</button>
+              </div>
+
+              <div id="ai-byok-status" class="ai-status-msg hidden"></div>
+              <p class="ai-privacy-note" data-i18n="aiPrivacyNotice">API Key 僅加密儲存於本機瀏覽器，絕不同步至雲端，亦不會包含於匯出的 JSON 設定檔中。</p>
+            </div>
+          </details>
+
+          <!-- 區塊 B: 主密碼解鎖橫幅 -->
+          <div id="ai-unlock-banner" class="ai-unlock-banner hidden">
+            <span class="ai-unlock-text" data-i18n="aiUnlockBannerText">金鑰保險箱已鎖定，請輸入主密碼以解鎖使用 AI 對話：</span>
+            <div class="ai-unlock-controls">
+              <input
+                type="password"
+                id="ai-unlock-passphrase-input"
+                class="ai-input"
+                autocomplete="off"
+                data-i18n-placeholder="aiPassphrasePlaceholder"
+                placeholder="設定或輸入主密碼"
+              >
+              <button type="button" id="ai-btn-unlock-vault" class="btn btn-primary" data-i18n="aiUnlockBtn">🔓 解鎖</button>
+            </div>
+          </div>
+
+          <!-- 區塊 C: AI 對話調參區 -->
+          <div class="setting-group ai-chat-card">
+            <div class="group-header-row ai-chat-header">
+              <div class="group-header">
+                <span class="group-icon">✨</span>
+                <div class="group-title-wrap">
+                  <h2 class="group-title" data-i18n="aiChatSectionTitle">口語化 AI 調參對話</h2>
+                  <p class="group-desc" data-i18n="aiChatSectionDesc">用自然語言描述您想要的游標手感、殘影風格或閱讀氛圍，AI 會產出可預覽套用的參數變更</p>
+                </div>
+              </div>
+              <div class="ai-chat-toolbar">
+                <button type="button" id="ai-btn-undo" class="btn btn-secondary" disabled data-i18n="aiUndoBtn">↩ 復原上一版</button>
+                <button type="button" id="ai-btn-clear-chat" class="btn btn-secondary" data-i18n="aiClearChatBtn">清除對話</button>
+              </div>
+            </div>
+
+            <div id="ai-quick-chips" class="ai-quick-chips">
+              <button type="button" class="ai-chip-btn" data-chip-i18n="aiChipSnappy" data-i18n="aiChipSnappy">幫我調成俐落跟手、低延遲的手感</button>
+              <button type="button" class="ai-chip-btn" data-chip-i18n="aiChipCalm" data-i18n="aiChipCalm">調成柔和護眼、帶點禪意呼吸燈的閱讀感</button>
+              <button type="button" class="ai-chip-btn" data-chip-i18n="aiChipBouncy" data-i18n="aiChipBouncy">讓游標更有 Q 彈果凍感，拖尾滑順但不要太長</button>
+              <button type="button" class="ai-chip-btn" data-chip-i18n="aiChipMinimal" data-i18n="aiChipMinimal">關閉多餘殘影與蓄力過載，保持極簡專注</button>
+            </div>
+
+            <div id="ai-chat-messages" class="ai-chat-messages"></div>
+
+            <div class="ai-chat-composer">
+              <textarea
+                id="ai-chat-input"
+                class="ai-textarea"
+                rows="2"
+                data-i18n-placeholder="aiChatInputPlaceholder"
+                placeholder="輸入想要的游標手感或微調需求（Enter 送出，Shift+Enter 換行）..."
+              ></textarea>
+              <button type="button" id="ai-btn-send" class="btn btn-primary ai-send-btn" data-i18n="aiSendBtn">送出</button>
+            </div>
+          </div>
+
+        </div><!-- 結束 tab-ai-assistant -->
 
       </section>
 

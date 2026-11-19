@@ -16,6 +16,8 @@ import { initCursorHost } from '../src/content/hostElement';
 import { CursorController } from '../src/core/cursorController';
 import { LOCALES, Locale, Translations, detectDefaultLocale } from '../src/i18n/locales';
 import { generateSmartCursorPalette, SmartThemePalette } from '../src/utils/themeDetector';
+import { ConfigSnapshot } from '../src/core/configSchema';
+import { initAiAssistantPanel, AiAssistantPanelHandle } from './aiAssistantPanel';
 
 /**
  * Muzen Cursor 進階設定頁面互動邏輯 (全面接入真實 VimCursorOverlay 與 CursorController)
@@ -38,6 +40,7 @@ let isAutoTheme: boolean = false;
 let darkThemeConfig: CursorTheme = 'gruvbox-dark';
 let lightThemeConfig: CursorTheme = 'gruvbox-light';
 let isSandboxLightBg: boolean = false;
+let aiPanelHandle: AiAssistantPanelHandle | null = null;
 
 interface KeyGroupDef {
   groupTitleKey: keyof Translations;
@@ -118,6 +121,14 @@ function applyLocale(locale: Locale): void {
     }
   });
 
+  const placeholderElements = document.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('[data-i18n-placeholder]');
+  placeholderElements.forEach((el) => {
+    const key = el.getAttribute('data-i18n-placeholder') as keyof Translations;
+    if (key && dict[key]) {
+      el.placeholder = dict[key];
+    }
+  });
+
   const resetBtns = document.querySelectorAll<HTMLElement>('.btn-field-reset');
   resetBtns.forEach((btn) => {
     btn.title = dict.resetFieldTooltip;
@@ -134,6 +145,7 @@ function applyLocale(locale: Locale): void {
   }
 
   renderKeybindingsList();
+  aiPanelHandle?.refreshLocale();
 }
 
 function showToast(message?: string): void {
@@ -280,7 +292,7 @@ function syncCursorStore(): void {
   });
 }
 
-type OptionsTabId = 'tab-geometry' | 'tab-physics' | 'tab-effects' | 'tab-keybindings';
+type OptionsTabId = 'tab-geometry' | 'tab-physics' | 'tab-effects' | 'tab-keybindings' | 'tab-ai-assistant';
 
 function switchTab(tabId: OptionsTabId): void {
   const tabBtns = document.querySelectorAll<HTMLButtonElement>('.tab-btn');
@@ -288,7 +300,7 @@ function switchTab(tabId: OptionsTabId): void {
     btn.classList.toggle('active', btn.getAttribute('data-tab') === tabId);
   });
 
-  const allPanes: OptionsTabId[] = ['tab-geometry', 'tab-physics', 'tab-effects', 'tab-keybindings'];
+  const allPanes: OptionsTabId[] = ['tab-geometry', 'tab-physics', 'tab-effects', 'tab-keybindings', 'tab-ai-assistant'];
   allPanes.forEach((paneId) => {
     const pane = document.getElementById(paneId);
     if (pane) {
@@ -300,7 +312,8 @@ function switchTab(tabId: OptionsTabId): void {
     'tab-geometry': '#appearance',
     'tab-physics': '#physics',
     'tab-effects': '#effects',
-    'tab-keybindings': '#keybindings'
+    'tab-keybindings': '#keybindings',
+    'tab-ai-assistant': '#ai'
   };
   window.location.hash = hashMap[tabId] || '#appearance';
 }
@@ -314,9 +327,74 @@ function applyHashRoute(): void {
     switchTab('tab-physics');
   } else if (hash === '#effects' || hash === '#trail' || hash === '#overdrive') {
     switchTab('tab-effects');
+  } else if (hash === '#ai' || hash === '#assistant') {
+    switchTab('tab-ai-assistant');
   } else {
     switchTab('tab-geometry');
   }
+}
+
+function getCurrentConfigSnapshot(): ConfigSnapshot {
+  return {
+    appearance: {
+      shape: sandboxShape,
+      thickness: currentThickness,
+      glow: currentGlow
+    },
+    advanced: { ...currentConfig },
+    effects: { ...cursorStore.getState().effects }
+  };
+}
+
+function applyConfigSnapshot(snapshot: ConfigSnapshot, toastMessage?: string): void {
+  currentConfig = { ...DEFAULT_ADVANCED_CONFIG, ...snapshot.advanced };
+  currentThickness = snapshot.appearance.thickness;
+  currentGlow = snapshot.appearance.glow;
+  sandboxShape = snapshot.appearance.shape;
+
+  const mergedEffects = {
+    ...cursorStore.getState().effects,
+    ...snapshot.effects
+  };
+  const style = resolveTrailStyle(mergedEffects);
+  const nextEffects = {
+    ...mergedEffects,
+    trailStyle: style,
+    smear: style === 'smear',
+    trail: style === 'trail'
+  };
+  cursorStore.setState({ effects: nextEffects });
+
+  const shapeSel = document.getElementById('sandbox-shape') as HTMLSelectElement | null;
+  if (shapeSel) shapeSel.value = sandboxShape;
+
+  const trailStyleSel = document.getElementById('sandbox-trail-style') as HTMLSelectElement | null;
+  if (trailStyleSel) trailStyleSel.value = style;
+
+  populateForm(currentConfig);
+
+  if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
+    chrome.storage.sync.set(
+      {
+        muzen_advanced: currentConfig,
+        muzen_thickness: currentThickness,
+        muzen_glow: currentGlow,
+        muzen_shape: sandboxShape,
+        muzen_effects: nextEffects
+      },
+      () => showToast(toastMessage)
+    );
+  } else {
+    localStorage.setItem('muzen_advanced', JSON.stringify(currentConfig));
+    localStorage.setItem('muzen_thickness', String(currentThickness));
+    localStorage.setItem('muzen_glow', String(currentGlow));
+    localStorage.setItem('muzen_shape', sandboxShape);
+    localStorage.setItem('muzen_effects', JSON.stringify(nextEffects));
+    showToast(toastMessage);
+  }
+
+  controller?.moveHorizontal(1);
+  setTimeout(() => controller?.moveHorizontal(-1), 220);
 }
 
 function renderKeybindingsList(): void {
@@ -1534,6 +1612,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   loadConfig();
   initEvents();
+
+  aiPanelHandle = initAiAssistantPanel({
+    getLocale: () => currentLocale,
+    getCurrentSnapshot: getCurrentConfigSnapshot,
+    applySnapshot: applyConfigSnapshot,
+    showToast,
+    confirmAction: (title, message) => showCustomConfirm({ title, message, type: 'warning' })
+  });
 
   setTimeout(() => {
     controller?.findInitialTarget();

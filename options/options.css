@@ -1420,3 +1420,420 @@ input:checked + .slider-small:before {
   font-size: 0.84rem;
   border-radius: var(--radius-sm);
 }
+
+/* ==========================================================================
+   標籤 5: AI 調參助手與 BYOK 金鑰保險箱
+   ========================================================================== */
+
+.btn:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.btn-primary {
+  background: var(--accent-orange);
+  color: var(--bg-darkest);
+  border-color: var(--accent-orange);
+}
+
+.btn-primary:hover {
+  filter: brightness(1.08);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--accent-orange) 40%, transparent);
+}
+
+.ai-byok-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.ai-byok-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  transition: background var(--transition-fast);
+}
+
+.ai-byok-summary::-webkit-details-marker {
+  display: none;
+}
+
+.ai-byok-summary:hover {
+  background: color-mix(in srgb, var(--bg-card-hover) 65%, transparent);
+}
+
+.ai-summary-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.ai-chevron {
+  font-size: 0.9rem;
+  color: var(--fg-muted);
+  transition: transform var(--transition-fast);
+}
+
+.ai-byok-card[open] .ai-chevron {
+  transform: rotate(180deg);
+}
+
+.ai-byok-body {
+  padding: 4px 20px 20px;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ai-byok-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 16px;
+  margin-top: 10px;
+}
+
+.ai-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ai-field-full {
+  grid-column: 1 / -1;
+}
+
+.ai-field.hidden {
+  display: none;
+}
+
+.ai-input,
+.ai-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--bg-input);
+  color: var(--fg-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  font-size: 0.85rem;
+  font-family: inherit;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.ai-input:focus,
+.ai-textarea:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-orange) 20%, transparent);
+}
+
+.ai-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.ai-badge-ok {
+  color: var(--accent-green);
+  background: color-mix(in srgb, var(--accent-green) 14%, var(--bg-input));
+  border-color: color-mix(in srgb, var(--accent-green) 40%, transparent);
+}
+
+.ai-badge-warn {
+  color: var(--accent-gold);
+  background: color-mix(in srgb, var(--accent-gold) 14%, var(--bg-input));
+  border-color: color-mix(in srgb, var(--accent-gold) 40%, transparent);
+}
+
+.ai-badge-locked {
+  color: var(--accent-red);
+  background: color-mix(in srgb, var(--accent-red) 14%, var(--bg-input));
+  border-color: color-mix(in srgb, var(--accent-red) 40%, transparent);
+}
+
+.ai-actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.ai-actions-row .hidden {
+  display: none;
+}
+
+.ai-status-msg {
+  font-size: 0.82rem;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  background: var(--bg-input);
+  color: var(--fg-color);
+}
+
+.ai-status-msg.hidden {
+  display: none;
+}
+
+.ai-status-msg.is-ok {
+  border-color: color-mix(in srgb, var(--accent-green) 50%, transparent);
+  color: var(--accent-green);
+}
+
+.ai-status-msg.is-error {
+  border-color: color-mix(in srgb, var(--accent-red) 55%, transparent);
+  color: var(--accent-red);
+}
+
+.ai-privacy-note {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--fg-dim);
+  line-height: 1.45;
+}
+
+.ai-unlock-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 18px;
+  margin-bottom: 18px;
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--accent-gold) 10%, var(--bg-card));
+  border: 1px solid color-mix(in srgb, var(--accent-gold) 48%, transparent);
+}
+
+.ai-unlock-banner.hidden {
+  display: none;
+}
+
+.ai-unlock-text {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent-gold);
+}
+
+.ai-unlock-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.ai-unlock-controls .ai-input {
+  flex: 1;
+}
+
+.ai-chat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ai-chat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.ai-chat-toolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.ai-quick-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ai-chip-btn {
+  background: var(--bg-input);
+  color: var(--fg-muted);
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-align: left;
+}
+
+.ai-chip-btn:hover {
+  color: var(--accent-orange);
+  border-color: var(--accent-orange);
+  background: color-mix(in srgb, var(--accent-orange) 10%, var(--bg-card));
+}
+
+.ai-chat-messages {
+  min-height: 280px;
+  max-height: 460px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  background: var(--bg-darkest);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.ai-msg {
+  max-width: 88%;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  font-size: 0.86rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.ai-msg-user {
+  align-self: flex-end;
+  background: color-mix(in srgb, var(--accent-orange) 18%, var(--bg-card));
+  border: 1px solid color-mix(in srgb, var(--accent-orange) 42%, transparent);
+  color: var(--fg-color);
+}
+
+.ai-msg-assistant {
+  align-self: flex-start;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--fg-color);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ai-msg-error {
+  align-self: flex-start;
+  background: color-mix(in srgb, var(--accent-red) 12%, var(--bg-card));
+  border: 1px solid color-mix(in srgb, var(--accent-red) 45%, transparent);
+  color: var(--accent-red);
+}
+
+.ai-msg-thinking {
+  color: var(--fg-muted);
+  font-style: italic;
+}
+
+.ai-diff-card {
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ai-diff-title {
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--accent-cyan);
+}
+
+.ai-diff-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ai-diff-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.8rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.ai-diff-key {
+  color: var(--fg-color);
+}
+
+.ai-diff-values {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.ai-diff-old {
+  color: var(--fg-dim);
+  text-decoration: line-through;
+}
+
+.ai-diff-arrow {
+  color: var(--fg-muted);
+}
+
+.ai-diff-new {
+  color: var(--accent-green);
+  font-weight: 700;
+}
+
+.ai-diff-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 2px;
+}
+
+.ai-diff-apply-btn.applied {
+  background: color-mix(in srgb, var(--accent-green) 18%, var(--bg-card));
+  color: var(--accent-green);
+  border-color: color-mix(in srgb, var(--accent-green) 45%, transparent);
+}
+
+.ai-diff-empty-note {
+  font-size: 0.78rem;
+  color: var(--fg-muted);
+}
+
+.ai-chat-composer {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.ai-textarea {
+  flex: 1;
+  resize: vertical;
+  min-height: 44px;
+  max-height: 160px;
+  line-height: 1.45;
+}
+
+.ai-send-btn {
+  min-width: 84px;
+  height: auto;
+  align-self: stretch;
+}
+
+@media (max-width: 720px) {
+  .ai-byok-grid {
+    grid-template-columns: 1fr;
+  }
+  .ai-chat-composer {
+    flex-direction: column;
+  }
+  .ai-send-btn {
+    height: 36px;
+  }
+}
