@@ -75,28 +75,30 @@ export function animateScrollTo(
   cancelActiveScroll();
   currentTargetTop = clampedTarget;
   const startTime = performance.now();
+  let prevAppliedOffset = 0;
 
   function step(currentTime: number) {
-    const elapsed = currentTime - startTime;
+    // 防禦 rAF 時間戳早於 performance.now() 導致負進度與反方向滾動
+    const elapsed = Math.max(0, currentTime - startTime);
     const progress = Math.min(1, elapsed / actualDuration);
     // Ease-Out Cubic: 物理阻尼曲線
     const ease = 1 - Math.pow(1 - progress, 3);
-    const currentPos = startTop + distance * ease;
+    const nextAppliedOffset = distance * ease;
+    const deltaStep = nextAppliedOffset - prevAppliedOffset;
+    prevAppliedOffset = nextAppliedOffset;
 
-    if (isWin) {
-      window.scrollTo(0, currentPos);
-    } else {
-      (target as HTMLElement).scrollTop = currentPos;
+    // 採用相對增量推進，避免以過時的絕對座標覆寫瀏覽器 Scroll Anchoring 補償
+    if (Math.abs(deltaStep) > 0) {
+      if (isWin) {
+        window.scrollBy({ top: deltaStep, behavior: 'instant' as ScrollBehavior });
+      } else {
+        (target as HTMLElement).scrollTop += deltaStep;
+      }
     }
 
     if (progress < 1) {
       activeScrollRafId = requestAnimationFrame(step);
     } else {
-      if (isWin) {
-        window.scrollTo(0, clampedTarget);
-      } else {
-        (target as HTMLElement).scrollTop = clampedTarget;
-      }
       activeScrollRafId = null;
       currentTargetTop = null;
     }
@@ -133,7 +135,7 @@ export function getScrollParent(node: Node | null, containerRoot?: HTMLElement):
         if (overflowY === 'auto' || overflowY === 'scroll') {
           return p;
         }
-      } catch {}
+      } catch { }
       p = p.parentElement;
     }
   }
