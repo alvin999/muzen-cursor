@@ -5,6 +5,76 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [v0.2.3] - 2026-11-19
+
+### 繁體中文 (Traditional Chinese)
+#### ✨ 新增功能與體驗優化 (Features & Improvements)
+- **AI 智慧調校助手與本地安全保險箱 (AI Tuning Assistant & BYOK Vault)**：
+  - 新增設定頁「AI 助手」分頁，支援以對話方式即時分析並推薦游標移動、平滑捲動與 Smear 物理參數。
+  - 支援 BYOK（Bring Your Own Key）本地保險箱機制，使用 Web Crypto API (AES-GCM) 於本機端安全加密儲存 API Key。
+  - 支援多模型服務供應商（Gemini、OpenAI、Anthropic、DeepSeek、Ollama 等）並支援動態載入供應商模型清單。
+  - 內建中立系統提示詞構建器 (Prompt Builder) 與結構化設定變更驗證器 (Patch Validator)，確保參數修改安全可靠。
+  - 支援設定檔自動備份 (Folder Backup) 與預設集同步管理 (Presets Sync)。
+- **核心架構模組化重構 (Core Architecture Modularization)**：
+  - 將龐大的 `CursorController` 拆解重構為專門的子控制器模組（位於 `src/core/controller/`）：
+    - `keybindingRouter`：按鍵事件分發、計數前綴與按鍵蓄力機制。
+    - `motionEngine`：方向、單字、行首尾、頁面與半頁移動引擎。
+    - `mediaController`：圖片/多媒體元素停駐、長圖分段滾動與燈箱控制。
+    - `scrollFollower`：黃金比例視窗追隨滾動與停手防抖重新對齊。
+    - `jumpHistoryManager`：跳轉點堆疊管理、歷史切換與 Jump Menu。
+    - `flashModeController`：Flash Jump 與搜尋跳轉狀態機。
+    - `pointerInteraction`：點擊聚焦與互動元素偵測。
+    - `cursorGeometry`：游標幾何計算、零尺寸字元修復與閱讀進度統計。
+    - `rearviewManager`：照後鏡快照快取與切換通知。
+  - `CursorController` 作為 Facade 外觀模式協調器，100% 保留對外公開 API 相容性。
+- **平滑捲動引擎修復 (Smooth Scroller Fixes)**：
+  - 修復平滑捲動時間戳計算可能發生的下溢問題，避免非預期的反向倒退滾動。
+  - 改用 delta `scrollBy` 推進捲動，避免動態 DOM 節點插入時覆蓋瀏覽器原生的捲動定錨 (scroll anchoring) 機制。
+- **導航行為與邊界控制優化 (Navigation & Boundary Controls)**：
+  - 水平移動邊界限制：水平導航（`h` / `l`）預設停在當前行首與行尾，不再自動跨行換行；於設定頁中新增 `horizontalWrap` 切換開關供自由選擇。
+  - 數字計數前綴解析修正：修復接續輸入 `0`（例如 `20l`、`10j`）時誤觸發行首跳轉 (`lineStart`) 的問題。
+  - 修復 `jumpBack` 返回跳轉時的切換行為與部分遺漏的 return 邏輯。
+  - 妥善處理 `<pre>` / `<code>` 程式碼區塊內尺寸為零的換行符號幾何量測，避免游標錯位至容器起點。
+- **Smear 拖尾幾何與預設參數調整 (Smear Trail Refinements)**：
+  - 修正對角線移動時四邊形拖尾形狀扭曲的問題，改以平移凸包包絡算法保持平行四邊形完整寬度拖尾。
+  - 更新 Smear 預設參數：殘影層數調整為 2、持續時間縮短為 180ms、剛性提升至 0.4、最大拖尾長度限制為 200px，呈現更俐落順暢的流體質感。
+
+---
+
+### English
+#### ✨ Features & Improvements
+- **AI Tuning Assistant & BYOK Encrypted Vault**:
+  - Added an AI Assistant tab in Options to converse with LLMs for real-time cursor, scroll, and physics parameter adjustments.
+  - Built-in BYOK (Bring Your Own Key) vault with Web Crypto AES-GCM local client encryption for API keys.
+  - Multi-provider support (Gemini, OpenAI, Anthropic, DeepSeek, Ollama, etc.) with dynamic model catalogue fetching.
+  - Neutral prompt builder and structured patch validator ensuring safe and verified config updates.
+  - Integrated config preset synchronization and automatic folder backup.
+- **Core Architecture Modularization**:
+  - Deconstructed the monolithic `CursorController` into dedicated submodules under `src/core/controller/`:
+    - `keybindingRouter`: Key dispatch, count prefix handling, and charge mechanics.
+    - `motionEngine`: Directional, word, line boundary, document, and half-page motions.
+    - `mediaController`: Media docking, segmental tall-image scrolling, and lightbox keys.
+    - `scrollFollower`: Viewport golden-ratio scroll follower and debounce realignment.
+    - `jumpHistoryManager`: Jump point stack, toggle mode, and jump menu HUD.
+    - `flashModeController`: Flash Jump and search jump state machine.
+    - `pointerInteraction`: Click-to-focus and interactive link detection.
+    - `cursorGeometry`: Rect measurement, zero-size rect recovery, and reading stats.
+    - `rearviewManager`: Snapshot cache and rearview mirror notification.
+  - Maintained `CursorController` as an orchestrator facade with 100% public API compatibility.
+- **Smooth Scroller Fixes**:
+  - Fixed timestamp underflow causing occasional reverse scrolling glitch.
+  - Switched to delta `scrollBy` during smooth scrolling to preserve browser-native scroll anchoring during dynamic DOM insertion.
+- **Navigation & Boundary Controls**:
+  - Horizontal boundary stop: horizontal motions (`h` / `l`) now stop at line boundaries by default without auto-wrapping; added `horizontalWrap` toggle in Options.
+  - Fixed count prefix parsing when typing `0` after digits (e.g. `20l`, `10j`) to prevent accidental line-start jump.
+  - Fixed `jumpBack` toggle behavior and restored missing return logic.
+  - Resolved zero-size newline rect calculations in `<pre>` / `<code>` code blocks.
+- **Smear Trail Refinements**:
+  - Replaced comet tapering with congruent translated hull to preserve full-width parallelogram smear trail shapes during diagonal travel.
+  - Updated Smear physics defaults: `trailCount` (4 -> 2), `trailDurationMs` (260 -> 180 ms), `smearTrailingStiffness` (0.18 -> 0.4), `smearMaxLength` (200 px).
+
+---
+
 ## [v0.2.2] - 2026-11-18
 
 ### 繁體中文 (Traditional Chinese)
