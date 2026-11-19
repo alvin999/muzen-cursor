@@ -35,6 +35,7 @@ export interface JumpPoint {
   offset: number;
   scrollX: number;
   scrollY: number;
+  mediaElement?: Element;
 }
 
 /**
@@ -427,7 +428,7 @@ export class CursorController {
           } else {
             this.updateCursorPosition(true);
           }
-
+          return;
         }
       }
       return;
@@ -464,7 +465,7 @@ export class CursorController {
         e.stopImmediatePropagation();
         this.closeJumpMenu();
         this.lastEscTime = 0;
-
+        return;
       }
 
       if (this.jumpMenuTimer) {
@@ -485,7 +486,7 @@ export class CursorController {
         cursorStore.setState({ enabled: false, visible: false });
         const dict = LOCALES[cursorStore.getState().locale || 'zh-TW'] || LOCALES['zh-TW'];
         cursorStore.showStatusNotice(dict.noticeDeepSleep, 1800);
-
+        return;
       }
 
       // 單按 Esc：若 escape 啟用
@@ -496,7 +497,7 @@ export class CursorController {
           e.stopPropagation();
           e.stopImmediatePropagation();
           this.clearPendingKeys();
-
+          return;
         }
 
         // 單按 Esc：若處於 VISUAL 或 VISUAL_LINE 模式，退出選取回到 NORMAL (攔截事件)
@@ -505,12 +506,12 @@ export class CursorController {
           e.stopPropagation();
           e.stopImmediatePropagation();
           this.exitVisualMode();
-
+          return;
         }
 
         // 若原本就已處於淺層待命 (!visible)，維持待命
         if (!state.visible) {
-
+          return;
         }
 
         // 單按 Esc：由活動狀態轉為淺層休眠待機 (隱藏游標，保留右下角狀態列「按 j 開始」，隨時可喚醒)
@@ -520,7 +521,7 @@ export class CursorController {
           this.realignTimer = null;
         }
         cursorStore.setState({ visible: false });
-
+        return;
       }
     }
 
@@ -536,7 +537,7 @@ export class CursorController {
         } else {
           this.moveVertical(1);
         }
-
+        return;
       }
       if (matchesKeybinding(e, bindings.halfPageDown)) {
         e.preventDefault();
@@ -548,7 +549,7 @@ export class CursorController {
         } else {
           this.moveHalfPage(true, e.repeat);
         }
-
+        return;
       }
       if (matchesKeybinding(e, bindings.halfPageUp)) {
         e.preventDefault();
@@ -560,7 +561,7 @@ export class CursorController {
         } else {
           this.moveHalfPage(false, e.repeat);
         }
-
+        return;
       }
       if (matchesKeybinding(e, bindings.moveUp)) {
         e.preventDefault();
@@ -572,7 +573,7 @@ export class CursorController {
         } else {
           this.moveVertical(-1);
         }
-
+        return;
       }
       // 其他單鍵與快捷鍵在休眠時 100% 自然放行給網頁原生
       return;
@@ -590,7 +591,7 @@ export class CursorController {
       if (/^[1-9]$/.test(e.key)) {
         intercept();
         this.jumpToMenuItem(Number(e.key));
-
+        return;
       }
       intercept();
       this.closeJumpMenu();
@@ -655,7 +656,7 @@ export class CursorController {
         this.lastKey = '';
         this.clearPendingKeys();
         this.jumpBack(false); // false: 同一行行首
-
+        return;
       }
 
       // 單按 ' 鍵：啟動 400ms 計時器，若未按第二下則喚醒 Neovim 浮動選單
@@ -683,7 +684,7 @@ export class CursorController {
         this.lastKey = '';
         this.clearPendingKeys();
         this.jumpBack(true); // true: 同一字元精確位置
-
+        return;
       }
 
       // 單按 ` 鍵：啟動 400ms 計時器，若未按第二下則喚醒 Neovim 浮動選單 (精確字元模式)
@@ -707,7 +708,7 @@ export class CursorController {
         this.lastKey = '';
         this.clearPendingKeys();
         this.jumpToDocumentStart();
-
+        return;
       } else if (isConfiguredKey && docStartDef.isDouble && !isDoubleKey) {
         this.setPendingKeys(e.key, 500);
       }
@@ -1336,26 +1337,51 @@ export class CursorController {
   }
 
   /**
-   * 記錄當前游標與視窗捲動位置至 Jump 歷史堆疊
+   * 擷取當前游標位置（文字節點或媒體元素）與捲動座標作為跳轉點
    */
-  private pushJumpPoint(customPoint?: JumpPoint): void {
-    let pointToPush = customPoint;
-    if (!pointToPush) {
-      if (!this.currentTarget || !this.currentTarget.node) return;
-      const scrollParent = getScrollParent(this.currentTarget.node, this.options?.containerRoot);
+  private captureCurrentJumpPoint(): JumpPoint | null {
+    if (this.currentMediaElement && this.currentMediaElement.isConnected) {
+      const scrollParent = getScrollParent(this.currentMediaElement, this.options?.containerRoot);
       const scrollX = scrollParent ? scrollParent.scrollLeft : (window.scrollX ?? window.pageXOffset ?? 0);
       const scrollY = scrollParent ? scrollParent.scrollTop : (window.scrollY ?? window.pageYOffset ?? 0);
 
-      pointToPush = {
-        node: this.currentTarget.node,
-        offset: this.currentTarget.offset,
+      return {
+        node: this.currentMediaElement,
+        offset: 0,
         scrollX,
-        scrollY
+        scrollY,
+        mediaElement: this.currentMediaElement
       };
     }
 
+    if (!this.currentTarget || !this.currentTarget.node) return null;
+    const scrollParent = getScrollParent(this.currentTarget.node, this.options?.containerRoot);
+    const scrollX = scrollParent ? scrollParent.scrollLeft : (window.scrollX ?? window.pageXOffset ?? 0);
+    const scrollY = scrollParent ? scrollParent.scrollTop : (window.scrollY ?? window.pageYOffset ?? 0);
+
+    return {
+      node: this.currentTarget.node,
+      offset: this.currentTarget.offset,
+      scrollX,
+      scrollY
+    };
+  }
+
+  /**
+   * 記錄當前游標與視窗捲動位置至 Jump 歷史堆疊
+   */
+  private pushJumpPoint(customPoint?: JumpPoint): void {
+    const pointToPush = customPoint ?? this.captureCurrentJumpPoint() ?? undefined;
+    if (!pointToPush) return;
+
     const last = this.jumpHistory[this.jumpHistory.length - 1];
-    if (last && last.node === pointToPush.node && Math.abs(last.offset - pointToPush.offset) <= 2) {
+    if (
+      last &&
+      last.mediaElement === pointToPush.mediaElement &&
+      last.node === pointToPush.node &&
+      Math.abs(last.offset - pointToPush.offset) <= 2
+    ) {
+      this.lastJumpBackTarget = null;
       return;
     }
 
@@ -1381,43 +1407,21 @@ export class CursorController {
       // 1. 若已有 Toggle 恢復點 (剛才跳回前的位置)，切換回該位置
       if (this.lastJumpBackTarget) {
         const toggleTarget = this.lastJumpBackTarget;
-        this.lastJumpBackTarget = null;
-
-        if (this.currentTarget && this.currentTarget.node) {
-          const scrollParent = getScrollParent(this.currentTarget.node, this.options?.containerRoot);
-          const scrollX = scrollParent ? scrollParent.scrollLeft : (window.scrollX ?? window.pageXOffset ?? 0);
-          const scrollY = scrollParent ? scrollParent.scrollTop : (window.scrollY ?? window.pageYOffset ?? 0);
-          this.lastJumpBackTarget = {
-            node: this.currentTarget.node,
-            offset: this.currentTarget.offset,
-            scrollX,
-            scrollY
-          };
-        }
-
+        // 保存跳轉前當前位置作為下次 Toggle 目標
+        this.lastJumpBackTarget = this.captureCurrentJumpPoint();
         this.restoreJumpPoint(toggleTarget, exact);
-
+        return;
       }
 
       // 2. 從歷史堆疊讀取最新一筆跳轉點 (不破壞堆疊)
       if (this.jumpHistory.length === 0) {
-
+        return;
       }
 
       const targetPoint = this.jumpHistory[this.jumpHistory.length - 1];
 
       // 保存跳轉前當前位置作為 Toggle 目標
-      if (this.currentTarget && this.currentTarget.node) {
-        const scrollParent = getScrollParent(this.currentTarget.node, this.options?.containerRoot);
-        const scrollX = scrollParent ? scrollParent.scrollLeft : (window.scrollX ?? window.pageXOffset ?? 0);
-        const scrollY = scrollParent ? scrollParent.scrollTop : (window.scrollY ?? window.pageYOffset ?? 0);
-        this.lastJumpBackTarget = {
-          node: this.currentTarget.node,
-          offset: this.currentTarget.offset,
-          scrollX,
-          scrollY
-        };
-      }
+      this.lastJumpBackTarget = this.captureCurrentJumpPoint();
 
       this.restoreJumpPoint(targetPoint, exact);
       return;
@@ -1436,6 +1440,14 @@ export class CursorController {
     const currentScroll = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
     this.triggerRearviewNotice(point.scrollY < currentScroll ? 'up' : 'down');
     const duration = cursorStore.getState().advanced?.scrollDurationMs ?? 380;
+    this.preferredX = null;
+
+    if (point.mediaElement && point.mediaElement.isConnected) {
+      this.enterMediaTarget(point.mediaElement, undefined, false);
+      return;
+    }
+
+    this.clearMediaTarget();
 
     if (point.node && point.node.isConnected) {
       let target: TextTarget = {
@@ -1449,7 +1461,8 @@ export class CursorController {
       }
 
       this.currentTarget = target;
-      this.updateCursorPosition(true);
+      this.updateActiveScope(target.node);
+      this.updateCursorPosition(false, undefined, false, true);
 
       if (this.options?.enableScroll !== false) {
         const scrollParent = getScrollParent(this.currentTarget.node, this.options?.containerRoot);
@@ -1479,8 +1492,15 @@ export class CursorController {
     const maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
 
     const items: JumpMenuItem[] = recent.map((p, idx) => {
-      const raw = p.node?.textContent || '';
-      const snippet = raw.slice(p.offset, p.offset + 25).trim() || raw.slice(0, 25).trim() || '(位置錨點)';
+      let snippet = '';
+      if (p.mediaElement) {
+        const tag = p.mediaElement.tagName.toUpperCase();
+        const alt = (p.mediaElement as HTMLImageElement).alt?.trim();
+        snippet = alt ? `[${tag}] ${alt.slice(0, 22)}` : `[${tag}]`;
+      } else {
+        const raw = p.node?.textContent || '';
+        snippet = raw.slice(p.offset, p.offset + 25).trim() || raw.slice(0, 25).trim() || '(位置錨點)';
+      }
       const scrollPercent = Math.min(100, Math.max(0, Math.round((p.scrollY / maxScroll) * 100)));
       return {
         index: idx + 1,
@@ -2053,7 +2073,7 @@ export class CursorController {
       if (firstText) {
         this.currentTarget = { node: firstText, offset: 0 };
         this.updateCursorPosition();
-
+        return;
       }
     }
 
@@ -2092,7 +2112,7 @@ export class CursorController {
         this.currentTarget = localTarget;
         this.updateActiveScope(localTarget.node);
         this.updateCursorPosition();
-
+        return;
       }
     }
 
@@ -2122,7 +2142,7 @@ export class CursorController {
         this.currentTarget = { node: firstText, offset: 0 };
         this.updateActiveScope(firstText);
         this.updateCursorPosition();
-
+        return;
       }
     }
 
@@ -2447,7 +2467,7 @@ export class CursorController {
           estimatedMinutesLeft: this.cachedReadingMinutes
         });
         this.previousTarget = { ...this.currentTarget };
-
+        return;
       }
 
       // 計算本次位移向量與方向 (提供 3D 透視梯形動態反饋使用)
