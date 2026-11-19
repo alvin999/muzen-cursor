@@ -96,6 +96,7 @@ export class MediaController {
       isMediaTarget: true,
       mediaInfo,
       hoveredLinkUrl: null,
+      localDynamicPalette: null,
       rect: {
         x: mediaRect.left,
         y: mediaRect.top,

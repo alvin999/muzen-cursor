@@ -376,6 +376,10 @@ export interface CursorState {
     normal: { r: number; g: number; b: number; hex: string };
     visual: { r: number; g: number; b: number; hex: string };
   }; // 智慧感應當前網頁所演算之最佳對比游標調色盤
+  localDynamicPalette?: {
+    normal: { r: number; g: number; b: number; hex: string };
+    visual: { r: number; g: number; b: number; hex: string };
+  } | null; // 游標位於與全頁明暗相反之局部區塊（如淺色頁面中的深色 <code>）時之專屬高對比調色盤
   detectedBgRgb?: { r: number; g: number; b: number }; // 智慧感應當前網頁採樣之背景色數值
   advanced: AdvancedConfig; // 進階數值調校配置
   keybindings: KeybindingsConfig; // 自訂按鍵與防衝突配置

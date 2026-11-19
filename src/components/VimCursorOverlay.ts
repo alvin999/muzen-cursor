@@ -433,11 +433,16 @@ export class VimCursorOverlay {
   }
 
   /**
-   * 取得有效主題配色 (支援智慧感應主題之動態最適調色盤)
+   * 取得有效主題配色 (支援智慧感應主題之全頁與局部區塊動態最適調色盤)
    */
   private getEffectivePalette(state: CursorState): ThemeColorSet {
-    if (state.autoTheme && state.dynamicPalette) {
-      return state.dynamicPalette;
+    if (state.autoTheme) {
+      if (state.localDynamicPalette) {
+        return state.localDynamicPalette;
+      }
+      if (state.dynamicPalette) {
+        return state.dynamicPalette;
+      }
     }
     const themeKey = state.theme || 'gruvbox-dark';
     return THEME_PALETTES[themeKey] || THEME_PALETTES['gruvbox-dark'];

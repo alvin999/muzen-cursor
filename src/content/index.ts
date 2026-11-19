@@ -59,8 +59,10 @@ function main(): void {
           autoTheme,
           detectedPageTheme: smartInfo.theme,
           dynamicPalette: smartInfo.palette,
+          localDynamicPalette: null,
           detectedBgRgb: smartInfo.bgRgb
         });
+        controller.refreshLocalTheme();
         sendResponse({
           success: true,
           autoTheme,
@@ -296,8 +298,11 @@ function main(): void {
         cursorStore.setState({
           autoTheme: isAuto,
           detectedPageTheme: smartInfo.theme,
-          dynamicPalette: smartInfo.palette
+          dynamicPalette: smartInfo.palette,
+          localDynamicPalette: null,
+          detectedBgRgb: smartInfo.bgRgb
         });
+        controller.refreshLocalTheme();
       }
       if (changes.muzen_dark_theme) {
         cursorStore.setState({ darkTheme: changes.muzen_dark_theme.newValue });
@@ -319,8 +324,10 @@ function main(): void {
     cursorStore.setState({
       detectedPageTheme: info.theme,
       dynamicPalette: info.palette,
+      localDynamicPalette: null,
       detectedBgRgb: info.bgRgb
     });
+    controller.refreshLocalTheme();
   });
 
   logger.info('霧前禪夢，見字如初。Vim 閱讀游標已成功就緒。');

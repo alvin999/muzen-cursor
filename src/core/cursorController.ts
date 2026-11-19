@@ -1,6 +1,7 @@
-import { cursorStore, MotionDirection, CursorRect } from './cursorStore';
+import { cursorStore, CursorState, MotionDirection, CursorRect } from './cursorStore';
 import { LOCALES } from '../i18n/locales';
 import { detectReadingScope } from '../utils/domUtils';
+import { detectLocalSmartPalette, SmartThemePalette } from '../utils/themeDetector';
 import { TextTarget } from './wordNavigator';
 import { isSmoothScrolling } from '../utils/smoothScroller';
 import { computeWaypointsBetween } from './navigation/spatialNavigator';
@@ -36,6 +37,9 @@ export class CursorController {
   private activeScopeElement: HTMLElement | null = null;
   private moveTimer: ReturnType<typeof setTimeout> | null = null;
   private isRecoveringTarget = false;
+  private lastLocalThemeElement: Element | null = null;
+  private lastLocalThemePageTheme: 'dark' | 'light' | null = null;
+  private lastLocalPalette: SmartThemePalette | null = null;
 
   private readonly readingStats = new ReadingStatsCache();
   private readonly selectionManager = new VisualSelectionManager();
@@ -418,6 +422,59 @@ export class CursorController {
   }
 
   /**
+   * 依當前游標所在節點解析局部區塊之智慧調色盤（跨元素快取，避免同元素內重複呼叫 getComputedStyle）
+   */
+  private resolveLocalDynamicPalette(node: Node | null, state: CursorState): SmartThemePalette | null {
+    if (!state.autoTheme) {
+      this.lastLocalThemeElement = null;
+      this.lastLocalThemePageTheme = null;
+      this.lastLocalPalette = null;
+      return null;
+    }
+
+    const pageTheme = state.detectedPageTheme || 'light';
+    const el: Element | null =
+      node && node.nodeType === Node.TEXT_NODE
+        ? node.parentElement
+        : node && node.nodeType === Node.ELEMENT_NODE
+          ? (node as Element)
+          : null;
+
+    if (el === this.lastLocalThemeElement && pageTheme === this.lastLocalThemePageTheme) {
+      return this.lastLocalPalette;
+    }
+
+    const pageBgRgb =
+      state.detectedBgRgb || (pageTheme === 'dark' ? { r: 24, g: 24, b: 24 } : { r: 255, g: 255, b: 255 });
+    const palette = detectLocalSmartPalette(el, pageTheme, pageBgRgb);
+
+    this.lastLocalThemeElement = el;
+    this.lastLocalThemePageTheme = pageTheme;
+    this.lastLocalPalette = palette;
+    return palette;
+  }
+
+  /**
+   * 強制清除局部背景快取，並在智慧主題啟用時依目前游標位置即時重新計算局部配色
+   */
+  public refreshLocalTheme(): void {
+    this.lastLocalThemeElement = null;
+    this.lastLocalThemePageTheme = null;
+    this.lastLocalPalette = null;
+
+    const state = cursorStore.getState();
+    if (!state.autoTheme || state.isMediaTarget || !this.currentTarget) {
+      if (state.localDynamicPalette !== null && state.localDynamicPalette !== undefined) {
+        cursorStore.setState({ localDynamicPalette: null });
+      }
+      return;
+    }
+
+    const localDynamicPalette = this.resolveLocalDynamicPalette(this.currentTarget.node, state);
+    cursorStore.setState({ localDynamicPalette });
+  }
+
+  /**
    * 計算螢幕座標並同步游標、選取與視窗跟隨
    */
   private updateCursorPosition(
@@ -503,6 +560,8 @@ export class CursorController {
       // 當游標移動停頓時，預先在背景非同步更新當前視窗快照 (以備翻頁回溯 0ms 呈現)
       this.rearviewManager.requestBackgroundSnapshot();
 
+      const localDynamicPalette = this.resolveLocalDynamicPalette(node, prevState);
+
       cursorStore.setState({
         visible: forceVisible || isVisibleInViewport,
         isMoving: true,
@@ -513,6 +572,7 @@ export class CursorController {
         isMediaTarget: false,
         mediaInfo: null,
         hoveredLinkUrl: this.getHoveredAnchor(this.currentTarget)?.href || null,
+        localDynamicPalette,
         rect: {
           x: rect.left,
           y: rect.top,

@@ -31,14 +31,21 @@ export function parseCssColor(colorStr: string): { r: number; g: number; b: numb
     return null;
   }
 
-  // 1. rgb / rgba 格式
-  const rgbaMatch = colorStr.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([\d.]+))?\s*\)/i);
+  // 1. rgb / rgba 格式 (支援逗號分隔與 CSS Color 4 空白分隔語法)
+  const rgbaMatch = colorStr.match(
+    /rgba?\(\s*([\d.]+)\s*(?:,\s*|\s+)([\d.]+)\s*(?:,\s*|\s+)([\d.]+)(?:\s*(?:,|\/)\s*([\d.]+)(%)?)?\s*\)/i
+  );
   if (rgbaMatch) {
+    let a = 1;
+    if (rgbaMatch[4] !== undefined) {
+      const rawA = parseFloat(rgbaMatch[4]);
+      a = rgbaMatch[5] === '%' ? rawA / 100 : rawA;
+    }
     return {
-      r: parseInt(rgbaMatch[1], 10),
-      g: parseInt(rgbaMatch[2], 10),
-      b: parseInt(rgbaMatch[3], 10),
-      a: rgbaMatch[4] !== undefined ? parseFloat(rgbaMatch[4]) : 1
+      r: Math.round(parseFloat(rgbaMatch[1])),
+      g: Math.round(parseFloat(rgbaMatch[2])),
+      b: Math.round(parseFloat(rgbaMatch[3])),
+      a: Math.max(0, Math.min(1, a))
     };
   }
 
@@ -354,6 +361,109 @@ export function detectPageSmartInfo(luminanceThreshold = 128): SmartThemeInfo {
     palette,
     bgRgb: effectiveBg
   };
+}
+
+/**
+ * 將由上而下（前景色層 → 背景色層）收集到的 RGBA 層，依 Porter-Duff source-over
+ * 由底層往上合成至不透明底色，避免半透明淺灰背景（例如 rgba(0, 0, 0, 0.06)）誤判為深色。
+ */
+export function compositeRgbaLayers(
+  layersTopToBottom: { r: number; g: number; b: number; a: number }[],
+  baseRgb: { r: number; g: number; b: number }
+): { r: number; g: number; b: number } {
+  let r = baseRgb.r;
+  let g = baseRgb.g;
+  let b = baseRgb.b;
+
+  for (let i = layersTopToBottom.length - 1; i >= 0; i--) {
+    const layer = layersTopToBottom[i];
+    const alpha = Math.max(0, Math.min(1, layer.a));
+    r = layer.r * alpha + r * (1 - alpha);
+    g = layer.g * alpha + g * (1 - alpha);
+    b = layer.b * alpha + b * (1 - alpha);
+  }
+
+  return {
+    r: Math.round(r),
+    g: Math.round(g),
+    b: Math.round(b)
+  };
+}
+
+/**
+ * 從指定 DOM 元素向上遍歷祖先背景色，並將途中的半透明背景層依序混合至底層，
+ * 取得肉眼實際所見之局部有效背景色（支援淺色網頁中之深色 <code> / <pre> 等混合區塊）。
+ */
+export function getElementEffectiveBg(
+  el: Element | null,
+  fallbackBg: { r: number; g: number; b: number },
+  maxDepth = 32
+): { r: number; g: number; b: number } {
+  if (!el || typeof window === 'undefined' || typeof window.getComputedStyle !== 'function') {
+    return fallbackBg;
+  }
+
+  const layers: { r: number; g: number; b: number; a: number }[] = [];
+  let current: Element | null = el;
+  let depth = 0;
+  let opaqueBase: { r: number; g: number; b: number } | null = null;
+
+  while (current && depth < maxDepth) {
+    try {
+      const bg = window.getComputedStyle(current).backgroundColor;
+      const parsed = parseCssColor(bg);
+      if (parsed && parsed.a > 0.01) {
+        if (parsed.a >= 0.99) {
+          opaqueBase = { r: parsed.r, g: parsed.g, b: parsed.b };
+          break;
+        }
+        layers.push(parsed);
+      }
+    } catch {
+      // 安全略過無法讀取樣式之節點
+    }
+    current = current.parentElement;
+    depth++;
+  }
+
+  const base = opaqueBase ?? fallbackBg;
+  if (layers.length === 0) {
+    return base;
+  }
+  return compositeRgbaLayers(layers, base);
+}
+
+/**
+ * 偵測游標當前所在局部區塊是否與全頁明暗相反；
+ * 若局部背景明暗與全頁不同（例如淺色網頁中的深色 <code> 區塊），
+ * 回傳該局部背景專屬的高對比游標調色盤，否則回傳 null 沿用全頁調色盤。
+ */
+export function detectLocalSmartPalette(
+  node: Node | null,
+  pageTheme: PageTheme,
+  pageBgRgb: { r: number; g: number; b: number },
+  luminanceThreshold = 128
+): SmartThemePalette | null {
+  if (!node) return null;
+
+  const el: Element | null =
+    node.nodeType === 3 /* Node.TEXT_NODE */
+      ? node.parentElement
+      : node.nodeType === 1 /* Node.ELEMENT_NODE */
+        ? (node as Element)
+        : null;
+
+  if (!el) return null;
+
+  const localBg = getElementEffectiveBg(el, pageBgRgb);
+  const localLum = calculateLuminance(localBg.r, localBg.g, localBg.b);
+  const localTheme: PageTheme = localLum < luminanceThreshold ? 'dark' : 'light';
+
+  if (localTheme === pageTheme) {
+    return null;
+  }
+
+  return generateSmartCursorPalette(localTheme, localBg, null);
 }
 
 /**
