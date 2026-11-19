@@ -160,7 +160,7 @@ During long-form reading, mouse wheel scrolling frequently causes readers to los
 | <kbd>v</kbd> / <kbd>V</kbd> | Toggle **VISUAL** character / line selection mode | High-contrast selection color, syncs with native selection |
 | <kbd>y</kbd> | Copy selected text (Yank) | Writes directly to operating system clipboard |
 | <kbd>Enter</kbd> / <kbd>Ctrl</kbd> + <kbd>Enter</kbd> | Open link / Open in background tab | Navigates directly when cursor is over anchor text |
-| <kbd>alt</kbd> + <kbd>v</kbd> | Global toggle (Activate / Freeze cursor) | Awaken or sleep cursor at any time |
+| <kbd>alt</kbd> + <kbd>v</kbd> | Tab Sleep / Wake Toggle (Fallback) | Awaken or sleep cursor at any time |
 | <kbd>esc</kbd> / <kbd>esc</kbd> <kbd>esc</kbd> | Clear selection & shallow standby / Tab-level deep sleep | Double <kbd>esc</kbd> completely releases keys and hides status bar (double-press again to wake) |
 
 > 💡 **Tip**: Click any text on the page with your mouse, and the cursor and status bar will immediately anchor to that character.
