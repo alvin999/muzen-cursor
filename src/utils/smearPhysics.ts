@@ -78,6 +78,7 @@ export class SmearPhysicsEngine {
     { x: 0, y: 0 }
   ];
   private cornerStiffnesses: [number, number, number, number] = [0.8, 0.8, 0.8, 0.8];
+  private trailingIndices: [number, number] = [0, 3];
   private targetCenter: Point2D = { x: 0, y: 0 };
   private isInitialized = false;
 
@@ -89,6 +90,7 @@ export class SmearPhysicsEngine {
     this.currentCorners = corners.map(p => ({ ...p })) as [Point2D, Point2D, Point2D, Point2D];
     this.targetCorners = corners.map(p => ({ ...p })) as [Point2D, Point2D, Point2D, Point2D];
     this.targetCenter = { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
+    this.trailingIndices = [0, 3];
     for (let i = 0; i < 4; i++) {
       this.velocities[i].x = 0;
       this.velocities[i].y = 0;
@@ -155,12 +157,14 @@ export class SmearPhysicsEngine {
       config.trailingStiffness * (1 - 0.55 * longJumpRatio)
     );
 
+    const cornerDots: Array<{ idx: number; dot: number }> = [];
     // 依各頂點與移動方向的點積區分前導角 (Leading) 與拖尾角 (Trailing)
     for (let i = 0; i < 4; i++) {
       const offX = newTargetCorners[i].x - newCenter.x;
       const offY = newTargetCorners[i].y - newCenter.y;
       const offLen = Math.hypot(offX, offY) || 1;
       const dot = (offX / offLen) * dirX + (offY / offLen) * dirY;
+      cornerDots.push({ idx: i, dot });
 
       // 依指數曲率平滑過渡前導角與拖尾角剛性 (smear-cursor.nvim trailing_exponent)
       const exponent = Math.max(1.0, config.trailingExponent || 3.0);
@@ -169,6 +173,10 @@ export class SmearPhysicsEngine {
       this.cornerStiffnesses[i] =
         effectiveTrailingStiffness + (config.stiffness - effectiveTrailingStiffness) * factor;
     }
+
+    // 記錄背對移動方向的兩個拖尾角索引，避免高拖尾剛性下前導角過衝距離大於拖尾角而誤抓前導角
+    cornerDots.sort((a, b) => a.dot - b.dot);
+    this.trailingIndices = [cornerDots[0].idx, cornerDots[1].idx];
 
     this.targetCorners = newTargetCorners;
     this.targetCenter = newCenter;
@@ -234,45 +242,45 @@ export class SmearPhysicsEngine {
     return false;
   }
 
+  /**
+   * 計算拖尾端相對於目標矩形的平均落後位移向量
+   * 採用背對移動方向的兩個拖尾角各自相對於對應目標角的位移平均，
+   * 在保持等寬平移的同時，避免跨不同字元寬度移動時尾端反向溢出起點。
+   */
+  private getTailLag(): Point2D {
+    if (!this.currentCorners || !this.targetCorners) {
+      return { x: 0, y: 0 };
+    }
+    const [idxA, idxB] = this.trailingIndices;
+    const lagAx = this.currentCorners[idxA].x - this.targetCorners[idxA].x;
+    const lagAy = this.currentCorners[idxA].y - this.targetCorners[idxA].y;
+    const lagBx = this.currentCorners[idxB].x - this.targetCorners[idxB].x;
+    const lagBy = this.currentCorners[idxB].y - this.targetCorners[idxB].y;
+    return {
+      x: (lagAx + lagBx) * 0.5,
+      y: (lagAy + lagBy) * 0.5
+    };
+  }
+
   public getPolygon(): Point2D[] {
     if (!this.currentCorners || !this.targetCorners) return [];
 
-    // 找出距離目標中心最遠的兩個拖尾角，將尾端收窄成彗星錐形
-    // 避免長按 j/k 遇到大距離左右跨度時，四角在空間中張開成畸形四邊形
-    const ranked = this.currentCorners
-      .map(c => ({
-        pt: c,
-        dist: Math.hypot(c.x - this.targetCenter.x, c.y - this.targetCenter.y)
-      }))
-      .sort((a, b) => b.dist - a.dist);
+    // 以兩個拖尾角的平均落後位移整體平移目標矩形，建構等尺寸的平行尾端矩形再取凸包：
+    // 1. 保持平行四邊形／等寬掃掠外型，尾端維持 100% 寬度而不收窄成錐形
+    // 2. 避免長按 j/k 遇到大距離左右跨度時，四角在空間中張開成畸形四邊形
+    const tailLag = this.getTailLag();
+    const tailDist = Math.hypot(tailLag.x, tailLag.y);
 
-    const farA = ranked[0].pt;
-    const farB = ranked[1].pt;
-    const tailCenter: Point2D = {
-      x: (farA.x + farB.x) / 2,
-      y: (farA.y + farB.y) / 2
-    };
-    const tailDist = Math.hypot(
-      tailCenter.x - this.targetCenter.x,
-      tailCenter.y - this.targetCenter.y
-    );
-
-    if (tailDist < 3) {
-      return computeConvexHull(this.currentCorners);
+    if (tailDist < 0.5) {
+      return [...this.targetCorners];
     }
 
-    // 距離越長，尾端適度收窄（保留約 40% 寬度，兼顧方正厚實感與避免畸形四邊形）
-    const taper = Math.max(0.40, 1 - Math.min(0.60, tailDist / 100));
-    const tailA: Point2D = {
-      x: tailCenter.x + (farA.x - tailCenter.x) * taper,
-      y: tailCenter.y + (farA.y - tailCenter.y) * taper
-    };
-    const tailB: Point2D = {
-      x: tailCenter.x + (farB.x - tailCenter.x) * taper,
-      y: tailCenter.y + (farB.y - tailCenter.y) * taper
-    };
+    const tailCorners: Point2D[] = this.targetCorners.map(corner => ({
+      x: corner.x + tailLag.x,
+      y: corner.y + tailLag.y
+    }));
 
-    return computeConvexHull([...this.targetCorners, tailA, tailB]);
+    return computeConvexHull([...this.targetCorners, ...tailCorners]);
   }
 
   public getTargetCenter(): Point2D {
@@ -280,29 +288,27 @@ export class SmearPhysicsEngine {
   }
 
   /**
-   * 取得彗星漸層淡出軸線：從距離目標最遠的拖尾角指向目標中心
+   * 取得平行四邊形漸層淡出軸線：由平行尾端中心指向目標中心，與拖尾中軸線對齊
    */
   public getGradientAxis(): { tail: Point2D; head: Point2D } {
     const head = this.targetCenter;
-    if (!this.currentCorners) {
+    if (!this.currentCorners || !this.targetCorners) {
       return { tail: head, head };
     }
-    let tail = this.currentCorners[0];
-    let maxDist = -1;
-    for (let i = 0; i < 4; i++) {
-      const c = this.currentCorners[i];
-      const d = Math.hypot(c.x - head.x, c.y - head.y);
-      if (d > maxDist) {
-        maxDist = d;
-        tail = c;
-      }
-    }
-    return { tail, head };
+    const tailLag = this.getTailLag();
+    return {
+      tail: {
+        x: head.x + tailLag.x,
+        y: head.y + tailLag.y
+      },
+      head
+    };
   }
 
   public reset(): void {
     this.currentCorners = null;
     this.targetCorners = null;
+    this.trailingIndices = [0, 3];
     this.isInitialized = false;
   }
 }

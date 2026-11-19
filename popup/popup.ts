@@ -1,5 +1,5 @@
 import { LOCALES, Locale, Translations, detectDefaultLocale } from '../src/i18n/locales';
-import { formatKeyCombo, DEFAULT_KEYBINDINGS, KeybindingsConfig, TrailStyle } from '../src/core/cursorStore';
+import { formatKeyCombo, DEFAULT_ADVANCED_CONFIG, DEFAULT_KEYBINDINGS, KeybindingsConfig, TrailStyle } from '../src/core/cursorStore';
 import { checkExtensionUpdate, getCurrentVersion, ReleaseInfo } from '../src/utils/updater';
 import { SmartThemePalette } from '../src/utils/themeDetector';
 import { SmearPhysicsEngine } from '../src/utils/smearPhysics';
@@ -941,6 +941,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const previewCtx = previewCanvas?.getContext('2d') || null;
   const previewSmear = new SmearPhysicsEngine();
   const previewCanvasEffects = new CanvasTrailEffects();
+  const previewSmearConfig = {
+    stiffness: DEFAULT_ADVANCED_CONFIG.smearStiffness,
+    trailingStiffness: DEFAULT_ADVANCED_CONFIG.smearTrailingStiffness,
+    trailingExponent: DEFAULT_ADVANCED_CONFIG.smearTrailingExponent,
+    damping: DEFAULT_ADVANCED_CONFIG.smearDamping,
+    distanceStopAnimating: DEFAULT_ADVANCED_CONFIG.smearDistanceStopAnimating,
+    maxLength: DEFAULT_ADVANCED_CONFIG.smearMaxLength
+  };
+  const previewTrailDurationMs = DEFAULT_ADVANCED_CONFIG.trailDurationMs;
+  const previewTrailCount = DEFAULT_ADVANCED_CONFIG.trailCount;
   let previewMode: TrailStyle = 'smear';
   let previewAtRight = false;
   let previewLastJumpTs = 0;
@@ -978,7 +988,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const targetX = previewAtRight ? leftX : rightX;
     previewAtRight = !previewAtRight;
     previewLastJumpTs = performance.now();
-    previewGhostTimer = 260;
+    previewGhostTimer = previewTrailDurationMs;
 
     const originRect = { x: originX, y, width: boxW, height: boxH };
     const targetRect = { x: targetX, y, width: boxW, height: boxH };
@@ -986,14 +996,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const color = parseHexRgb(accentHex);
 
     if (mode === 'smear') {
-      previewSmear.setTarget(targetRect, {
-        stiffness: 0.85,
-        trailingStiffness: 0.30,
-        trailingExponent: 2.0,
-        damping: 0.82,
-        distanceStopAnimating: 0.4,
-        maxLength: 0
-      });
+      previewSmear.setTarget(targetRect, previewSmearConfig);
     } else if (mode === 'laser' || mode === 'sparkle' || mode === 'ribbon') {
       previewCanvasEffects.spawn(mode, originRect, targetRect, color, 0.45);
     }
@@ -1030,14 +1033,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const color = parseHexRgb(accentHex);
 
         if (previewMode === 'smear') {
-          const active = previewSmear.step(dt, {
-            stiffness: 0.85,
-            trailingStiffness: 0.30,
-            trailingExponent: 2.0,
-            damping: 0.82,
-            distanceStopAnimating: 0.4,
-            maxLength: 0
-          });
+          const active = previewSmear.step(dt, previewSmearConfig);
           previewCtx.save();
           previewCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
           previewCtx.clearRect(0, 0, w, h);
@@ -1084,9 +1080,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
           if (previewMode === 'trail' && previewGhostTimer > 0) {
             previewGhostTimer = Math.max(0, previewGhostTimer - dt);
-            const fade = previewGhostTimer / 260;
-            for (let g = 1; g <= 4; g++) {
-              const t = g / 5;
+            const fade = previewGhostTimer / previewTrailDurationMs;
+            for (let g = 1; g <= previewTrailCount; g++) {
+              const t = g / (previewTrailCount + 1);
               const gx = curOriginX + (curTargetX - curOriginX) * t;
               const alpha = fade * (0.15 + 0.5 * t);
               previewCtx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${(alpha * 0.25).toFixed(3)})`;

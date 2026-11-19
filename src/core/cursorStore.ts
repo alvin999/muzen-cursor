@@ -93,8 +93,8 @@ export interface AdvancedConfig {
 
   // 6. 流光殘影與動態拖尾物理
   trailMode: TrailMode;       // 殘影過渡軌跡模式 ('line': 逐行流光 / 'direct': 兩點躍遷)
-  trailCount: number;         // 殘影數量階數 (2 ~ 8，預設 4)
-  trailDurationMs: number;    // 殘影淡出時長 (ms，預設 240)
+  trailCount: number;         // 殘影數量階數 (2 ~ 8，預設 2)
+  trailDurationMs: number;    // 殘影淡出時長 (ms，預設 180)
   trailDecayExponent: number; // 距離衰減曲率 (預設 1.35)
   trailMaxOpacity: number;    // 最近端殘影起始透明度 (0.1 ~ 1.0，預設 0.75)
   trailPreserveTrapezoid: boolean; // 是否全程維持梯形透視形變 (預設 true)
@@ -108,11 +108,11 @@ export interface AdvancedConfig {
 
   // 8. Smear Cursor 連續形變物理引擎 (Neovide / smear-cursor.nvim)
   smearStiffness: number;              // 前導角剛性 (0.1 ~ 1.0，預設 0.85)
-  smearTrailingStiffness: number;      // 拖尾角剛性 (0.05 ~ 1.0，預設 0.18)
+  smearTrailingStiffness: number;      // 拖尾角剛性 (0.05 ~ 1.0，預設 0.4)
   smearTrailingExponent: number;       // 拖尾角度指數曲率 (1.0 ~ 5.0，預設 3.0)
   smearDamping: number;                // 阻尼係數 (0.1 ~ 0.99，預設 0.68)
   smearDistanceStopAnimating: number;  // 收斂停止閾值 (px，預設 0.5)
-  smearMaxLength: number;              // 最大拖尾長度限制 (px，0 表示無限制，預設 0)
+  smearMaxLength: number;              // 最大拖尾長度限制 (px，0 表示無限制，預設 200)
 
   // 9. 雷射 / 星塵 / 速度線殘影參數 (Canvas Trail Effects)
   laserDurationMs: number;             // 雷射光束殘留時長 (ms，預設 220)
@@ -151,8 +151,8 @@ export const DEFAULT_ADVANCED_CONFIG: AdvancedConfig = {
   viewportPaddingBottom: 160,
 
   trailMode: 'line',
-  trailCount: 4,
-  trailDurationMs: 260,
+  trailCount: 2,
+  trailDurationMs: 180,
   trailDecayExponent: 1.35,
   trailMaxOpacity: 0.75,
   trailPreserveTrapezoid: true,
@@ -164,11 +164,11 @@ export const DEFAULT_ADVANCED_CONFIG: AdvancedConfig = {
   chargeTrailBoost: 3,
 
   smearStiffness: 0.85,
-  smearTrailingStiffness: 0.18,
+  smearTrailingStiffness: 0.4,
   smearTrailingExponent: 3.0,
   smearDamping: 0.68,
   smearDistanceStopAnimating: 0.5,
-  smearMaxLength: 0,
+  smearMaxLength: 200,
 
   laserDurationMs: 220,
   laserWidth: 2.2,

@@ -765,7 +765,7 @@ export class VimCursorOverlay {
     const trailMode = (adv.trailMode || 'line') as 'line' | 'direct';
     const trailDurationMs = typeof adv.trailDurationMs === 'number'
       ? Math.round(Math.max(100, adv.trailDurationMs) * (1 + (isChargeEnabled ? this.currentCharge * 0.45 : 0)))
-      : 260;
+      : DEFAULT_ADVANCED_CONFIG.trailDurationMs;
     const trailMaxOpacity = typeof adv.trailMaxOpacity === 'number'
       ? Math.min(1, Math.max(0.1, adv.trailMaxOpacity) * (1 + (isChargeEnabled ? this.currentCharge * 0.25 : 0)))
       : 0.75;
@@ -788,20 +788,20 @@ export class VimCursorOverlay {
         this.element.style.transform = `translate3d(${targetX}px, ${targetY}px, 0)`;
 
         const smearConfig: SmearConfig = {
-          stiffness: typeof adv.smearStiffness === 'number' ? adv.smearStiffness : 0.85,
-          trailingStiffness: typeof adv.smearTrailingStiffness === 'number' ? adv.smearTrailingStiffness : 0.18,
-          trailingExponent: typeof adv.smearTrailingExponent === 'number' ? adv.smearTrailingExponent : 3.0,
-          damping: typeof adv.smearDamping === 'number' ? adv.smearDamping : 0.68,
-          distanceStopAnimating: typeof adv.smearDistanceStopAnimating === 'number' ? adv.smearDistanceStopAnimating : 0.5,
-          maxLength: typeof adv.smearMaxLength === 'number' ? adv.smearMaxLength : 0
+          stiffness: typeof adv.smearStiffness === 'number' ? adv.smearStiffness : DEFAULT_ADVANCED_CONFIG.smearStiffness,
+          trailingStiffness: typeof adv.smearTrailingStiffness === 'number' ? adv.smearTrailingStiffness : DEFAULT_ADVANCED_CONFIG.smearTrailingStiffness,
+          trailingExponent: typeof adv.smearTrailingExponent === 'number' ? adv.smearTrailingExponent : DEFAULT_ADVANCED_CONFIG.smearTrailingExponent,
+          damping: typeof adv.smearDamping === 'number' ? adv.smearDamping : DEFAULT_ADVANCED_CONFIG.smearDamping,
+          distanceStopAnimating: typeof adv.smearDistanceStopAnimating === 'number' ? adv.smearDistanceStopAnimating : DEFAULT_ADVANCED_CONFIG.smearDistanceStopAnimating,
+          maxLength: typeof adv.smearMaxLength === 'number' ? adv.smearMaxLength : DEFAULT_ADVANCED_CONFIG.smearMaxLength
         };
         const fillOpacity = shape === 'underline'
           ? 1
           : shape === 'hollow'
             ? (typeof adv.hollowBgOpacity === 'number' ? adv.hollowBgOpacity : 0.05)
             : (state.mode === 'VISUAL'
-                ? (typeof adv.visualBgOpacity === 'number' ? adv.visualBgOpacity : 0.35)
-                : (typeof adv.blockBgOpacity === 'number' ? adv.blockBgOpacity : 0.22));
+              ? (typeof adv.visualBgOpacity === 'number' ? adv.visualBgOpacity : 0.35)
+              : (typeof adv.blockBgOpacity === 'number' ? adv.blockBgOpacity : 0.22));
 
         this.smearRenderStyle = {
           shape,
@@ -1159,10 +1159,10 @@ export class VimCursorOverlay {
     } = params;
 
     const extraGhosts = Math.round(this.currentCharge * (adv.chargeTrailBoost ?? 3));
-    const trailCount = Math.max(2, Math.min(this.MAX_GHOSTS, Math.round((adv.trailCount ?? 4) + extraGhosts)));
+    const trailCount = Math.max(2, Math.min(this.MAX_GHOSTS, Math.round((adv.trailCount ?? DEFAULT_ADVANCED_CONFIG.trailCount) + extraGhosts)));
     const trailDurationMs = typeof adv.trailDurationMs === 'number'
       ? Math.round(Math.max(100, adv.trailDurationMs) * (1 + this.currentCharge * 0.45))
-      : 260;
+      : DEFAULT_ADVANCED_CONFIG.trailDurationMs;
     const trailDecayExponent = typeof adv.trailDecayExponent === 'number' ? Math.max(0.2, adv.trailDecayExponent) : 1.35;
     const trailMaxOpacity = typeof adv.trailMaxOpacity === 'number'
       ? Math.min(1, Math.max(0.1, adv.trailMaxOpacity) * (1 + this.currentCharge * 0.25))
