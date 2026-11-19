@@ -1139,12 +1139,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const baseY = Math.round((mh - boxH) / 2);
 
         const focus = motionPreviewFocus;
-        const isSmooth = focus ? focus === 'effect-smooth' || focus === 'effect-bounce' : !!effectSmooth?.checked;
-        const isBounce = focus ? focus === 'effect-bounce' : !!effectBounce?.checked;
+        const isSmooth = !!effectSmooth?.checked;
+        const isBounce = !!effectBounce?.checked;
+        const isSmoothScroll = !!effectSmoothScroll?.checked;
+        const isCharge = !!effectCharge?.checked;
+        const isRearview = !!effectRearviewMirror?.checked;
 
         if (focus === 'effect-smooth-scroll') {
-          // 示範柔和捲動線條
-          const scrollOffset = Math.sin((now / 900) * Math.PI) * 8;
+          // 示範捲動線條（開啟時柔和捲動，關閉時階梯式瞬間跳段）
+          const scrollOffset = isSmoothScroll
+            ? Math.sin((now / 900) * Math.PI) * 8
+            : (Math.sin((now / 900) * Math.PI) >= 0 ? 6 : -6);
           motionCtx.strokeStyle = `rgba(${color.r}, ${color.g}, ${color.b}, 0.35)`;
           motionCtx.lineWidth = 2;
           for (let line = -1; line <= 2; line++) {
@@ -1162,26 +1167,87 @@ document.addEventListener('DOMContentLoaded', () => {
           motionCtx.fillRect(Math.round(mw / 2 - boxW / 2), baseY, boxW, boxH);
           motionCtx.strokeRect(Math.round(mw / 2 - boxW / 2), baseY, boxW, boxH);
         } else if (focus === 'effect-rearview-mirror') {
-          // 示範大跳躍 + 右下角後照鏡 HUD 閃現
-          const cx = forward ? rightX : leftX;
+          // 示範垂直大距離翻頁捲動（開啟時顯示頂部上方大框後照鏡 HUD，關閉時不顯示 HUD）
+          const rvCycleMs = 1500;
+          const rvPhase = (now % rvCycleMs) / rvCycleMs;
+          const pageIndex = Math.floor(now / rvCycleMs);
+          const scrollT = Math.min(1, rvPhase / 0.28);
+          const scrollEase = 1 - Math.pow(1 - scrollT, 3);
+          const lineSpacing = 9;
+          const scrollOffset = ((pageIndex + scrollEase) * (lineSpacing * 3)) % lineSpacing;
+
+          motionCtx.strokeStyle = `rgba(${color.r}, ${color.g}, ${color.b}, 0.32)`;
+          motionCtx.lineWidth = 2;
+          for (let ly = lineSpacing - scrollOffset; ly <= mh - 2; ly += lineSpacing) {
+            if (ly >= 2) {
+              motionCtx.beginPath();
+              motionCtx.moveTo(16, Math.round(ly));
+              motionCtx.lineTo(mw - 16, Math.round(ly));
+              motionCtx.stroke();
+            }
+          }
+
+          // 翻頁後的目前游標位置（位於中下方左側，避免與頂部 HUD 重疊）
+          const rvBoxH = 12;
+          const rvBoxY = mh - rvBoxH - 3;
           motionCtx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, 0.28)`;
           motionCtx.strokeStyle = color.hex;
           motionCtx.lineWidth = 1.5;
+          motionCtx.fillRect(24, rvBoxY, boxW, rvBoxH);
+          motionCtx.strokeRect(24, rvBoxY, boxW, rvBoxH);
+
+          if (isRearview) {
+            // 固定在頂部上方的大框 HUD（顯示出發前位置，隨時間淡出）
+            const hudAlpha = rvPhase < 0.12
+              ? 0.35 + (rvPhase / 0.12) * 0.65
+              : Math.max(0.12, 1 - (rvPhase - 0.12) / 0.85);
+            const hudW = Math.min(116, Math.round(mw * 0.42));
+            const hudH = 11;
+            const hudX = Math.round((mw - hudW) / 2);
+            const hudY = 2;
+
+            motionCtx.fillStyle = `rgba(18, 18, 22, ${(hudAlpha * 0.82).toFixed(3)})`;
+            motionCtx.fillRect(hudX, hudY, hudW, hudH);
+            motionCtx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${(hudAlpha * 0.16).toFixed(3)})`;
+            motionCtx.strokeStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${hudAlpha.toFixed(3)})`;
+            motionCtx.lineWidth = 1.2;
+            motionCtx.fillRect(hudX, hudY, hudW, hudH);
+            motionCtx.strokeRect(hudX, hudY, hudW, hudH);
+
+            // HUD 框內「出發前位置」縮圖標記
+            motionCtx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${(hudAlpha * 0.45).toFixed(3)})`;
+            motionCtx.fillRect(hudX + 6, hudY + 4, hudW - 12, 3);
+            motionCtx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${hudAlpha.toFixed(3)})`;
+            motionCtx.fillRect(hudX + 12, hudY + 3, 5, 5);
+          }
+        } else if (focus === 'effect-charge') {
+          // 動能蓄力專屬示範（開啟時呈現原色增亮 → 白熱超載，關閉時維持原色無光暈）
+          const chargeCycleMs = 2600;
+          const chargePhase = (now % chargeCycleMs) / chargeCycleMs;
+          const moveProgress = Math.min(1, chargePhase / 0.75);
+          const cx = leftX + (rightX - leftX) * moveProgress;
+          const charge = isCharge ? moveProgress : 0;
+
+          const threshold = 0.55;
+          const whiteBlend = charge >= threshold
+            ? Math.pow((charge - threshold) / (1 - threshold), 1.2) * 0.85
+            : 0;
+          const boost = 1 + charge * 0.25;
+          const cr = Math.min(255, Math.round(color.r * boost + (255 - color.r) * whiteBlend));
+          const cg = Math.min(255, Math.round(color.g * boost + (255 - color.g) * whiteBlend));
+          const cb = Math.min(255, Math.round(color.b * boost + (255 - color.b) * whiteBlend));
+
+          const chargeGlow = Math.round(charge * 14);
+          if (chargeGlow > 0) {
+            motionCtx.shadowColor = `rgb(${cr}, ${cg}, ${cb})`;
+            motionCtx.shadowBlur = chargeGlow;
+          }
+          const fillAlpha = 0.28 + charge * 0.38;
+          motionCtx.fillStyle = `rgba(${cr}, ${cg}, ${cb}, ${fillAlpha.toFixed(3)})`;
+          motionCtx.strokeStyle = `rgb(${cr}, ${cg}, ${cb})`;
+          motionCtx.lineWidth = 1.5;
           motionCtx.fillRect(cx, baseY, boxW, boxH);
           motionCtx.strokeRect(cx, baseY, boxW, boxH);
-
-          const hudAlpha = Math.max(0.15, 1 - tRaw * 1.1);
-          const hudW = 36;
-          const hudH = 16;
-          const hudX = Math.round(mw / 2 - hudW / 2);
-          const hudY = Math.round((mh - hudH) / 2);
-          motionCtx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${(hudAlpha * 0.2).toFixed(3)})`;
-          motionCtx.strokeStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${hudAlpha.toFixed(3)})`;
-          motionCtx.lineWidth = 1;
-          motionCtx.fillRect(hudX, hudY, hudW, hudH);
-          motionCtx.strokeRect(hudX, hudY, hudW, hudH);
-          motionCtx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${hudAlpha.toFixed(3)})`;
-          motionCtx.fillRect(hudX + 5, hudY + 6, hudW - 10, 4);
         } else {
           // smooth / bounce / charge 綜合移動示範
           const moveT = Math.min(1, tRaw * 3.4);
@@ -1200,9 +1266,8 @@ document.addEventListener('DOMContentLoaded', () => {
           const startX = forward ? leftX : rightX;
           const endX = forward ? rightX : leftX;
           const cx = startX + (endX - startX) * ease;
-          const skew = isBounce && moveT < 0.8 ? (forward ? -0.22 : 0.22) * (1 - moveT) : 0;
+          const skew = isSmooth && isBounce && moveT < 0.8 ? (forward ? -0.22 : 0.22) * (1 - moveT) : 0;
 
-          const isCharge = focus === 'effect-charge' || (!focus && !!effectCharge?.checked);
           const chargeGlow = isCharge ? 6 + Math.sin(now / 140) * 4 : 0;
           if (chargeGlow > 0) {
             motionCtx.shadowColor = color.hex;
