@@ -17,18 +17,18 @@
     <style>
       /* 游標位移與躍進動畫 (8s 循環) */
       @keyframes cursorFlight {
-        0%, 18%  { transform: translate(0px, 0px); opacity: 1; }
-        20%, 38% { transform: translate(24px, 0px); opacity: 1; } /* 游標微調，準備起跳 */
-        40%, 54% { transform: translate(182px, 34px); opacity: 1; } /* f -> d 瞬間跨區飛躍至右下卡片 */
-        56%, 76% { transform: translate(240px, 34px); opacity: 1; } /* 到達目標後按 w 順暢推進 */
-        80%, 94% { transform: translate(240px, 34px); opacity: 0.2; }
-        96%, 100%{ transform: translate(0px, 0px); opacity: 1; }
+        0%, 18%  { transform: translate(16px, 41px); opacity: 1; }   /* 起點: 1. Overview 詞首 */
+        20%, 38% { transform: translate(38px, 41px); opacity: 1; }   /* 微調至 Overview */
+        40%, 54% { transform: translate(198px, 71px); opacity: 1; }  /* f -> d 跨區直達右下卡片目標 🎯 */
+        56%, 76% { transform: translate(242px, 71px); opacity: 1; }  /* 目標區塊內按 w 推進至 Target */
+        80%, 94% { transform: translate(198px, 71px); opacity: 0.2; }
+        96%, 100%{ transform: translate(16px, 41px); opacity: 1; }
       }
 
       /* 跨區飛躍光軌引導線 */
       @keyframes leapTrailAnim {
         0%, 36%  { stroke-dashoffset: 260; opacity: 0; }
-        38%, 46% { stroke-dashoffset: 0; opacity: 0.9; }
+        38%, 46% { stroke-dashoffset: 0; opacity: 0.95; }
         50%, 60% { stroke-dashoffset: -260; opacity: 0; }
         61%, 100%{ opacity: 0; }
       }
@@ -274,11 +274,11 @@
         </g>
 
         <!-- 跨區跳躍虛線光軌 (從左側 1. Overview 飛向右側卡片目標) -->
-        <path class="anim-leap-trail" d="M 98 56 C 140 40, 160 84, 192 90" fill="none" stroke="#fabd2f" stroke-width="2" stroke-linecap="round" />
+        <path class="anim-leap-trail" d="M 100 50 C 145 38, 162 76, 196 78" fill="none" stroke="#fabd2f" stroke-width="2" stroke-linecap="round" />
 
         <!-- 動態幾何方塊游標 -->
-        <g class="anim-cursor" transform="translate(14, 44)">
-          <rect x="0" y="0" width="10" height="15" rx="2" fill="#fe8019" fill-opacity="0.38" stroke="#fe8019" stroke-width="1.8" filter="url(#anchor-glow-orange)" />
+        <g class="anim-cursor">
+          <rect x="0" y="0" width="11" height="17" rx="2.5" fill="#fe8019" fill-opacity="0.38" stroke="#fe8019" stroke-width="1.8" filter="url(#anchor-glow-orange)" />
         </g>
       </g>
 
