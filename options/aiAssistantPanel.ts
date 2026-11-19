@@ -11,14 +11,37 @@ import {
   updateActiveProviderConfig
 } from '../src/ai/byokStorage';
 import { EncryptionMode } from '../src/ai/cryptoVault';
-import { sendLlmChat, testProviderConnection } from '../src/ai/llmClient';
 import {
+  RemoteModelOption,
+  fetchAvailableModels,
+  sendLlmChat,
+  testProviderConnection
+} from '../src/ai/llmClient';
+import {
+  ValidatedPresetAction,
   ValidatedTuningResponse,
   applyValidatedPatch,
   validateTuningResponse
 } from '../src/ai/patchValidator';
 import { ChatTurn, buildTuningPrompt } from '../src/ai/promptBuilder';
 import { ConfigSnapshot } from '../src/core/configSchema';
+import {
+  bindBackupFolder,
+  getBoundFolderStatus,
+  readBackupFromBoundFolder,
+  requestBoundFolderPermission,
+  unbindBackupFolder,
+  writeBackupToBoundFolder
+} from '../src/core/folderBackup';
+import {
+  CursorPreset,
+  deletePreset,
+  loadPresets,
+  presetToSnapshot,
+  replaceAllPresets,
+  savePreset,
+  toPresetSummaries
+} from '../src/core/presetStorage';
 import { LOCALES, Locale, Translations } from '../src/i18n/locales';
 
 export interface AiAssistantPanelHooks {
@@ -31,9 +54,11 @@ export interface AiAssistantPanelHooks {
 
 export interface AiAssistantPanelHandle {
   refreshLocale: () => void;
+  notifySettingsChanged: () => void;
 }
 
 const MAX_UNDO_STACK = 20;
+const AUTO_SYNC_DEBOUNCE_MS = 800;
 
 interface RenderedAssistantEntry {
   kind: 'welcome' | 'assistant' | 'error';
@@ -42,11 +67,14 @@ interface RenderedAssistantEntry {
   diffEmptyEl?: HTMLElement;
   applyBtn?: HTMLButtonElement;
   applied?: boolean;
-  errorPrefixKey?: 'aiErrRequestFailed';
+  hasDiffs?: boolean;
+  presetAction?: ValidatedPresetAction;
+  actionBtn?: HTMLButtonElement;
+  actionDone?: boolean;
 }
 
 /**
- * Initialize the BYOK key vault UI and conversational AI tuning panel in Options.
+ * Initialize the BYOK key vault UI, presets/folder auto-backup, and conversational AI tuning panel.
  */
 export function initAiAssistantPanel(hooks: AiAssistantPanelHooks): AiAssistantPanelHandle {
   const detailsEl = document.getElementById('ai-byok-details') as HTMLDetailsElement | null;
@@ -54,6 +82,8 @@ export function initAiAssistantPanel(hooks: AiAssistantPanelHooks): AiAssistantP
   const providerSel = document.getElementById('ai-provider-select') as HTMLSelectElement | null;
   const modelInput = document.getElementById('ai-model-input') as HTMLInputElement | null;
   const modelSuggestions = document.getElementById('ai-model-suggestions') as HTMLDataListElement | null;
+  const modelSelect = document.getElementById('ai-model-select') as HTMLSelectElement | null;
+  const btnFetchModels = document.getElementById('ai-btn-fetch-models') as HTMLButtonElement | null;
   const baseUrlGroup = document.getElementById('ai-base-url-group');
   const baseUrlInput = document.getElementById('ai-base-url-input') as HTMLInputElement | null;
   const apiKeyInput = document.getElementById('ai-api-key-input') as HTMLInputElement | null;
@@ -71,6 +101,18 @@ export function initAiAssistantPanel(hooks: AiAssistantPanelHooks): AiAssistantP
   const unlockPassInput = document.getElementById('ai-unlock-passphrase-input') as HTMLInputElement | null;
   const btnUnlockVault = document.getElementById('ai-btn-unlock-vault') as HTMLButtonElement | null;
 
+  const presetCountBadge = document.getElementById('ai-preset-count-badge');
+  const folderBadge = document.getElementById('ai-folder-badge');
+  const presetNameInput = document.getElementById('ai-preset-name-input') as HTMLInputElement | null;
+  const btnSavePreset = document.getElementById('ai-btn-save-preset') as HTMLButtonElement | null;
+  const presetListEl = document.getElementById('ai-preset-list');
+  const btnBindFolder = document.getElementById('ai-btn-bind-folder') as HTMLButtonElement | null;
+  const btnReauthFolder = document.getElementById('ai-btn-reauth-folder') as HTMLButtonElement | null;
+  const btnSyncFolder = document.getElementById('ai-btn-sync-folder') as HTMLButtonElement | null;
+  const btnRestoreFolder = document.getElementById('ai-btn-restore-folder') as HTMLButtonElement | null;
+  const btnUnbindFolder = document.getElementById('ai-btn-unbind-folder') as HTMLButtonElement | null;
+  const folderStatusEl = document.getElementById('ai-folder-status');
+
   const btnUndo = document.getElementById('ai-btn-undo') as HTMLButtonElement | null;
   const btnClearChat = document.getElementById('ai-btn-clear-chat') as HTMLButtonElement | null;
   const quickChipsEl = document.getElementById('ai-quick-chips');
@@ -79,25 +121,40 @@ export function initAiAssistantPanel(hooks: AiAssistantPanelHooks): AiAssistantP
   const btnSend = document.getElementById('ai-btn-send') as HTMLButtonElement | null;
 
   let byokState: ByokStoredState | null = null;
+  let presets: CursorPreset[] = [];
+  const loadedModelsByProvider = new Map<LlmProviderId, RemoteModelOption[]>();
   let chatHistory: ChatTurn[] = [];
   let undoStack: ConfigSnapshot[] = [];
   let renderedEntries: RenderedAssistantEntry[] = [];
   let activeAbortController: AbortController | null = null;
+  let autoSyncTimer: number | null = null;
   let isSending = false;
   let hasInitializedOpenState = false;
 
   const dict = (): Translations => LOCALES[hooks.getLocale()] || LOCALES['zh-TW'];
 
+  function showStatusBanner(
+    el: HTMLElement | null,
+    message: string,
+    kind: 'ok' | 'error' | 'info' = 'info'
+  ): void {
+    if (!el) return;
+    el.textContent = message;
+    el.classList.remove('hidden', 'is-ok', 'is-error');
+    if (kind === 'ok') el.classList.add('is-ok');
+    if (kind === 'error') el.classList.add('is-error');
+  }
+
   function showByokStatus(message: string, kind: 'ok' | 'error' | 'info' = 'info'): void {
-    if (!byokStatusEl) return;
-    byokStatusEl.textContent = message;
-    byokStatusEl.classList.remove('hidden', 'is-ok', 'is-error');
-    if (kind === 'ok') byokStatusEl.classList.add('is-ok');
-    if (kind === 'error') byokStatusEl.classList.add('is-error');
+    showStatusBanner(byokStatusEl, message, kind);
   }
 
   function hideByokStatus(): void {
     byokStatusEl?.classList.add('hidden');
+  }
+
+  function showFolderStatus(message: string, kind: 'ok' | 'error' | 'info' = 'info'): void {
+    showStatusBanner(folderStatusEl, message, kind);
   }
 
   function formatRuntimeError(err: unknown): string {
@@ -105,6 +162,10 @@ export function initAiAssistantPanel(hooks: AiAssistantPanelHooks): AiAssistantP
     const rawMsg = err instanceof Error ? err.message : String(err);
     if (rawMsg === 'VAULT_LOCKED') return d.aiErrVaultLocked;
     if (rawMsg.startsWith('API_KEY_MISSING:')) return d.aiErrApiKeyMissing;
+    if (rawMsg.startsWith('MODEL_MISSING:')) return d.aiErrModelMissing;
+    if (rawMsg === 'PRESET_LIMIT_REACHED' || rawMsg === 'PRESET_SYNC_QUOTA_EXCEEDED') {
+      return d.aiPresetQuotaErr;
+    }
     return rawMsg;
   }
 
@@ -116,14 +177,43 @@ export function initAiAssistantPanel(hooks: AiAssistantPanelHooks): AiAssistantP
     return (encryptionSel?.value as EncryptionMode) || byokState?.encryptionMode || 'transparent';
   }
 
-  function populateModelSuggestions(provider: LlmProviderId): void {
-    if (!modelSuggestions) return;
-    modelSuggestions.innerHTML = '';
-    for (const modelName of PROVIDER_PRESETS[provider].suggestedModels) {
-      const opt = document.createElement('option');
-      opt.value = modelName;
-      modelSuggestions.appendChild(opt);
+  function renderLoadedModels(models: RemoteModelOption[]): void {
+    const d = dict();
+
+    if (modelSuggestions) {
+      modelSuggestions.innerHTML = '';
+      for (const m of models) {
+        const opt = document.createElement('option');
+        opt.value = m.id;
+        if (m.label) opt.textContent = m.label;
+        modelSuggestions.appendChild(opt);
+      }
     }
+
+    if (!modelSelect) return;
+    modelSelect.innerHTML = '';
+
+    if (models.length === 0) {
+      modelSelect.classList.add('hidden');
+      return;
+    }
+
+    const placeholderOpt = document.createElement('option');
+    placeholderOpt.value = '';
+    placeholderOpt.textContent = d.aiModelsSelectPlaceholder.replace('{count}', String(models.length));
+    modelSelect.appendChild(placeholderOpt);
+
+    for (const m of models) {
+      const opt = document.createElement('option');
+      opt.value = m.id;
+      opt.textContent = m.label && m.label !== m.id ? `${m.label} (${m.id})` : m.id;
+      modelSelect.appendChild(opt);
+    }
+
+    const currentModel = modelInput?.value.trim() || '';
+    const hasMatch = currentModel.length > 0 && models.some((m) => m.id === currentModel);
+    modelSelect.value = hasMatch ? currentModel : '';
+    modelSelect.classList.remove('hidden');
   }
 
   function syncEncryptionVisibility(): void {
@@ -135,11 +225,11 @@ export function initAiAssistantPanel(hooks: AiAssistantPanelHooks): AiAssistantP
     const preset = PROVIDER_PRESETS[provider];
     const savedProfile = byokState?.profiles[provider];
 
-    populateModelSuggestions(provider);
-
     if (modelInput) {
-      modelInput.value = savedProfile?.model || preset.defaultModel;
+      modelInput.value = savedProfile?.model || '';
     }
+
+    renderLoadedModels(loadedModelsByProvider.get(provider) ?? []);
 
     if (baseUrlGroup && baseUrlInput) {
       baseUrlGroup.classList.toggle('hidden', !preset.allowsCustomBaseUrl);
@@ -152,6 +242,51 @@ export function initAiAssistantPanel(hooks: AiAssistantPanelHooks): AiAssistantP
       apiKeyInput.placeholder = preset.requiresApiKey
         ? d.aiApiKeyPlaceholder
         : d.aiApiKeyOptionalPlaceholder;
+    }
+  }
+
+  async function handleFetchModels(opts?: { silent?: boolean }): Promise<void> {
+    const d = dict();
+    const provider = getSelectedProvider();
+    const preset = PROVIDER_PRESETS[provider];
+    const baseUrl = baseUrlInput?.value.trim() || preset.defaultBaseUrl;
+    const draftApiKey = apiKeyInput?.value.trim();
+
+    if (opts?.silent) {
+      const hasStoredKey = Boolean(byokState?.encryptedKeys[provider]);
+      const unlocked = await isVaultUnlocked(provider);
+      const canFetch = !preset.requiresApiKey || Boolean(draftApiKey) || (hasStoredKey && unlocked);
+      if (!canFetch) return;
+    } else {
+      showByokStatus(d.aiFetchingModels, 'info');
+      if (btnFetchModels) btnFetchModels.disabled = true;
+    }
+
+    try {
+      const models = await fetchAvailableModels({
+        provider,
+        baseUrl,
+        apiKey: draftApiKey ? draftApiKey : undefined
+      });
+      loadedModelsByProvider.set(provider, models);
+      if (getSelectedProvider() === provider) {
+        renderLoadedModels(models);
+      }
+      if (!opts?.silent) {
+        if (models.length > 0) {
+          showByokStatus(d.aiModelsLoaded.replace('{count}', String(models.length)), 'ok');
+        } else {
+          showByokStatus(d.aiModelsEmpty, 'info');
+        }
+      }
+    } catch (err) {
+      if (!opts?.silent) {
+        showByokStatus(formatRuntimeError(err), 'error');
+      }
+    } finally {
+      if (!opts?.silent && btnFetchModels) {
+        btnFetchModels.disabled = false;
+      }
     }
   }
 
@@ -204,6 +339,15 @@ export function initAiAssistantPanel(hooks: AiAssistantPanelHooks): AiAssistantP
     }
   }
 
+  function pushUndoSnapshot(snapshot?: ConfigSnapshot): void {
+    const snap = snapshot ?? hooks.getCurrentSnapshot();
+    undoStack.push(snap);
+    if (undoStack.length > MAX_UNDO_STACK) {
+      undoStack.shift();
+    }
+    updateUndoButton();
+  }
+
   function updateUndoButton(): void {
     if (!btnUndo) return;
     const d = dict();
@@ -217,6 +361,242 @@ export function initAiAssistantPanel(hooks: AiAssistantPanelHooks): AiAssistantP
     btnSend.textContent = isSending ? d.aiCancelBtn : d.aiSendBtn;
     btnSend.classList.toggle('btn-danger', isSending);
     btnSend.classList.toggle('btn-primary', !isSending);
+  }
+
+  function scheduleFolderAutoSync(): void {
+    if (autoSyncTimer !== null) {
+      window.clearTimeout(autoSyncTimer);
+    }
+    autoSyncTimer = window.setTimeout(async () => {
+      autoSyncTimer = null;
+      try {
+        const res = await writeBackupToBoundFolder(hooks.getCurrentSnapshot(), presets, {
+          requestPermissionIfNeeded: false
+        });
+        if (!res.written && res.reason === 'needs-permission') {
+          await refreshFolderStatus();
+        }
+      } catch {
+        // Silent background sync must not interrupt manual slider tuning
+      }
+    }, AUTO_SYNC_DEBOUNCE_MS);
+  }
+
+  async function refreshFolderStatus(): Promise<void> {
+    const d = dict();
+    const status = await getBoundFolderStatus();
+
+    if (folderBadge) {
+      folderBadge.classList.remove('ai-badge-ok', 'ai-badge-warn', 'ai-badge-locked');
+      if (!status.supported) {
+        folderBadge.textContent = d.aiFolderStatusUnsupported;
+        folderBadge.classList.add('ai-badge-warn');
+      } else if (!status.bound) {
+        folderBadge.textContent = d.aiFolderStatusUnbound;
+        folderBadge.classList.add('ai-badge-warn');
+      } else if (status.permission === 'granted') {
+        folderBadge.textContent = d.aiFolderStatusActive.replace('{name}', status.folderName || '');
+        folderBadge.classList.add('ai-badge-ok');
+      } else {
+        folderBadge.textContent = d.aiFolderStatusNeedsAuth.replace('{name}', status.folderName || '');
+        folderBadge.classList.add('ai-badge-locked');
+      }
+    }
+
+    if (btnBindFolder) {
+      btnBindFolder.disabled = !status.supported;
+    }
+    btnReauthFolder?.classList.toggle(
+      'hidden',
+      !(status.supported && status.bound && status.permission !== 'granted')
+    );
+    btnSyncFolder?.classList.toggle(
+      'hidden',
+      !(status.supported && status.bound && status.permission === 'granted')
+    );
+    btnRestoreFolder?.classList.toggle('hidden', !(status.supported && status.bound));
+    btnUnbindFolder?.classList.toggle('hidden', !(status.supported && status.bound));
+  }
+
+  function renderPresetList(): void {
+    const d = dict();
+    if (presetCountBadge) {
+      presetCountBadge.textContent = d.aiPresetCountBadge.replace('{count}', String(presets.length));
+    }
+
+    if (!presetListEl) return;
+    presetListEl.innerHTML = '';
+
+    if (presets.length === 0) {
+      const emptyEl = document.createElement('div');
+      emptyEl.className = 'ai-preset-empty';
+      emptyEl.textContent = d.aiPresetEmpty;
+      presetListEl.appendChild(emptyEl);
+      return;
+    }
+
+    for (const preset of presets) {
+      const itemEl = document.createElement('div');
+      itemEl.className = 'ai-preset-item';
+
+      const metaEl = document.createElement('div');
+      metaEl.className = 'ai-preset-meta';
+
+      const nameEl = document.createElement('span');
+      nameEl.className = 'ai-preset-name';
+      nameEl.textContent = preset.name;
+      metaEl.appendChild(nameEl);
+
+      if (preset.description) {
+        const descEl = document.createElement('span');
+        descEl.className = 'ai-preset-desc';
+        descEl.textContent = preset.description;
+        metaEl.appendChild(descEl);
+      }
+
+      const actionsEl = document.createElement('div');
+      actionsEl.className = 'ai-preset-actions';
+
+      const applyBtn = document.createElement('button');
+      applyBtn.type = 'button';
+      applyBtn.className = 'btn btn-secondary';
+      applyBtn.textContent = d.aiPresetApplyBtn;
+      applyBtn.addEventListener('click', () => {
+        pushUndoSnapshot();
+        hooks.applySnapshot(
+          presetToSnapshot(preset),
+          dict().aiPresetLoadedToast.replace('{name}', preset.name)
+        );
+      });
+
+      const delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.className = 'btn btn-danger';
+      delBtn.textContent = d.aiPresetDeleteBtn;
+      delBtn.addEventListener('click', () => {
+        void handleDeletePresetById(preset.id, preset.name);
+      });
+
+      actionsEl.append(applyBtn, delBtn);
+      itemEl.append(metaEl, actionsEl);
+      presetListEl.appendChild(itemEl);
+    }
+  }
+
+  async function performSavePreset(
+    name: string,
+    snapshot: ConfigSnapshot,
+    description?: string
+  ): Promise<boolean> {
+    const d = dict();
+    try {
+      presets = await savePreset(name, snapshot, description);
+      renderPresetList();
+      scheduleFolderAutoSync();
+      hooks.showToast(d.aiPresetSavedToast);
+      return true;
+    } catch (err) {
+      showFolderStatus(formatRuntimeError(err), 'error');
+      return false;
+    }
+  }
+
+  async function handleDeletePresetById(presetId: string, presetName: string): Promise<boolean> {
+    const d = dict();
+    const confirmed = await hooks.confirmAction(
+      d.aiPresetDeleteConfirmTitle,
+      d.aiPresetDeleteConfirmMsg.replace('{name}', presetName)
+    );
+    if (!confirmed) return false;
+
+    presets = await deletePreset(presetId);
+    renderPresetList();
+    scheduleFolderAutoSync();
+    hooks.showToast(d.aiPresetDeletedToast);
+    return true;
+  }
+
+  async function handleManualSavePreset(): Promise<void> {
+    const name = presetNameInput?.value.trim() || '';
+    if (!name) return;
+    const saved = await performSavePreset(name, hooks.getCurrentSnapshot());
+    if (saved && presetNameInput) {
+      presetNameInput.value = '';
+    }
+  }
+
+  async function handleBindFolder(): Promise<void> {
+    const d = dict();
+    try {
+      await bindBackupFolder();
+      await writeBackupToBoundFolder(hooks.getCurrentSnapshot(), presets, {
+        requestPermissionIfNeeded: true
+      });
+      await refreshFolderStatus();
+      showFolderStatus(d.aiFolderMsgSynced, 'ok');
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') return;
+      showFolderStatus(`${d.aiFolderMsgFailed}${formatRuntimeError(err)}`, 'error');
+    }
+  }
+
+  async function handleReauthFolder(): Promise<void> {
+    const d = dict();
+    try {
+      const granted = await requestBoundFolderPermission();
+      if (granted) {
+        await writeBackupToBoundFolder(hooks.getCurrentSnapshot(), presets, {
+          requestPermissionIfNeeded: false
+        });
+        showFolderStatus(d.aiFolderMsgSynced, 'ok');
+      }
+      await refreshFolderStatus();
+    } catch (err) {
+      showFolderStatus(`${d.aiFolderMsgFailed}${formatRuntimeError(err)}`, 'error');
+    }
+  }
+
+  async function handleSyncFolderNow(): Promise<void> {
+    const d = dict();
+    try {
+      const res = await writeBackupToBoundFolder(hooks.getCurrentSnapshot(), presets, {
+        requestPermissionIfNeeded: true
+      });
+      await refreshFolderStatus();
+      if (res.written) {
+        showFolderStatus(d.aiFolderMsgSynced, 'ok');
+      }
+    } catch (err) {
+      showFolderStatus(`${d.aiFolderMsgFailed}${formatRuntimeError(err)}`, 'error');
+    }
+  }
+
+  async function handleRestoreFolder(): Promise<void> {
+    const d = dict();
+    const confirmed = await hooks.confirmAction(
+      d.aiFolderRestoreConfirmTitle,
+      d.aiFolderRestoreConfirmMsg
+    );
+    if (!confirmed) return;
+
+    try {
+      const backup = await readBackupFromBoundFolder();
+      pushUndoSnapshot();
+      presets = await replaceAllPresets(backup.presets);
+      renderPresetList();
+      hooks.applySnapshot(backup.snapshot, d.aiFolderMsgRestored);
+      await refreshFolderStatus();
+      showFolderStatus(d.aiFolderMsgRestored, 'ok');
+    } catch (err) {
+      showFolderStatus(`${d.aiFolderMsgFailed}${formatRuntimeError(err)}`, 'error');
+    }
+  }
+
+  async function handleUnbindFolder(): Promise<void> {
+    const d = dict();
+    await unbindBackupFolder();
+    await refreshFolderStatus();
+    showFolderStatus(d.aiFolderMsgUnbound, 'info');
   }
 
   function scrollChatToBottom(): void {
@@ -253,13 +633,37 @@ export function initAiAssistantPanel(hooks: AiAssistantPanelHooks): AiAssistantP
     bubble.className = 'ai-msg ai-msg-error';
     bubble.textContent = `${d.aiErrRequestFailed}${message}`;
     chatMessagesEl.appendChild(bubble);
-    renderedEntries.push({ kind: 'error', textEl: bubble, errorPrefixKey: 'aiErrRequestFailed' });
+    renderedEntries.push({ kind: 'error', textEl: bubble });
     scrollChatToBottom();
   }
 
   function formatDiffVal(val: number | boolean | string | undefined, unit?: string): string {
     if (val === undefined) return '—';
     return unit && typeof val === 'number' ? `${val} ${unit}` : String(val);
+  }
+
+  function getDiffButtonLabel(entry: RenderedAssistantEntry): string {
+    const d = dict();
+    if (entry.applied) return d.aiAppliedPatchBtn;
+    if (entry.presetAction?.type === 'save') {
+      return d.aiActionApplyAndSavePresetBtn.replace('{name}', entry.presetAction.name);
+    }
+    if (entry.presetAction?.type === 'load') {
+      return d.aiActionLoadAndTunePresetBtn.replace('{name}', entry.presetAction.presetName);
+    }
+    return d.aiApplyPatchBtn;
+  }
+
+  function getStandaloneActionLabel(action: ValidatedPresetAction, done: boolean): string {
+    const d = dict();
+    if (done) return d.aiActionDoneBtn;
+    if (action.type === 'save') {
+      return d.aiActionSavePresetBtn.replace('{name}', action.name);
+    }
+    if (action.type === 'load') {
+      return d.aiActionLoadPresetBtn.replace('{name}', action.presetName);
+    }
+    return d.aiActionDeletePresetBtn.replace('{name}', action.presetName);
   }
 
   function appendAssistantBubble(result: ValidatedTuningResponse): void {
@@ -273,10 +677,20 @@ export function initAiAssistantPanel(hooks: AiAssistantPanelHooks): AiAssistantP
     replyEl.textContent = result.reply;
     bubble.appendChild(replyEl);
 
+    const candidateAction = result.presetAction;
+    const validAction =
+      candidateAction?.type === 'load' &&
+      !presets.some((p) => p.id === candidateAction.presetId)
+        ? undefined
+        : candidateAction;
+
     const entry: RenderedAssistantEntry = {
       kind: 'assistant',
       textEl: replyEl,
-      applied: false
+      applied: false,
+      hasDiffs: result.diffs.length > 0,
+      presetAction: validAction,
+      actionDone: false
     };
 
     if (result.diffs.length > 0) {
@@ -328,28 +742,109 @@ export function initAiAssistantPanel(hooks: AiAssistantPanelHooks): AiAssistantP
       const applyBtn = document.createElement('button');
       applyBtn.type = 'button';
       applyBtn.className = 'btn btn-primary ai-diff-apply-btn';
-      applyBtn.textContent = d.aiApplyPatchBtn;
+      applyBtn.textContent = getDiffButtonLabel(entry);
       entry.applyBtn = applyBtn;
 
-      applyBtn.addEventListener('click', () => {
+      applyBtn.addEventListener('click', async () => {
         const currentDict = dict();
         const before = hooks.getCurrentSnapshot();
-        undoStack.push(before);
-        if (undoStack.length > MAX_UNDO_STACK) {
-          undoStack.shift();
+        pushUndoSnapshot(before);
+
+        let baseSnapshot = before;
+        if (validAction?.type === 'load') {
+          const target = presets.find((p) => p.id === validAction.presetId);
+          if (target) {
+            baseSnapshot = presetToSnapshot(target);
+          }
         }
-        const nextSnapshot = applyValidatedPatch(before, result);
+
+        const nextSnapshot = applyValidatedPatch(baseSnapshot, result);
         hooks.applySnapshot(nextSnapshot, currentDict.aiToastApplied);
 
+        if (validAction?.type === 'save') {
+          await performSavePreset(validAction.name, nextSnapshot, validAction.description);
+        }
+
         entry.applied = true;
-        applyBtn.textContent = currentDict.aiAppliedPatchBtn;
+        applyBtn.textContent = getDiffButtonLabel(entry);
         applyBtn.classList.add('applied');
-        updateUndoButton();
       });
 
       actionsEl.appendChild(applyBtn);
       diffCard.appendChild(actionsEl);
       bubble.appendChild(diffCard);
+
+      // Keep delete action separate so applying diffs and deleting a preset remain explicit
+      if (validAction?.type === 'delete') {
+        const actionCard = document.createElement('div');
+        actionCard.className = 'ai-action-card';
+        const delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.className = 'btn btn-danger';
+        delBtn.textContent = getStandaloneActionLabel(validAction, false);
+        entry.actionBtn = delBtn;
+
+        delBtn.addEventListener('click', async () => {
+          const deleted = await handleDeletePresetById(validAction.presetId, validAction.presetName);
+          if (deleted) {
+            entry.actionDone = true;
+            delBtn.textContent = getStandaloneActionLabel(validAction, true);
+            delBtn.disabled = true;
+          }
+        });
+
+        actionCard.appendChild(delBtn);
+        bubble.appendChild(actionCard);
+      }
+    } else if (validAction) {
+      const actionCard = document.createElement('div');
+      actionCard.className = 'ai-action-card';
+
+      const actionBtn = document.createElement('button');
+      actionBtn.type = 'button';
+      actionBtn.className =
+        validAction.type === 'delete'
+          ? 'btn btn-danger'
+          : 'btn btn-primary ai-diff-apply-btn';
+      actionBtn.textContent = getStandaloneActionLabel(validAction, false);
+      entry.actionBtn = actionBtn;
+
+      actionBtn.addEventListener('click', async () => {
+        const currentDict = dict();
+        if (validAction.type === 'save') {
+          const ok = await performSavePreset(
+            validAction.name,
+            hooks.getCurrentSnapshot(),
+            validAction.description
+          );
+          if (ok) {
+            entry.actionDone = true;
+            actionBtn.textContent = getStandaloneActionLabel(validAction, true);
+            actionBtn.classList.add('applied');
+          }
+        } else if (validAction.type === 'load') {
+          const target = presets.find((p) => p.id === validAction.presetId);
+          if (!target) return;
+          pushUndoSnapshot();
+          hooks.applySnapshot(
+            presetToSnapshot(target),
+            currentDict.aiPresetLoadedToast.replace('{name}', target.name)
+          );
+          entry.actionDone = true;
+          actionBtn.textContent = getStandaloneActionLabel(validAction, true);
+          actionBtn.classList.add('applied');
+        } else if (validAction.type === 'delete') {
+          const deleted = await handleDeletePresetById(validAction.presetId, validAction.presetName);
+          if (deleted) {
+            entry.actionDone = true;
+            actionBtn.textContent = getStandaloneActionLabel(validAction, true);
+            actionBtn.disabled = true;
+          }
+        }
+      });
+
+      actionCard.appendChild(actionBtn);
+      bubble.appendChild(actionCard);
     } else {
       const noDiffEl = document.createElement('div');
       noDiffEl.className = 'ai-diff-empty-note';
@@ -391,11 +886,12 @@ export function initAiAssistantPanel(hooks: AiAssistantPanelHooks): AiAssistantP
 
     try {
       const provider = getSelectedProvider();
-      const model = modelInput?.value.trim() || PROVIDER_PRESETS[provider].defaultModel;
+      const model = modelInput?.value.trim() || '';
       const baseUrl = baseUrlInput?.value.trim();
 
       const snapshot = hooks.getCurrentSnapshot();
-      const prompt = buildTuningPrompt(snapshot, chatHistory, text);
+      const presetSummaries = toPresetSummaries(presets);
+      const prompt = buildTuningPrompt(snapshot, chatHistory, text, presetSummaries);
 
       const rawOutput = await sendLlmChat(prompt, {
         provider,
@@ -404,7 +900,7 @@ export function initAiAssistantPanel(hooks: AiAssistantPanelHooks): AiAssistantP
         signal: activeAbortController.signal
       });
 
-      const validated = validateTuningResponse(rawOutput, snapshot);
+      const validated = validateTuningResponse(rawOutput, snapshot, presetSummaries);
       chatHistory.push({ role: 'user', content: text });
       chatHistory.push({ role: 'assistant', content: validated.reply });
 
@@ -429,7 +925,7 @@ export function initAiAssistantPanel(hooks: AiAssistantPanelHooks): AiAssistantP
 
     const provider = getSelectedProvider();
     const targetMode = getSelectedEncryptionMode();
-    const model = modelInput?.value.trim() || PROVIDER_PRESETS[provider].defaultModel;
+    const model = modelInput?.value.trim() || '';
     const baseUrl = baseUrlInput?.value.trim() || PROVIDER_PRESETS[provider].defaultBaseUrl;
     const newApiKey = apiKeyInput?.value.trim() || '';
     const passphrase = passphraseInput?.value || '';
@@ -463,6 +959,15 @@ export function initAiAssistantPanel(hooks: AiAssistantPanelHooks): AiAssistantP
       if (passphraseInput) passphraseInput.value = '';
       await refreshStatusAndBadges();
       showByokStatus(d.aiMsgByokSaved, 'ok');
+
+      if (
+        newApiKey ||
+        (byokState.encryptedKeys[provider] &&
+          (await isVaultUnlocked(provider)) &&
+          !loadedModelsByProvider.has(provider))
+      ) {
+        void handleFetchModels({ silent: true });
+      }
     } catch (err) {
       showByokStatus(formatRuntimeError(err), 'error');
     }
@@ -471,7 +976,7 @@ export function initAiAssistantPanel(hooks: AiAssistantPanelHooks): AiAssistantP
   async function handleTestConnection(): Promise<void> {
     const d = dict();
     const provider = getSelectedProvider();
-    const model = modelInput?.value.trim() || PROVIDER_PRESETS[provider].defaultModel;
+    const model = modelInput?.value.trim() || '';
     const baseUrl = baseUrlInput?.value.trim() || PROVIDER_PRESETS[provider].defaultBaseUrl;
     const draftApiKey = apiKeyInput?.value.trim();
 
@@ -479,13 +984,31 @@ export function initAiAssistantPanel(hooks: AiAssistantPanelHooks): AiAssistantP
     showByokStatus(d.aiMsgTestingConn, 'info');
 
     try {
-      await testProviderConnection({
-        provider,
-        model,
-        baseUrl,
-        apiKey: draftApiKey ? draftApiKey : undefined
-      });
-      showByokStatus(d.aiMsgConnOk, 'ok');
+      if (!model) {
+        const models = await fetchAvailableModels({
+          provider,
+          baseUrl,
+          apiKey: draftApiKey ? draftApiKey : undefined
+        });
+        loadedModelsByProvider.set(provider, models);
+        if (getSelectedProvider() === provider) {
+          renderLoadedModels(models);
+        }
+        showByokStatus(
+          models.length > 0
+            ? d.aiModelsLoaded.replace('{count}', String(models.length))
+            : d.aiModelsEmpty,
+          'ok'
+        );
+      } else {
+        await testProviderConnection({
+          provider,
+          model,
+          baseUrl,
+          apiKey: draftApiKey ? draftApiKey : undefined
+        });
+        showByokStatus(d.aiMsgConnOk, 'ok');
+      }
     } catch (err) {
       showByokStatus(`${d.aiMsgConnFail}${formatRuntimeError(err)}`, 'error');
     } finally {
@@ -504,6 +1027,11 @@ export function initAiAssistantPanel(hooks: AiAssistantPanelHooks): AiAssistantP
     if (unlockPassInput) unlockPassInput.value = '';
     await refreshStatusAndBadges();
     showByokStatus(d.aiMsgUnlocked, 'ok');
+
+    const provider = getSelectedProvider();
+    if (!loadedModelsByProvider.has(provider)) {
+      void handleFetchModels({ silent: true });
+    }
   }
 
   async function handleLock(): Promise<void> {
@@ -539,6 +1067,36 @@ export function initAiAssistantPanel(hooks: AiAssistantPanelHooks): AiAssistantP
       syncProviderFields(provider);
       hideByokStatus();
       await refreshStatusAndBadges();
+      if (
+        PROVIDER_PRESETS[provider].requiresApiKey &&
+        byokState?.encryptedKeys[provider] &&
+        !loadedModelsByProvider.has(provider)
+      ) {
+        void handleFetchModels({ silent: true });
+      }
+    });
+
+    btnFetchModels?.addEventListener('click', () => {
+      void handleFetchModels({ silent: false });
+    });
+
+    modelSelect?.addEventListener('change', () => {
+      if (modelSelect.value && modelInput) {
+        modelInput.value = modelSelect.value;
+      }
+    });
+
+    modelInput?.addEventListener('input', () => {
+      if (!modelSelect) return;
+      const models = loadedModelsByProvider.get(getSelectedProvider()) ?? [];
+      const val = modelInput.value.trim();
+      modelSelect.value = val.length > 0 && models.some((m) => m.id === val) ? val : '';
+    });
+
+    apiKeyInput?.addEventListener('change', () => {
+      if (apiKeyInput.value.trim().length > 0) {
+        void handleFetchModels({ silent: false });
+      }
     });
 
     encryptionSel?.addEventListener('change', () => {
@@ -571,6 +1129,37 @@ export function initAiAssistantPanel(hooks: AiAssistantPanelHooks): AiAssistantP
         e.preventDefault();
         void handleUnlock();
       }
+    });
+
+    btnSavePreset?.addEventListener('click', () => {
+      void handleManualSavePreset();
+    });
+
+    presetNameInput?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.isComposing) {
+        e.preventDefault();
+        void handleManualSavePreset();
+      }
+    });
+
+    btnBindFolder?.addEventListener('click', () => {
+      void handleBindFolder();
+    });
+
+    btnReauthFolder?.addEventListener('click', () => {
+      void handleReauthFolder();
+    });
+
+    btnSyncFolder?.addEventListener('click', () => {
+      void handleSyncFolderNow();
+    });
+
+    btnRestoreFolder?.addEventListener('click', () => {
+      void handleRestoreFolder();
+    });
+
+    btnUnbindFolder?.addEventListener('click', () => {
+      void handleUnbindFolder();
     });
 
     btnSend?.addEventListener('click', () => {
@@ -607,15 +1196,25 @@ export function initAiAssistantPanel(hooks: AiAssistantPanelHooks): AiAssistantP
 
   async function hydrate(): Promise<void> {
     byokState = await loadByokState();
+    presets = await loadPresets();
     if (providerSel) providerSel.value = byokState.activeProvider;
     if (encryptionSel) encryptionSel.value = byokState.encryptionMode;
 
     syncEncryptionVisibility();
     syncProviderFields(byokState.activeProvider);
     await refreshStatusAndBadges();
+    renderPresetList();
+    await refreshFolderStatus();
     resetChat();
     updateUndoButton();
     updateSendButtonState();
+
+    if (
+      PROVIDER_PRESETS[byokState.activeProvider].requiresApiKey &&
+      byokState.encryptedKeys[byokState.activeProvider]
+    ) {
+      void handleFetchModels({ silent: true });
+    }
   }
 
   bindEvents();
@@ -635,7 +1234,13 @@ export function initAiAssistantPanel(hooks: AiAssistantPanelHooks): AiAssistantP
           entry.diffEmptyEl.textContent = d.aiDiffNoChanges;
         }
         if (entry.applyBtn) {
-          entry.applyBtn.textContent = entry.applied ? d.aiAppliedPatchBtn : d.aiApplyPatchBtn;
+          entry.applyBtn.textContent = getDiffButtonLabel(entry);
+        }
+        if (entry.actionBtn && entry.presetAction) {
+          entry.actionBtn.textContent = getStandaloneActionLabel(
+            entry.presetAction,
+            Boolean(entry.actionDone)
+          );
         }
       }
       if (apiKeyInput) {
@@ -644,9 +1249,18 @@ export function initAiAssistantPanel(hooks: AiAssistantPanelHooks): AiAssistantP
           ? d.aiApiKeyPlaceholder
           : d.aiApiKeyOptionalPlaceholder;
       }
+      const cachedModels = loadedModelsByProvider.get(getSelectedProvider());
+      if (cachedModels) {
+        renderLoadedModels(cachedModels);
+      }
+      renderPresetList();
       updateUndoButton();
       updateSendButtonState();
       void refreshStatusAndBadges();
+      void refreshFolderStatus();
+    },
+    notifySettingsChanged(): void {
+      scheduleFolderAutoSync();
     }
   };
 }

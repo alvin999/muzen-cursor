@@ -18,8 +18,6 @@ export interface ProviderPreset {
   id: LlmProviderId;
   label: string;
   defaultBaseUrl: string;
-  defaultModel: string;
-  suggestedModels: readonly string[];
   requiresApiKey: boolean;
   allowsCustomBaseUrl: boolean;
 }
@@ -29,8 +27,6 @@ export const PROVIDER_PRESETS: Record<LlmProviderId, ProviderPreset> = {
     id: 'openai',
     label: 'OpenAI',
     defaultBaseUrl: 'https://api.openai.com/v1',
-    defaultModel: 'gpt-4o-mini',
-    suggestedModels: ['gpt-4o-mini', 'gpt-4.1-mini', 'gpt-4o'],
     requiresApiKey: true,
     allowsCustomBaseUrl: false
   },
@@ -38,12 +34,6 @@ export const PROVIDER_PRESETS: Record<LlmProviderId, ProviderPreset> = {
     id: 'openrouter',
     label: 'OpenRouter',
     defaultBaseUrl: 'https://openrouter.ai/api/v1',
-    defaultModel: 'google/gemini-2.5-flash',
-    suggestedModels: [
-      'google/gemini-2.5-flash',
-      'anthropic/claude-3.5-haiku',
-      'openai/gpt-4o-mini'
-    ],
     requiresApiKey: true,
     allowsCustomBaseUrl: false
   },
@@ -51,12 +41,6 @@ export const PROVIDER_PRESETS: Record<LlmProviderId, ProviderPreset> = {
     id: 'groq',
     label: 'Groq',
     defaultBaseUrl: 'https://api.groq.com/openai/v1',
-    defaultModel: 'llama-3.3-70b-versatile',
-    suggestedModels: [
-      'llama-3.3-70b-versatile',
-      'llama-3.1-8b-instant',
-      'qwen-qwq-32b'
-    ],
     requiresApiKey: true,
     allowsCustomBaseUrl: false
   },
@@ -64,8 +48,6 @@ export const PROVIDER_PRESETS: Record<LlmProviderId, ProviderPreset> = {
     id: 'gemini',
     label: 'Google Gemini',
     defaultBaseUrl: 'https://generativelanguage.googleapis.com/v1beta',
-    defaultModel: 'gemini-2.5-flash',
-    suggestedModels: ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.0-flash'],
     requiresApiKey: true,
     allowsCustomBaseUrl: false
   },
@@ -73,11 +55,6 @@ export const PROVIDER_PRESETS: Record<LlmProviderId, ProviderPreset> = {
     id: 'claude',
     label: 'Anthropic Claude',
     defaultBaseUrl: 'https://api.anthropic.com/v1',
-    defaultModel: 'claude-3-5-haiku-latest',
-    suggestedModels: [
-      'claude-3-5-haiku-latest',
-      'claude-sonnet-4-20250514'
-    ],
     requiresApiKey: true,
     allowsCustomBaseUrl: false
   },
@@ -85,8 +62,6 @@ export const PROVIDER_PRESETS: Record<LlmProviderId, ProviderPreset> = {
     id: 'openai-compatible',
     label: 'OpenAI Compatible (Ollama / Custom)',
     defaultBaseUrl: 'http://localhost:11434/v1',
-    defaultModel: 'qwen2.5:7b',
-    suggestedModels: ['qwen2.5:7b', 'llama3.2', 'deepseek-chat'],
     requiresApiKey: false,
     allowsCustomBaseUrl: true
   }
@@ -200,7 +175,7 @@ export async function updateActiveProviderConfig(
     profiles: {
       ...state.profiles,
       [provider]: {
-        model: profile.model.trim() || PROVIDER_PRESETS[provider].defaultModel,
+        model: profile.model.trim(),
         baseUrl: profile.baseUrl?.trim() || PROVIDER_PRESETS[provider].defaultBaseUrl
       }
     }

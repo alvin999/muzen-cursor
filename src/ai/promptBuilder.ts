@@ -1,4 +1,5 @@
 import { buildPromptSchemaReference, ConfigSnapshot } from '../core/configSchema';
+import { PresetSummary } from '../core/presetStorage';
 
 export interface ChatTurn {
   role: 'user' | 'assistant';
@@ -29,28 +30,47 @@ Motion & Feel Tuning Guide (use as starting intuition, adapt to current values):
 export function buildTuningPrompt(
   snapshot: ConfigSnapshot,
   history: readonly ChatTurn[],
-  userMessage: string
+  userMessage: string,
+  presets: readonly PresetSummary[] = []
 ): BuiltPrompt {
   const schemaRef = buildPromptSchemaReference();
   const currentSnapshotJson = JSON.stringify(snapshot, null, 2);
+  const presetsJson =
+    presets.length > 0
+      ? JSON.stringify(
+          presets.map((p) => ({
+            id: p.id,
+            name: p.name,
+            ...(p.description ? { description: p.description } : {})
+          }))
+        )
+      : '[]';
 
   const systemPrompt = [
     'You are the Muzen Cursor configuration assistant.',
-    'Translate the user\'s natural-language preferences into valid cursor configuration patches.',
+    'Translate the user\'s natural-language preferences into valid cursor configuration patches or preset management actions.',
     '',
     'Rules:',
     '1. Output ONLY a valid JSON object matching this exact top-level shape:',
-    '   {"reply": string, "appearancePatch": object, "advancedPatch": object, "effectsPatch": object}',
+    '   {"reply": string, "appearancePatch": object, "advancedPatch": object, "effectsPatch": object, "presetAction"?: null | {"type": "save", "name": string, "description"?: string} | {"type": "load", "presetId": string} | {"type": "delete", "presetId": string}}',
     '2. Include ONLY the keys that actually need to change inside appearancePatch, advancedPatch, or effectsPatch. Leave unchanged sections as {}.',
     '3. Every value MUST strictly stay within the allowed type, enum options, and min..max range in the schema below.',
     '4. For relative requests (e.g., "faster", "softer", "shorter tail"), calculate new values relative to the Current Configuration Snapshot.',
-    '5. In the "reply" field, ALWAYS respond in the exact same language the user used in their latest message, explaining the adjustments concisely.',
-    '6. If the user asks a question without requesting changes, return empty patch objects ({}) and answer in "reply".',
+    '5. Preset management ("presetAction"):',
+    '   - If the user asks to save/archive the current or newly tuned feel as a named preset, set presetAction to {"type": "save", "name": "...", "description": "..."}.',
+    '   - If the user asks to load or switch to an existing preset, pick the matching presetId from Saved Presets below and set presetAction to {"type": "load", "presetId": "..."} (and optionally include extra tweaks in the patch objects).',
+    '   - If the user asks to delete a preset, pick its presetId and set presetAction to {"type": "delete", "presetId": "..."}.',
+    '   - Otherwise omit presetAction or set it to null.',
+    '6. In the "reply" field, ALWAYS respond in the exact same language the user used in their latest message, explaining the adjustments concisely.',
+    '7. If the user asks a question without requesting changes, return empty patch objects ({}) and answer in "reply".',
     '',
     'Configuration Schema:',
     schemaRef,
     '',
     FEEL_TUNING_GUIDE,
+    '',
+    'Saved Presets:',
+    presetsJson,
     '',
     'Current Configuration Snapshot:',
     currentSnapshotJson

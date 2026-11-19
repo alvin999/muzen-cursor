@@ -5,6 +5,7 @@ import {
   sanitizeFieldValue
 } from '../core/configSchema';
 import { AdvancedConfig, CursorEffects, CursorShape } from '../core/cursorStore';
+import { PresetSummary } from '../core/presetStorage';
 
 export interface ConfigDiffItem {
   key: string;
@@ -14,12 +15,18 @@ export interface ConfigDiffItem {
   unit?: string;
 }
 
+export type ValidatedPresetAction =
+  | { type: 'save'; name: string; description?: string }
+  | { type: 'load'; presetId: string; presetName: string }
+  | { type: 'delete'; presetId: string; presetName: string };
+
 export interface ValidatedTuningResponse {
   reply: string;
   appearancePatch: Partial<ConfigSnapshot['appearance']>;
   advancedPatch: Partial<AdvancedConfig>;
   effectsPatch: Partial<CursorEffects>;
   diffs: ConfigDiffItem[];
+  presetAction?: ValidatedPresetAction;
 }
 
 interface RawLlmPayload {
@@ -27,6 +34,7 @@ interface RawLlmPayload {
   appearancePatch?: unknown;
   advancedPatch?: unknown;
   effectsPatch?: unknown;
+  presetAction?: unknown;
 }
 
 /**
@@ -93,13 +101,60 @@ function sanitizeSectionPatch(
   return cleanPatch;
 }
 
+function sanitizePresetAction(
+  rawAction: unknown,
+  presets: readonly PresetSummary[]
+): ValidatedPresetAction | undefined {
+  if (!rawAction || typeof rawAction !== 'object' || Array.isArray(rawAction)) {
+    return undefined;
+  }
+
+  const obj = rawAction as Record<string, unknown>;
+  const type = obj.type;
+
+  if (type === 'save') {
+    const rawName = typeof obj.name === 'string' ? obj.name.trim().slice(0, 40) : '';
+    if (!rawName) return undefined;
+    const rawDesc =
+      typeof obj.description === 'string' && obj.description.trim().length > 0
+        ? obj.description.trim().slice(0, 100)
+        : undefined;
+    return {
+      type: 'save',
+      name: rawName,
+      ...(rawDesc ? { description: rawDesc } : {})
+    };
+  }
+
+  if (type === 'load' || type === 'delete') {
+    const rawId = typeof obj.presetId === 'string' ? obj.presetId.trim() : '';
+    const rawName = typeof obj.name === 'string' ? obj.name.trim() : '';
+    const candidate = rawId || rawName;
+    if (!candidate) return undefined;
+
+    const matched =
+      presets.find((p) => p.id === candidate) ||
+      presets.find((p) => p.name.toLowerCase() === candidate.toLowerCase());
+    if (!matched) return undefined;
+
+    return {
+      type,
+      presetId: matched.id,
+      presetName: matched.name
+    };
+  }
+
+  return undefined;
+}
+
 /**
  * Parse and validate an LLM response (either raw JSON string or pre-parsed object)
  * against CONFIG_SCHEMA and the current configuration snapshot.
  */
 export function validateTuningResponse(
   rawInput: string | Record<string, unknown>,
-  currentSnapshot: ConfigSnapshot
+  currentSnapshot: ConfigSnapshot,
+  presets: readonly PresetSummary[] = []
 ): ValidatedTuningResponse {
   const parsed: RawLlmPayload =
     typeof rawInput === 'string' ? extractJsonObject(rawInput) : (rawInput as RawLlmPayload);
@@ -123,12 +178,13 @@ export function validateTuningResponse(
     currentSnapshot,
     diffs
   ) as Partial<CursorEffects>;
+  const presetAction = sanitizePresetAction(parsed.presetAction, presets);
 
   const reply =
     typeof parsed.reply === 'string' && parsed.reply.trim().length > 0
       ? parsed.reply.trim()
-      : diffs.length > 0
-        ? 'Configuration patch generated.'
+      : diffs.length > 0 || presetAction
+        ? 'Configuration action ready.'
         : 'No configuration changes were needed.';
 
   return {
@@ -136,7 +192,8 @@ export function validateTuningResponse(
     appearancePatch,
     advancedPatch,
     effectsPatch,
-    diffs
+    diffs,
+    ...(presetAction ? { presetAction } : {})
   };
 }
 

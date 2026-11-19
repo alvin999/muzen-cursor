@@ -426,6 +426,12 @@ export interface Translations {
   aiProviderLabel: string;
   aiModelLabel: string;
   aiModelPlaceholder: string;
+  aiFetchModelsBtn: string;
+  aiFetchingModels: string;
+  aiModelsLoaded: string;
+  aiModelsSelectPlaceholder: string;
+  aiModelsEmpty: string;
+  aiErrModelMissing: string;
   aiBaseUrlLabel: string;
   aiBaseUrlPlaceholder: string;
   aiApiKeyLabel: string;
@@ -481,6 +487,45 @@ export interface Translations {
   aiChipCalm: string;
   aiChipBouncy: string;
   aiChipMinimal: string;
+
+  // 風格檔與自動資料夾備份 (Presets & Folder Backup)
+  aiPresetsSectionTitle: string;
+  aiPresetsSectionDesc: string;
+  aiPresetSavePlaceholder: string;
+  aiPresetSaveBtn: string;
+  aiPresetEmpty: string;
+  aiPresetApplyBtn: string;
+  aiPresetDeleteBtn: string;
+  aiPresetDeleteConfirmTitle: string;
+  aiPresetDeleteConfirmMsg: string;
+  aiPresetCountBadge: string;
+  aiPresetSavedToast: string;
+  aiPresetLoadedToast: string;
+  aiPresetDeletedToast: string;
+  aiPresetQuotaErr: string;
+  aiFolderTitle: string;
+  aiFolderHint: string;
+  aiFolderStatusUnsupported: string;
+  aiFolderStatusUnbound: string;
+  aiFolderStatusActive: string;
+  aiFolderStatusNeedsAuth: string;
+  aiFolderBindBtn: string;
+  aiFolderReauthBtn: string;
+  aiFolderSyncNowBtn: string;
+  aiFolderRestoreBtn: string;
+  aiFolderUnbindBtn: string;
+  aiFolderRestoreConfirmTitle: string;
+  aiFolderRestoreConfirmMsg: string;
+  aiFolderMsgSynced: string;
+  aiFolderMsgRestored: string;
+  aiFolderMsgUnbound: string;
+  aiFolderMsgFailed: string;
+  aiActionSavePresetBtn: string;
+  aiActionApplyAndSavePresetBtn: string;
+  aiActionLoadPresetBtn: string;
+  aiActionLoadAndTunePresetBtn: string;
+  aiActionDeletePresetBtn: string;
+  aiActionDoneBtn: string;
 }
 
 export const LOCALES: Record<Locale, Translations> = {
@@ -893,7 +938,13 @@ export const LOCALES: Record<Locale, Translations> = {
     aiPrivacyNotice: 'API Key 僅加密儲存於本機瀏覽器，絕不同步至雲端，亦不會包含於匯出的 JSON 設定檔中。',
     aiProviderLabel: 'AI 服務商 (Provider)',
     aiModelLabel: '模型名稱 (Model)',
-    aiModelPlaceholder: '輸入或選擇模型 ID',
+    aiModelPlaceholder: '請先輸入 API Key 讀取模型，或手動輸入模型 ID',
+    aiFetchModelsBtn: '🔄 讀取模型',
+    aiFetchingModels: '正在讀取可用模型清單...',
+    aiModelsLoaded: '✓ 已讀取 {count} 個可用模型，請選擇欲使用的模型',
+    aiModelsSelectPlaceholder: '— 請從已讀取的 {count} 個模型中選擇 —',
+    aiModelsEmpty: '此端點未回傳任何可用模型，請手動輸入模型 ID',
+    aiErrModelMissing: '尚未選擇或輸入模型名稱，請先讀取並選擇模型。',
     aiBaseUrlLabel: '自訂 Base URL',
     aiBaseUrlPlaceholder: '例如 http://localhost:11434/v1',
     aiApiKeyLabel: 'API Key（留空則維持已存金鑰）',
@@ -948,7 +999,46 @@ export const LOCALES: Record<Locale, Translations> = {
     aiChipSnappy: '幫我調成俐落跟手、低延遲的手感',
     aiChipCalm: '調成柔和護眼、帶點禪意呼吸燈的閱讀感',
     aiChipBouncy: '讓游標更有 Q 彈果凍感，拖尾滑順但不要太長',
-    aiChipMinimal: '關閉多餘殘影與蓄力過載，保持極簡專注'
+    aiChipMinimal: '關閉多餘殘影與蓄力過載，保持極簡專注',
+
+    // 風格檔與自動資料夾備份 (Presets & Folder Backup)
+    aiPresetsSectionTitle: '風格檔與自動資料夾備份',
+    aiPresetsSectionDesc: '以差異壓縮同步至 Chrome 雲端，並可綁定本機或雲端硬碟同步資料夾自動保存 JSON',
+    aiPresetSavePlaceholder: '輸入風格檔名稱（例如：深夜閱讀模式）',
+    aiPresetSaveBtn: '💾 儲存目前設定',
+    aiPresetEmpty: '尚未儲存自訂風格檔，可於上方輸入名稱儲存，或直接請 AI 幫您命名歸檔。',
+    aiPresetApplyBtn: '套用',
+    aiPresetDeleteBtn: '刪除',
+    aiPresetDeleteConfirmTitle: '刪除風格檔',
+    aiPresetDeleteConfirmMsg: '確定要刪除風格檔「{name}」嗎？',
+    aiPresetCountBadge: '{count} 套風格',
+    aiPresetSavedToast: '✓ 已儲存風格檔並同步',
+    aiPresetLoadedToast: '✓ 已載入風格檔：{name}',
+    aiPresetDeletedToast: '✓ 已刪除風格檔',
+    aiPresetQuotaErr: '無法儲存：已達風格檔數量上限或 Chrome 同步空間上限',
+    aiFolderTitle: '自動備份資料夾（無須手動管理 JSON）',
+    aiFolderHint: '建議選擇 OneDrive / Google Drive / iCloud 同步資料夾或本機文件夾，設定變更時自動更新 muzen-cursor-backup.json（不含 API Key）。',
+    aiFolderStatusUnsupported: '瀏覽器不支援資料夾 API',
+    aiFolderStatusUnbound: '未綁定資料夾',
+    aiFolderStatusActive: '自動備份中：{name}',
+    aiFolderStatusNeedsAuth: '需恢復授權：{name}',
+    aiFolderBindBtn: '📁 選擇備份資料夾',
+    aiFolderReauthBtn: '🔓 恢復自動備份授權',
+    aiFolderSyncNowBtn: '🔄 立即同步',
+    aiFolderRestoreBtn: '📥 從資料夾還原',
+    aiFolderUnbindBtn: '解除綁定',
+    aiFolderRestoreConfirmTitle: '從備份資料夾還原',
+    aiFolderRestoreConfirmMsg: '將讀取 muzen-cursor-backup.json 並覆蓋目前設定與風格檔清單，確定要還原嗎？',
+    aiFolderMsgSynced: '✓ 已自動寫入 muzen-cursor-backup.json',
+    aiFolderMsgRestored: '✓ 已從備份資料夾還原設定與風格檔',
+    aiFolderMsgUnbound: '已解除資料夾綁定（硬碟上原有備份檔不受影響）',
+    aiFolderMsgFailed: '資料夾操作失敗：',
+    aiActionSavePresetBtn: '💾 儲存為風格檔：{name}',
+    aiActionApplyAndSavePresetBtn: '💾 套用微調並存為：{name}',
+    aiActionLoadPresetBtn: '📂 載入風格檔：{name}',
+    aiActionLoadAndTunePresetBtn: '📂 載入「{name}」並套用微調',
+    aiActionDeletePresetBtn: '🗑️ 刪除風格檔：{name}',
+    aiActionDoneBtn: '✓ 已完成'
   },
   'en': {
     appName: 'Muzen Cursor',
@@ -1359,7 +1449,13 @@ export const LOCALES: Record<Locale, Translations> = {
     aiPrivacyNotice: 'API keys are encrypted locally in this browser only, never synced to the cloud, and excluded from JSON exports.',
     aiProviderLabel: 'AI Provider',
     aiModelLabel: 'Model ID',
-    aiModelPlaceholder: 'Enter or select a model ID',
+    aiModelPlaceholder: 'Enter API key to load models, or type a model ID',
+    aiFetchModelsBtn: '🔄 Load Models',
+    aiFetchingModels: 'Loading available models...',
+    aiModelsLoaded: '✓ Loaded {count} models. Please choose one.',
+    aiModelsSelectPlaceholder: '— Select from {count} loaded models —',
+    aiModelsEmpty: 'No models returned by this endpoint. Please type a model ID manually.',
+    aiErrModelMissing: 'No model selected. Please load and select a model first.',
     aiBaseUrlLabel: 'Custom Base URL',
     aiBaseUrlPlaceholder: 'e.g. http://localhost:11434/v1',
     aiApiKeyLabel: 'API Key (leave blank to keep saved key)',
@@ -1414,7 +1510,46 @@ export const LOCALES: Record<Locale, Translations> = {
     aiChipSnappy: 'Make the cursor snappy and responsive with low latency',
     aiChipCalm: 'Tune for soft eye-friendly reading with a gentle zen breathing pulse',
     aiChipBouncy: 'Make it bouncy and jelly-like with a smooth but shorter smear tail',
-    aiChipMinimal: 'Turn off extra trails and kinetic charge for minimal distraction-free focus'
+    aiChipMinimal: 'Turn off extra trails and kinetic charge for minimal distraction-free focus',
+
+    // Presets & Auto Folder Backup
+    aiPresetsSectionTitle: 'Presets & Auto Folder Backup',
+    aiPresetsSectionDesc: 'Synced via compact deltas to Chrome Sync, with optional auto-backup to a local/cloud-synced folder',
+    aiPresetSavePlaceholder: 'Enter preset name (e.g. Late-night Reading)',
+    aiPresetSaveBtn: '💾 Save Current',
+    aiPresetEmpty: 'No saved presets yet. Save one above or ask the AI assistant to name and archive your current feel.',
+    aiPresetApplyBtn: 'Apply',
+    aiPresetDeleteBtn: 'Delete',
+    aiPresetDeleteConfirmTitle: 'Delete Preset',
+    aiPresetDeleteConfirmMsg: 'Delete saved preset "{name}"?',
+    aiPresetCountBadge: '{count} presets',
+    aiPresetSavedToast: '✓ Preset saved and synced',
+    aiPresetLoadedToast: '✓ Loaded preset: {name}',
+    aiPresetDeletedToast: '✓ Preset deleted',
+    aiPresetQuotaErr: 'Cannot save: preset limit or Chrome Sync quota reached',
+    aiFolderTitle: 'Auto-Backup Folder (Hands-free JSON)',
+    aiFolderHint: 'Pick a OneDrive, Google Drive, iCloud, or local folder to auto-save muzen-cursor-backup.json on changes (excludes API keys).',
+    aiFolderStatusUnsupported: 'Folder API unsupported',
+    aiFolderStatusUnbound: 'No folder bound',
+    aiFolderStatusActive: 'Auto-syncing: {name}',
+    aiFolderStatusNeedsAuth: 'Re-authorize: {name}',
+    aiFolderBindBtn: '📁 Choose Folder',
+    aiFolderReauthBtn: '🔓 Resume Auto-Backup',
+    aiFolderSyncNowBtn: '🔄 Sync Now',
+    aiFolderRestoreBtn: '📥 Restore from Folder',
+    aiFolderUnbindBtn: 'Unbind',
+    aiFolderRestoreConfirmTitle: 'Restore from Backup Folder',
+    aiFolderRestoreConfirmMsg: 'Read muzen-cursor-backup.json and overwrite current settings and presets?',
+    aiFolderMsgSynced: '✓ Written to muzen-cursor-backup.json',
+    aiFolderMsgRestored: '✓ Restored settings and presets from folder',
+    aiFolderMsgUnbound: 'Folder unbound (existing backup file on disk is untouched)',
+    aiFolderMsgFailed: 'Folder operation failed: ',
+    aiActionSavePresetBtn: '💾 Save Preset: {name}',
+    aiActionApplyAndSavePresetBtn: '💾 Apply & Save Preset: {name}',
+    aiActionLoadPresetBtn: '📂 Load Preset: {name}',
+    aiActionLoadAndTunePresetBtn: '📂 Load "{name}" + Tweaks',
+    aiActionDeletePresetBtn: '🗑️ Delete Preset: {name}',
+    aiActionDoneBtn: '✓ Done'
   },
   'ja': {
     appName: 'Muzen Cursor',
@@ -1825,7 +1960,13 @@ export const LOCALES: Record<Locale, Translations> = {
     aiPrivacyNotice: 'API キーはこのブラウザ内に暗号化保存され、クラウド同期や JSON 書き出しには含まれません。',
     aiProviderLabel: 'AI プロバイダー',
     aiModelLabel: 'モデル名 (Model)',
-    aiModelPlaceholder: 'モデル ID を入力または選択',
+    aiModelPlaceholder: 'API キー入力後にモデルを取得、または直接入力',
+    aiFetchModelsBtn: '🔄 モデル取得',
+    aiFetchingModels: '利用可能なモデルを取得中...',
+    aiModelsLoaded: '✓ {count} 件のモデルを取得しました。使用するモデルを選択してください',
+    aiModelsSelectPlaceholder: '— 取得済み {count} 件から選択 —',
+    aiModelsEmpty: 'モデル一覧が空です。モデル ID を手動で入力してください',
+    aiErrModelMissing: 'モデル名が未設定です。先にモデルを取得・選択してください。',
     aiBaseUrlLabel: 'カスタム Base URL',
     aiBaseUrlPlaceholder: '例: http://localhost:11434/v1',
     aiApiKeyLabel: 'API キー（空欄のままなら保存済みキーを維持）',
@@ -1880,7 +2021,46 @@ export const LOCALES: Record<Locale, Translations> = {
     aiChipSnappy: '反応が速く低遅延でキビキビした操作感にしたい',
     aiChipCalm: '目に優しい穏やかな読書向けと落ち着いた呼吸エフェクトにしたい',
     aiChipBouncy: 'ゼリーのような弾力があり、長すぎない滑らかな残像にしたい',
-    aiChipMinimal: '余計な残像やチャージ効果をオフにしてシンプルな集中モードにしたい'
+    aiChipMinimal: '余計な残像やチャージ効果をオフにしてシンプルな集中モードにしたい',
+
+    // プリセットと自動フォルダバックアップ
+    aiPresetsSectionTitle: 'プリセットと自動フォルダバックアップ',
+    aiPresetsSectionDesc: '差分圧縮で Chrome 同期に保存し、ローカル／クラウド同期フォルダへの自動保存も設定できます',
+    aiPresetSavePlaceholder: 'プリセット名を入力（例：深夜読書モード）',
+    aiPresetSaveBtn: '💾 現在設定を保存',
+    aiPresetEmpty: 'プリセットはまだありません。上で保存するか、AI に名前を付けて保存するよう頼んでください。',
+    aiPresetApplyBtn: '適用',
+    aiPresetDeleteBtn: '削除',
+    aiPresetDeleteConfirmTitle: 'プリセットの削除',
+    aiPresetDeleteConfirmMsg: 'プリセット「{name}」を削除しますか？',
+    aiPresetCountBadge: '{count} 件',
+    aiPresetSavedToast: '✓ プリセットを保存・同期しました',
+    aiPresetLoadedToast: '✓ プリセットを適用しました：{name}',
+    aiPresetDeletedToast: '✓ プリセットを削除しました',
+    aiPresetQuotaErr: '保存できません：プリセット上限または Chrome 同期容量の上限に達しました',
+    aiFolderTitle: '自動バックアップフォルダ（JSON 管理不要）',
+    aiFolderHint: 'OneDrive・Google Drive・iCloud 同期フォルダ等を選ぶと、変更時に muzen-cursor-backup.json を自動更新します（API キー除外）。',
+    aiFolderStatusUnsupported: 'フォルダ API 非対応',
+    aiFolderStatusUnbound: '未設定',
+    aiFolderStatusActive: '自動同期中：{name}',
+    aiFolderStatusNeedsAuth: '再許可が必要：{name}',
+    aiFolderBindBtn: '📁 フォルダを選択',
+    aiFolderReauthBtn: '🔓 自動バックアップを再開',
+    aiFolderSyncNowBtn: '🔄 今すぐ同期',
+    aiFolderRestoreBtn: '📥 フォルダから復元',
+    aiFolderUnbindBtn: '解除',
+    aiFolderRestoreConfirmTitle: 'バックアップフォルダから復元',
+    aiFolderRestoreConfirmMsg: 'muzen-cursor-backup.json を読み込み、現在の設定とプリセットを上書きしますか？',
+    aiFolderMsgSynced: '✓ muzen-cursor-backup.json に保存しました',
+    aiFolderMsgRestored: '✓ フォルダから設定とプリセットを復元しました',
+    aiFolderMsgUnbound: 'フォルダ連携を解除しました（既存ファイルは残ります）',
+    aiFolderMsgFailed: 'フォルダ操作に失敗しました：',
+    aiActionSavePresetBtn: '💾 プリセット保存：{name}',
+    aiActionApplyAndSavePresetBtn: '💾 適用して保存：{name}',
+    aiActionLoadPresetBtn: '📂 プリセット読込：{name}',
+    aiActionLoadAndTunePresetBtn: '📂 「{name}」読込＋微調整',
+    aiActionDeletePresetBtn: '🗑️ プリセット削除：{name}',
+    aiActionDoneBtn: '✓ 完了'
   }
 };
 

@@ -395,6 +395,7 @@ function applyConfigSnapshot(snapshot: ConfigSnapshot, toastMessage?: string): v
 
   controller?.moveHorizontal(1);
   setTimeout(() => controller?.moveHorizontal(-1), 220);
+  aiPanelHandle?.notifySettingsChanged();
 }
 
 function renderKeybindingsList(): void {
@@ -969,6 +970,7 @@ function saveConfig(silent = false): void {
   }
   updateDiagnostics();
   syncCursorStore();
+  aiPanelHandle?.notifySettingsChanged();
 }
 
 function loadConfig(): void {

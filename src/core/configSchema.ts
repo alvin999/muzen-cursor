@@ -713,3 +713,74 @@ export function computeConfigDelta(snapshot: ConfigSnapshot): Record<string, unk
 
   return delta;
 }
+
+/**
+ * Create a baseline configuration snapshot from built-in defaults.
+ */
+export function createDefaultSnapshot(): ConfigSnapshot {
+  const trailStyle = DEFAULT_EFFECTS_CONFIG.trailStyle;
+  return {
+    appearance: {
+      shape: 'block',
+      thickness: 1.5,
+      glow: 0
+    },
+    advanced: { ...DEFAULT_ADVANCED_CONFIG },
+    effects: {
+      ...DEFAULT_EFFECTS_CONFIG,
+      smear: trailStyle === 'smear',
+      trail: trailStyle === 'trail'
+    }
+  };
+}
+
+/**
+ * Validate and clamp a raw delta object against CONFIG_SCHEMA,
+ * dropping unknown keys, invalid types, and entries identical to defaults.
+ */
+export function sanitizeDeltaRecord(rawDelta: unknown): Record<string, number | boolean | string> {
+  if (!rawDelta || typeof rawDelta !== 'object' || Array.isArray(rawDelta)) {
+    return {};
+  }
+
+  const clean: Record<string, number | boolean | string> = {};
+  for (const [key, rawValue] of Object.entries(rawDelta as Record<string, unknown>)) {
+    const schema = SCHEMA_BY_KEY.get(key);
+    if (!schema) continue;
+
+    const sanitized = sanitizeFieldValue(key, rawValue);
+    if (sanitized === undefined || sanitized === schema.defaultValue) continue;
+
+    clean[key] = sanitized;
+  }
+
+  return clean;
+}
+
+/**
+ * Reconstruct a full ConfigSnapshot by layering a sanitized delta onto defaults.
+ */
+export function materializeConfigDelta(rawDelta: unknown): ConfigSnapshot {
+  const snapshot = createDefaultSnapshot();
+  const cleanDelta = sanitizeDeltaRecord(rawDelta);
+
+  for (const [key, value] of Object.entries(cleanDelta)) {
+    const schema = SCHEMA_BY_KEY.get(key);
+    if (!schema) continue;
+
+    if (schema.section === 'appearance') {
+      (snapshot.appearance as unknown as Record<string, unknown>)[key] = value;
+    } else if (schema.section === 'effects') {
+      (snapshot.effects as unknown as Record<string, unknown>)[key] = value;
+    } else {
+      (snapshot.advanced as unknown as Record<string, unknown>)[key] = value;
+    }
+  }
+
+  if (snapshot.effects.trailStyle) {
+    snapshot.effects.smear = snapshot.effects.trailStyle === 'smear';
+    snapshot.effects.trail = snapshot.effects.trailStyle === 'trail';
+  }
+
+  return snapshot;
+}

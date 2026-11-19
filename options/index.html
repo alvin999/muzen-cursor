@@ -478,7 +478,7 @@
                 </div>
                 <p class="field-hint" data-i18n="hintSmearTrailingStiffness">背對移動方向的拖尾頂點剛性，越低拖尾拉扯越長 (0.05 - 1.0)</p>
                 <div class="input-with-unit">
-                  <input type="number" id="adv-smearTrailingStiffness" data-key="smearTrailingStiffness" min="0.05" max="1.0" step="0.05" value="0.3">
+                  <input type="number" id="adv-smearTrailingStiffness" data-key="smearTrailingStiffness" min="0.05" max="1.0" step="0.05" value="0.4">
                   <span class="unit">k</span>
                 </div>
               </div>
@@ -863,9 +863,9 @@
 
             <div class="ai-byok-body">
               <div class="ai-byok-grid">
-                <div class="ai-field">
+                <div class="ai-field ai-field-full">
                   <label for="ai-provider-select" class="field-label" data-i18n="aiProviderLabel">AI 服務商 (Provider)</label>
-                  <select id="ai-provider-select" class="sandbox-select ai-input">
+                  <select id="ai-provider-select" class="ai-input ai-select">
                     <option value="gemini">Google Gemini</option>
                     <option value="openai">OpenAI</option>
                     <option value="openrouter">OpenRouter</option>
@@ -873,20 +873,6 @@
                     <option value="claude">Anthropic Claude</option>
                     <option value="openai-compatible">OpenAI Compatible (Ollama / Custom)</option>
                   </select>
-                </div>
-
-                <div class="ai-field">
-                  <label for="ai-model-input" class="field-label" data-i18n="aiModelLabel">模型名稱 (Model)</label>
-                  <input
-                    type="text"
-                    id="ai-model-input"
-                    class="ai-input"
-                    list="ai-model-suggestions"
-                    autocomplete="off"
-                    data-i18n-placeholder="aiModelPlaceholder"
-                    placeholder="輸入或選擇模型 ID"
-                  >
-                  <datalist id="ai-model-suggestions"></datalist>
                 </div>
 
                 <div id="ai-base-url-group" class="ai-field ai-field-full hidden">
@@ -916,9 +902,27 @@
                   >
                 </div>
 
+                <div class="ai-field ai-field-full">
+                  <label for="ai-model-input" class="field-label" data-i18n="aiModelLabel">模型名稱 (Model)</label>
+                  <div class="ai-model-row">
+                    <input
+                      type="text"
+                      id="ai-model-input"
+                      class="ai-input"
+                      list="ai-model-suggestions"
+                      autocomplete="off"
+                      data-i18n-placeholder="aiModelPlaceholder"
+                      placeholder="請先輸入 API Key 讀取模型，或手動輸入模型 ID"
+                    >
+                    <button type="button" id="ai-btn-fetch-models" class="btn btn-secondary" data-i18n="aiFetchModelsBtn">🔄 讀取模型</button>
+                  </div>
+                  <datalist id="ai-model-suggestions"></datalist>
+                  <select id="ai-model-select" class="ai-input ai-select hidden"></select>
+                </div>
+
                 <div class="ai-field">
                   <label for="ai-encryption-mode" class="field-label" data-i18n="aiEncryptionModeLabel">本機金鑰加密模式</label>
-                  <select id="ai-encryption-mode" class="sandbox-select ai-input">
+                  <select id="ai-encryption-mode" class="ai-input ai-select">
                     <option value="transparent" data-i18n="aiEncryptionTransparent">本機透明加密（免每次輸入密碼）</option>
                     <option value="passphrase" data-i18n="aiEncryptionPassphrase">主密碼加密（重開瀏覽器需解鎖）</option>
                   </select>
@@ -964,6 +968,58 @@
               <button type="button" id="ai-btn-unlock-vault" class="btn btn-primary" data-i18n="aiUnlockBtn">🔓 解鎖</button>
             </div>
           </div>
+
+          <!-- 區塊 B2: 風格檔與自動資料夾備份 -->
+          <details id="ai-presets-details" class="setting-group ai-presets-card">
+            <summary class="ai-byok-summary">
+              <div class="group-header">
+                <span class="group-icon">🗂️</span>
+                <div class="group-title-wrap">
+                  <h2 class="group-title" data-i18n="aiPresetsSectionTitle">風格檔與自動資料夾備份</h2>
+                  <p class="group-desc" data-i18n="aiPresetsSectionDesc">以差異壓縮同步至 Chrome 雲端，並可綁定本機或雲端硬碟同步資料夾自動保存 JSON</p>
+                </div>
+              </div>
+              <div class="ai-summary-meta">
+                <span id="ai-preset-count-badge" class="ai-badge ai-badge-ok">0 套風格</span>
+                <span id="ai-folder-badge" class="ai-badge ai-badge-warn" data-i18n="aiFolderStatusUnbound">未綁定資料夾</span>
+                <span class="ai-chevron">▾</span>
+              </div>
+            </summary>
+
+            <div class="ai-byok-body">
+              <div class="ai-preset-save-row">
+                <input
+                  type="text"
+                  id="ai-preset-name-input"
+                  class="ai-input"
+                  maxlength="40"
+                  autocomplete="off"
+                  data-i18n-placeholder="aiPresetSavePlaceholder"
+                  placeholder="輸入風格檔名稱（例如：深夜閱讀模式）"
+                >
+                <button type="button" id="ai-btn-save-preset" class="btn btn-primary" data-i18n="aiPresetSaveBtn">💾 儲存目前設定</button>
+              </div>
+
+              <div id="ai-preset-list" class="ai-preset-list"></div>
+
+              <div class="ai-folder-box">
+                <div class="ai-folder-header">
+                  <div>
+                    <div class="field-label" data-i18n="aiFolderTitle">自動備份資料夾（無須手動管理 JSON）</div>
+                    <p class="ai-privacy-note" data-i18n="aiFolderHint">建議選擇 OneDrive / Google Drive / iCloud 同步資料夾或本機文件夾，設定變更時自動更新 muzen-cursor-backup.json（不含 API Key）。</p>
+                  </div>
+                </div>
+                <div class="ai-actions-row">
+                  <button type="button" id="ai-btn-bind-folder" class="btn btn-secondary" data-i18n="aiFolderBindBtn">📁 選擇備份資料夾</button>
+                  <button type="button" id="ai-btn-reauth-folder" class="btn btn-primary hidden" data-i18n="aiFolderReauthBtn">🔓 恢復自動備份授權</button>
+                  <button type="button" id="ai-btn-sync-folder" class="btn btn-secondary hidden" data-i18n="aiFolderSyncNowBtn">🔄 立即同步</button>
+                  <button type="button" id="ai-btn-restore-folder" class="btn btn-secondary hidden" data-i18n="aiFolderRestoreBtn">📥 從資料夾還原</button>
+                  <button type="button" id="ai-btn-unbind-folder" class="btn btn-danger hidden" data-i18n="aiFolderUnbindBtn">解除綁定</button>
+                </div>
+                <div id="ai-folder-status" class="ai-status-msg hidden"></div>
+              </div>
+            </div>
+          </details>
 
           <!-- 區塊 C: AI 對話調參區 -->
           <div class="setting-group ai-chat-card">

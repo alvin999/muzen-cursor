@@ -16,22 +16,26 @@ export interface LlmCallOptions {
 
 export type RawLlmOutput = string | Record<string, unknown>;
 
+export interface RemoteModelOption {
+  id: string;
+  label?: string;
+}
+
 function normalizeBaseUrl(url: string): string {
   return url.trim().replace(/\/+$/, '');
 }
 
-async function resolveRuntimeConfig(options?: LlmCallOptions): Promise<{
+async function resolveEndpointAndKey(options?: LlmCallOptions): Promise<{
   provider: LlmProviderId;
-  model: string;
   baseUrl: string;
   apiKey: string | null;
+  savedModel: string;
 }> {
   const state = await loadByokState();
   const provider = options?.provider ?? state.activeProvider;
   const preset = PROVIDER_PRESETS[provider];
   const profile = state.profiles[provider];
 
-  const model = options?.model?.trim() || profile?.model || preset.defaultModel;
   const baseUrl = normalizeBaseUrl(options?.baseUrl || profile?.baseUrl || preset.defaultBaseUrl);
 
   let apiKey = options?.apiKey !== undefined ? options.apiKey : await getDecryptedApiKey(provider);
@@ -41,7 +45,42 @@ async function resolveRuntimeConfig(options?: LlmCallOptions): Promise<{
     throw new Error(`API_KEY_MISSING:${provider}`);
   }
 
-  return { provider, model, baseUrl, apiKey: apiKey || null };
+  return {
+    provider,
+    baseUrl,
+    apiKey: apiKey || null,
+    savedModel: profile?.model?.trim() || ''
+  };
+}
+
+async function resolveRuntimeConfig(options?: LlmCallOptions): Promise<{
+  provider: LlmProviderId;
+  model: string;
+  baseUrl: string;
+  apiKey: string | null;
+}> {
+  const { provider, baseUrl, apiKey, savedModel } = await resolveEndpointAndKey(options);
+  const model = options?.model?.trim() || savedModel;
+
+  if (!model) {
+    throw new Error(`MODEL_MISSING:${provider}`);
+  }
+
+  return { provider, model, baseUrl, apiKey };
+}
+
+function buildOpenAiHeaders(provider: LlmProviderId, apiKey: string | null): Record<string, string> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json'
+  };
+  if (apiKey) {
+    headers['Authorization'] = `Bearer ${apiKey}`;
+  }
+  if (provider === 'openrouter') {
+    headers['HTTP-Referer'] = 'https://github.com/muzen-cursor';
+    headers['X-Title'] = 'Muzen Cursor';
+  }
+  return headers;
 }
 
 async function extractErrorMessage(resp: Response): Promise<string> {
@@ -63,16 +102,7 @@ async function callOpenAiCompatible(
   signal?: AbortSignal
 ): Promise<string> {
   const endpoint = `${baseUrl}/chat/completions`;
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json'
-  };
-  if (apiKey) {
-    headers['Authorization'] = `Bearer ${apiKey}`;
-  }
-  if (provider === 'openrouter') {
-    headers['HTTP-Referer'] = 'https://github.com/muzen-cursor';
-    headers['X-Title'] = 'Muzen Cursor';
-  }
+  const headers = buildOpenAiHeaders(provider, apiKey);
 
   const messages = [
     { role: 'system', content: prompt.systemPrompt },
@@ -194,7 +224,17 @@ async function callClaude(
               reply: { type: 'string' },
               appearancePatch: { type: 'object' },
               advancedPatch: { type: 'object' },
-              effectsPatch: { type: 'object' }
+              effectsPatch: { type: 'object' },
+              presetAction: {
+                type: 'object',
+                properties: {
+                  type: { type: 'string', enum: ['save', 'load', 'delete'] },
+                  name: { type: 'string' },
+                  description: { type: 'string' },
+                  presetId: { type: 'string' }
+                },
+                required: ['type']
+              }
             },
             required: ['reply', 'appearancePatch', 'advancedPatch', 'effectsPatch']
           }
@@ -255,4 +295,127 @@ export async function testProviderConnection(options?: LlmCallOptions): Promise<
     messages: [{ role: 'user', content: 'ping' }]
   };
   await sendLlmChat(pingPrompt, options);
+}
+
+const NON_CHAT_OPENAI_KEYWORDS = [
+  'embedding',
+  'whisper',
+  'tts-',
+  'dall-e',
+  'moderation',
+  'babbage',
+  'davinci',
+  'transcribe',
+  'sora',
+  'realtime',
+  'audio',
+  'image'
+];
+
+function dedupeModelOptions(items: RemoteModelOption[]): RemoteModelOption[] {
+  const byId = new Map<string, RemoteModelOption>();
+  for (const item of items) {
+    const id = item.id.trim();
+    if (!id) continue;
+    const label = item.label?.trim();
+    byId.set(id, label && label !== id ? { id, label } : { id });
+  }
+  return Array.from(byId.values());
+}
+
+/**
+ * Fetch available chat/generation models dynamically from the configured provider.
+ */
+export async function fetchAvailableModels(options?: LlmCallOptions): Promise<RemoteModelOption[]> {
+  const { provider, baseUrl, apiKey } = await resolveEndpointAndKey(options);
+
+  if (provider === 'gemini') {
+    if (!apiKey) throw new Error('API_KEY_MISSING:gemini');
+    const resp = await fetch(`${baseUrl}/models?pageSize=100`, {
+      method: 'GET',
+      headers: {
+        'x-goog-api-key': apiKey
+      },
+      signal: options?.signal
+    });
+    if (!resp.ok) throw new Error(await extractErrorMessage(resp));
+
+    const data = (await resp.json()) as {
+      models?: Array<{
+        name?: string;
+        displayName?: string;
+        supportedGenerationMethods?: string[];
+      }>;
+    };
+
+    const items: RemoteModelOption[] = [];
+    for (const m of data.models ?? []) {
+      if (
+        Array.isArray(m.supportedGenerationMethods) &&
+        !m.supportedGenerationMethods.includes('generateContent')
+      ) {
+        continue;
+      }
+      const id = (m.name || '').replace(/^models\//, '').trim();
+      if (!id) continue;
+      items.push({ id, label: m.displayName?.trim() });
+    }
+    return dedupeModelOptions(items);
+  }
+
+  if (provider === 'claude') {
+    if (!apiKey) throw new Error('API_KEY_MISSING:claude');
+    const resp = await fetch(`${baseUrl}/models`, {
+      method: 'GET',
+      headers: {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      signal: options?.signal
+    });
+    if (!resp.ok) throw new Error(await extractErrorMessage(resp));
+
+    const data = (await resp.json()) as {
+      data?: Array<{ id?: string; display_name?: string }>;
+    };
+    const items: RemoteModelOption[] = (data.data ?? [])
+      .filter((m) => Boolean(m.id))
+      .map((m) => ({
+        id: m.id!.trim(),
+        label: m.display_name?.trim()
+      }));
+    return dedupeModelOptions(items);
+  }
+
+  const resp = await fetch(`${baseUrl}/models`, {
+    method: 'GET',
+    headers: buildOpenAiHeaders(provider, apiKey),
+    signal: options?.signal
+  });
+  if (!resp.ok) throw new Error(await extractErrorMessage(resp));
+
+  const data = (await resp.json()) as {
+    data?: Array<{ id?: string; name?: string }>;
+    models?: Array<{ id?: string; name?: string }>;
+  };
+  const rawList = Array.isArray(data.data)
+    ? data.data
+    : Array.isArray(data.models)
+      ? data.models
+      : [];
+
+  const items: RemoteModelOption[] = [];
+  for (const m of rawList) {
+    const id = (m.id || m.name || '').trim();
+    if (!id) continue;
+    if (
+      provider === 'openai' &&
+      NON_CHAT_OPENAI_KEYWORDS.some((kw) => id.toLowerCase().includes(kw))
+    ) {
+      continue;
+    }
+    items.push({ id, label: m.name?.trim() });
+  }
+  return dedupeModelOptions(items);
 }

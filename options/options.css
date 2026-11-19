@@ -1837,3 +1837,163 @@ input:checked + .slider-small:before {
     height: 36px;
   }
 }
+
+/* 風格檔與自動資料夾備份卡片 */
+.ai-presets-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.ai-presets-card[open] .ai-chevron {
+  transform: rotate(180deg);
+}
+
+.ai-preset-save-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.ai-preset-save-row .ai-input {
+  flex: 1;
+}
+
+.ai-preset-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.ai-preset-empty {
+  font-size: 0.82rem;
+  color: var(--fg-muted);
+  padding: 10px 12px;
+  border: 1px dashed var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+}
+
+.ai-preset-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-input);
+  transition: border-color var(--transition-fast);
+}
+
+.ai-preset-item:hover {
+  border-color: var(--border-color);
+}
+
+.ai-preset-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.ai-preset-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--fg-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ai-preset-desc {
+  font-size: 0.76rem;
+  color: var(--fg-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ai-preset-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.ai-preset-actions .btn {
+  height: 28px;
+  min-height: 28px;
+  padding: 0 10px;
+  font-size: 0.76rem;
+}
+
+.ai-folder-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-darkest);
+}
+
+.ai-folder-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.ai-folder-header .field-label {
+  margin-bottom: 4px;
+}
+
+.ai-action-card {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 2px;
+}
+
+@media (max-width: 720px) {
+  .ai-preset-save-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.ai-select {
+  height: 36px;
+  min-height: 36px;
+  padding: 0 10px;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.ai-select option {
+  background: var(--bg-input);
+  color: var(--fg-color);
+}
+
+.ai-model-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.ai-model-row .ai-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.ai-model-row .btn {
+  height: 36px;
+  min-height: 36px;
+  flex-shrink: 0;
+}
+
+#ai-model-select.hidden {
+  display: none;
+}
