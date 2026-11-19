@@ -791,7 +791,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
       chrome.storage.sync.set({ muzen_auto_theme: isAuto });
     }
-    broadcastToActiveTab({ type: 'SET_AUTO_THEME', autoTheme: isAuto });
+    broadcastToActiveTab({
+      type: 'SET_AUTO_THEME',
+      autoTheme: isAuto,
+      ...(isAuto ? {} : { theme: savedManualTheme })
+    });
     setTimeout(() => refreshActiveTabStatus(), 100);
   });
 
@@ -1424,11 +1428,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const defaultInterceptPdf = true;
 
     // 1. 更新 UI 控制項狀態
+    savedManualTheme = defaultTheme;
     if (themeSelect) {
       themeSelect.value = defaultTheme;
-      applyTheme(defaultTheme);
     }
-    updateAutoThemeUI(false);
+    updatePopupThemeState(false);
     if (shapeSelect) shapeSelect.value = defaultShape;
     updateThicknessUI(defaultThickness);
     updateGlowUI(defaultGlow);

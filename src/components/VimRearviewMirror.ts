@@ -253,9 +253,11 @@ export class VimRearviewMirror {
       const markX = cursorX - srcCropX;
       const markY = cursorY - srcCropY;
 
-      // 取得當前主題色
+      // 取得當前主題色（僅在啟用智慧感應主題時採用 dynamicPalette）
       const themePalette = THEME_PALETTES[state.theme] || THEME_PALETTES['gruvbox-dark'];
-      const cursorColor = state.dynamicPalette?.normal?.hex || themePalette.normal.hex;
+      const cursorColor = (state.autoTheme && state.dynamicPalette?.normal?.hex)
+        ? state.dynamicPalette.normal.hex
+        : themePalette.normal.hex;
 
       // 1. 繪製半透明文字高亮底色
       ctx.fillStyle = cursorColor;

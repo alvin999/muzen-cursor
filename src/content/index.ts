@@ -55,13 +55,17 @@ function main(): void {
       } else if (message.type === 'SET_AUTO_THEME') {
         const autoTheme = !!message.autoTheme;
         const smartInfo = detectPageSmartInfo();
-        cursorStore.setState({
+        const nextState: Partial<ReturnType<typeof cursorStore.getState>> = {
           autoTheme,
           detectedPageTheme: smartInfo.theme,
           dynamicPalette: smartInfo.palette,
           localDynamicPalette: null,
           detectedBgRgb: smartInfo.bgRgb
-        });
+        };
+        if (!autoTheme && message.theme) {
+          nextState.theme = message.theme;
+        }
+        cursorStore.setState(nextState);
         controller.refreshLocalTheme();
         sendResponse({
           success: true,

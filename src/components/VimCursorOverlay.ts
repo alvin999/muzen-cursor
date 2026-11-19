@@ -508,6 +508,19 @@ export class VimCursorOverlay {
   }
 
   private render(state: CursorState): void {
+    const adv = state.advanced || DEFAULT_ADVANCED_CONFIG;
+    const palette = this.getEffectivePalette(state);
+    const visualBgOpacity = typeof adv.visualBgOpacity === 'number' ? adv.visualBgOpacity : 0.35;
+
+    // 即使游標處於隱藏或待命狀態，只要功能啟用且未排除，仍同步更新選取底色變數
+    if (state.enabled && !state.isExcluded) {
+      const visualColor = palette.visual;
+      document.documentElement.style.setProperty(
+        '--muzen-selection-bg',
+        `rgba(${visualColor.r}, ${visualColor.g}, ${visualColor.b}, ${visualBgOpacity})`
+      );
+    }
+
     if (!state.enabled || !state.visible || state.isExcluded) {
       this.element.style.opacity = '0';
       this.element.style.display = 'none';
@@ -525,7 +538,6 @@ export class VimCursorOverlay {
     this.element.style.display = 'block';
     this.lastState = state;
 
-    const adv = state.advanced || DEFAULT_ADVANCED_CONFIG;
     const isNewMotion = state.motionSequence !== this.lastRenderedSeq;
     this.lastRenderedSeq = state.motionSequence;
 
@@ -551,19 +563,10 @@ export class VimCursorOverlay {
     }
 
     // 1. 取得配色票券 (支援智慧感應主題之最佳調色盤) 並疊加動能過載色
-    const palette = this.getEffectivePalette(state);
     const isVisual = state.mode === 'VISUAL' || state.mode === 'VISUAL_LINE';
     const baseColor = isVisual ? palette.visual : palette.normal;
     const threshold = typeof adv?.chargeThreshold === 'number' ? adv.chargeThreshold : 0.70;
     const color = isChargeEnabled ? this.computeChargedColor(baseColor, this.currentCharge, threshold) : baseColor;
-
-    // 同步主題選取透明效果 (自訂 visualBgOpacity，預設 0.35)
-    const visualColor = palette.visual;
-    const visualBgOpacity = typeof adv.visualBgOpacity === 'number' ? adv.visualBgOpacity : 0.35;
-    document.documentElement.style.setProperty(
-      '--muzen-selection-bg',
-      `rgba(${visualColor.r}, ${visualColor.g}, ${visualColor.b}, ${visualBgOpacity})`
-    );
 
     // Visual Line 專屬整行展開掃掠光效 (Shift + V)
     if (state.mode === 'VISUAL_LINE') {
