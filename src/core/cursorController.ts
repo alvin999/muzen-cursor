@@ -15,6 +15,7 @@ import {
   searchUpwardPrevLine,
   computeWaypointsBetween,
   findVisualLineBoundary,
+  findAdjacentHorizontalChar,
   isValidReadableTextNode,
   findMediaBetweenVerticalRange,
   findNextMediaAfter
@@ -608,14 +609,22 @@ export class CursorController {
       // 若尚未有計數，首個數字不得為 0 (Vim 中 0 為行首指令 lineStart)
       if (this.countPrefix === 0 && e.key !== '0') {
         intercept();
+        if (this.jumpMenuTimer) {
+          clearTimeout(this.jumpMenuTimer);
+          this.jumpMenuTimer = null;
+        }
         this.countPrefix = Number(e.key);
         this.setPendingKeys(String(this.countPrefix));
-
+        return;
       } else if (this.countPrefix > 0) {
         intercept();
+        if (this.jumpMenuTimer) {
+          clearTimeout(this.jumpMenuTimer);
+          this.jumpMenuTimer = null;
+        }
         this.countPrefix = Math.min(999, this.countPrefix * 10 + Number(e.key));
         this.setPendingKeys(String(this.countPrefix));
-
+        return;
       }
     }
 
@@ -778,7 +787,7 @@ export class CursorController {
       intercept();
       this.recordNavCharge(e.repeat);
       const count = this.consumeCount();
-      for (let i = 0; i < count; i++) this.moveHorizontal(-1);
+      this.moveHorizontal(-count);
       return;
     }
 
@@ -786,7 +795,7 @@ export class CursorController {
       intercept();
       this.recordNavCharge(e.repeat);
       const count = this.consumeCount();
-      for (let i = 0; i < count; i++) this.moveHorizontal(1);
+      this.moveHorizontal(count);
       return;
     }
 
@@ -989,46 +998,38 @@ export class CursorController {
       if (!this.currentTarget || !this.currentTarget.node.isConnected) return;
     }
 
-    const { node, offset } = this.currentTarget;
-    const textLength = node.textContent?.length || 0;
+    const steps = Math.abs(Math.trunc(delta));
+    if (steps === 0) return;
 
-    const effectiveRoot = this.getEffectiveRoot();
-    const isOutOfFlow = isOutOfNormalFlowWidget(node, effectiveRoot);
+    const direction: 1 | -1 = delta > 0 ? 1 : -1;
+    const allowWrapLine = cursorStore.getState().keybindings?.horizontalWrap === true;
+    const storedRect = cursorStore.getState().rect;
+    const initialFallbackRect = storedRect && storedRect.height > 0
+      ? { y: storedRect.y, height: storedRect.height }
+      : null;
 
-    if (delta > 0) {
-      // 向右移動 (l)
-      const nextOffset = offset + delta;
-      if (nextOffset < textLength) {
-        this.currentTarget.offset = nextOffset;
-        this.updateCursorPosition(true);
-      } else {
-        // 到達當前文字節點末尾，平滑無縫跨入下一個文字標籤之首字元
-        const nextNode = findNextTextNode(node, effectiveRoot, isOutOfFlow);
-        if (nextNode) {
-          this.currentTarget = { node: nextNode, offset: 0 };
-          this.updateActiveScope(nextNode);
-          this.updateCursorPosition(true);
-        }
-      }
-    } else if (delta < 0) {
-      // 向左移動 (h)
-      const nextOffset = offset + delta;
-      if (nextOffset >= 0) {
-        this.currentTarget.offset = nextOffset;
-        this.updateCursorPosition(true);
-      } else {
-        // 到達當前文字節點開頭，平滑跨入前一個文字節點之末尾字元
-        const prevNode = findPrevTextNode(node, effectiveRoot, isOutOfFlow);
-        if (prevNode) {
-          const prevLen = prevNode.textContent?.length || 0;
-          this.currentTarget = {
-            node: prevNode,
-            offset: Math.max(0, prevLen - 1)
-          };
-          this.updateActiveScope(prevNode);
-          this.updateCursorPosition(true);
-        }
-      }
+    let moved = false;
+    for (let i = 0; i < steps; i++) {
+      const effectiveRoot = this.getEffectiveRoot();
+      const searchRoot = effectiveRoot.contains(this.currentTarget.node)
+        ? effectiveRoot
+        : this.rootElement;
+      const nextTarget = findAdjacentHorizontalChar(
+        this.currentTarget,
+        direction,
+        searchRoot,
+        allowWrapLine,
+        i === 0 ? initialFallbackRect : null
+      );
+      if (!nextTarget) break;
+
+      this.currentTarget = nextTarget;
+      this.updateActiveScope(nextTarget.node);
+      moved = true;
+    }
+
+    if (moved) {
+      this.updateCursorPosition(true);
     }
   }
 

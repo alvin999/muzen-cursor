@@ -323,6 +323,11 @@ export interface Translations {
   fieldEnableJumpMenu: string;
   hintEnableJumpMenu: string;
   enableJumpMenuText: string;
+  horizontalNavSectionTitle: string;
+  horizontalNavSectionDesc: string;
+  fieldHorizontalWrap: string;
+  hintHorizontalWrap: string;
+  horizontalWrapText: string;
   conflictStrategyTitle: string;
   conflictStrategyDesc: string;
   conflictModeActiveOnly: string;
@@ -836,6 +841,11 @@ export const LOCALES: Record<Locale, Translations> = {
     fieldEnableJumpMenu: 'Neovim 浮動跳轉選單 (Floating Jump Menu)',
     hintEnableJumpMenu: "單按 ' 或 ` 鍵稍候即彈出最近跳轉歷史，按下數字鍵 1-9 即可精確飛躍",
     enableJumpMenuText: '啟用浮動選單 HUD',
+    horizontalNavSectionTitle: '水平導航與行邊界 (Horizontal Navigation)',
+    horizontalNavSectionDesc: '控制 h / l 左右移動抵達視覺行首尾時的邊界行為 (對應 Vim whichwrap)',
+    fieldHorizontalWrap: '行邊界自動換行 (Line Wrap / whichwrap)',
+    hintHorizontalWrap: '關閉時貼近正統 Vim 預設，h / l 抵達行首或行尾即停住不跨行；開啟後可自動跨入上一行或下一行',
+    horizontalWrapText: '允許 h / l 在行首與行尾自動換行',
     conflictStrategyTitle: '網頁快捷鍵衝突防護策略',
     conflictStrategyDesc: '當瀏覽本身已有內建快捷鍵的網頁時，選擇 Muzen Cursor 的接管方式',
     conflictModeActiveOnly: '僅游標喚醒時接管 (推薦)',
@@ -1347,6 +1357,11 @@ export const LOCALES: Record<Locale, Translations> = {
     fieldEnableJumpMenu: 'Neovim Floating Jump Menu',
     hintEnableJumpMenu: "Single-press ' or ` to reveal recent jump history, press 1-9 to jump directly",
     enableJumpMenuText: 'Enable Floating Menu HUD',
+    horizontalNavSectionTitle: 'Horizontal Navigation & Line Boundaries',
+    horizontalNavSectionDesc: 'Control how h / l behave when reaching the start or end of a visual line (similar to Vim whichwrap)',
+    fieldHorizontalWrap: 'Auto-Wrap at Line Boundaries (whichwrap)',
+    hintHorizontalWrap: 'When off (orthodox Vim default), h / l stop at the start and end of the current visual line; when on, cursor wraps to the previous or next line',
+    horizontalWrapText: 'Allow h / l to wrap across line boundaries',
     conflictStrategyTitle: 'Web Shortcut Conflict Strategy',
     conflictStrategyDesc: 'Choose how Muzen Cursor intercepts keys when a web page has its own shortcuts',
     conflictModeActiveOnly: 'Only When Cursor Active (Recommended)',
@@ -1858,6 +1873,11 @@ export const LOCALES: Record<Locale, Translations> = {
     fieldEnableJumpMenu: 'Neovim風 フローティングジャンプメニュー',
     hintEnableJumpMenu: "' または ` キーを1回押して待つとジャンプ履歴が表示され、1-9キーで即座に移動可能",
     enableJumpMenuText: 'フローティングHUDメニューを有効化',
+    horizontalNavSectionTitle: '水平移動と行境界 (Horizontal Navigation)',
+    horizontalNavSectionDesc: 'h / l の左右移動で行頭・行末に達した際の挙動を設定します（Vim の whichwrap 相当）',
+    fieldHorizontalWrap: '行境界での自動折り返し (Line Wrap / whichwrap)',
+    hintHorizontalWrap: 'オフ時は純正 Vim と同様に現在の視覚行の行頭・行末で停止します。オンにすると前後の行へ自動的に移動します',
+    horizontalWrapText: 'h / l で行頭・行末を越えて自動改行移動を許可',
     conflictStrategyTitle: 'Webショートカット衝突防止戦略',
     conflictStrategyDesc: 'ページ独自のショートカットが存在する場合の動作ポリシーを選択します',
     conflictModeActiveOnly: 'カーソル起動時のみ有効 (推奨)',

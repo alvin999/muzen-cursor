@@ -821,6 +821,31 @@
             </div>
           </div>
 
+          <!-- 區塊 B2: 水平導航與行邊界 (Horizontal Navigation) -->
+          <div class="setting-group">
+            <div class="group-header">
+              <span class="group-icon">↔️</span>
+              <div class="group-title-wrap">
+                <h2 class="group-title" data-i18n="horizontalNavSectionTitle">水平導航與行邊界 (Horizontal Navigation)</h2>
+                <p class="group-desc" data-i18n="horizontalNavSectionDesc">控制 h / l 左右移動抵達視覺行首尾時的邊界行為 (對應 Vim whichwrap)</p>
+              </div>
+            </div>
+
+            <div class="field-card" style="max-width: 640px;">
+              <div class="field-label-row">
+                <label for="horizontal-wrap" class="field-label" data-i18n="fieldHorizontalWrap">行邊界自動換行 (Line Wrap / whichwrap)</label>
+              </div>
+              <p class="field-hint" data-i18n="hintHorizontalWrap">關閉時貼近正統 Vim 預設，h / l 抵達行首或行尾即停住不跨行；開啟後可自動跨入上一行或下一行</p>
+              <div class="checkbox-row" style="padding-top: 6px; display: flex; align-items: center;">
+                <label class="switch-small">
+                  <input type="checkbox" id="horizontal-wrap">
+                  <span class="slider-small"></span>
+                </label>
+                <span style="font-size: 13px; color: var(--color-fg-muted, #7c6f64); margin-left: 8px;" data-i18n="horizontalWrapText">允許 h / l 在行首與行尾自動換行</span>
+              </div>
+            </div>
+          </div>
+
           <!-- 區塊 C: 自訂快捷鍵配置表 -->
           <div class="setting-group">
             <div class="group-header" style="justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">

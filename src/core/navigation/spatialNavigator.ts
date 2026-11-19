@@ -653,6 +653,104 @@ export function findVisualLineBoundary(
   }
 }
 
+function textNodePreservesNewline(node: Text): boolean {
+  const parent = node.parentElement;
+  if (!parent) return false;
+  try {
+    const ws = window.getComputedStyle(parent).whiteSpace;
+    return ws === 'pre' || ws === 'pre-wrap' || ws === 'pre-line' || ws === 'break-spaces';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * 尋找水平方向相鄰的下一個（或前一個）實體可見字元
+ * - 自動略過折疊空白與零寬字元，並穿透 <a>、<span>、<code>、<b> 等行內標籤
+ * - 當 allowWrapLine 為 false 時（正統 Vim 預設），若相鄰字元跨出當前視覺行或遇保留換行符，回傳 null 停留在行邊界
+ */
+export function findAdjacentHorizontalChar(
+  target: TextTarget,
+  direction: 1 | -1,
+  rootElement: HTMLElement,
+  allowWrapLine: boolean,
+  fallbackLineRect?: { y: number; height: number } | null
+): TextTarget | null {
+  try {
+    const range = document.createRange();
+    const startText = target.node.textContent || '';
+    const startLen = startText.length;
+
+    let lineTop: number | null = null;
+    let charHeight = 20;
+
+    if (startLen > 0) {
+      const safeOffset = Math.min(Math.max(0, target.offset), startLen - 1);
+      range.setStart(target.node, safeOffset);
+      range.setEnd(target.node, Math.min(safeOffset + 1, startLen));
+      const startRect = range.getBoundingClientRect();
+      if (startRect.width > 0 && startRect.height > 0) {
+        lineTop = startRect.top;
+        charHeight = startRect.height;
+      }
+    }
+
+    if (lineTop === null && fallbackLineRect && fallbackLineRect.height > 0) {
+      lineTop = fallbackLineRect.y;
+      charHeight = fallbackLineRect.height;
+    }
+
+    const currentCenterY = lineTop !== null ? lineTop + charHeight / 2 : null;
+    const isOutOfFlow = isOutOfNormalFlowWidget(target.node, rootElement);
+    const walker = createFlowTreeWalker(rootElement, isOutOfFlow);
+    walker.currentNode = target.node;
+
+    let currentNode: Text | null = target.node;
+    let nodesScanned = 0;
+    const MAX_NODES_TO_SCAN = 100;
+
+    while (currentNode && nodesScanned < MAX_NODES_TO_SCAN) {
+      nodesScanned++;
+      const text = currentNode.textContent || '';
+      const len = text.length;
+      const preservesNewline = textNodePreservesNewline(currentNode);
+
+      const startIdx = direction > 0
+        ? (currentNode === target.node ? target.offset + 1 : 0)
+        : (currentNode === target.node ? Math.min(target.offset - 1, len - 1) : len - 1);
+
+      for (let i = startIdx; direction > 0 ? i < len : i >= 0; i += direction) {
+        const ch = text[i];
+        if ((ch === '\n' || ch === '\r') && preservesNewline) {
+          if (!allowWrapLine) return null;
+          continue;
+        }
+
+        range.setStart(currentNode, i);
+        range.setEnd(currentNode, i + 1);
+        const rect = range.getBoundingClientRect();
+        if (rect.width === 0 || rect.height === 0) continue;
+
+        if (!allowWrapLine && currentCenterY !== null) {
+          const candCenterY = rect.top + rect.height / 2;
+          const tolerance = Math.max(charHeight, rect.height) * 0.55;
+          if (Math.abs(candCenterY - currentCenterY) > tolerance) {
+            return null;
+          }
+        }
+
+        return { node: currentNode, offset: i };
+      }
+
+      currentNode = (direction > 0 ? walker.nextNode() : walker.previousNode()) as Text | null;
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 
 const MIN_MEDIA_WIDTH = 120;
 const MIN_MEDIA_HEIGHT = 80;

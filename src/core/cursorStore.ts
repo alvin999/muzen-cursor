@@ -251,12 +251,14 @@ export interface JumpMenuItem {
 export interface KeybindingsConfig {
   jumpMode?: JumpMode;       // 'toggle' (雙點來回切換) 或 'history' (依序回溯堆疊)
   enableJumpMenu?: boolean;  // 是否開啟 Neovim 風格浮動歷史選單 (預設 true)
+  horizontalWrap?: boolean;  // h / l 左右移動至行邊界時是否自動換行 (對應 Vim whichwrap，預設 false 不換行)
   bindings: Record<KeyActionId, KeybindingDef>;
 }
 
 export const DEFAULT_KEYBINDINGS: KeybindingsConfig = {
   jumpMode: 'toggle',
   enableJumpMenu: true,
+  horizontalWrap: false,
   bindings: {
     toggleCursor: { key: 'v', altKey: true, enabled: true },
     escape: { key: 'Escape', enabled: true },

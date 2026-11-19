@@ -495,6 +495,11 @@ function renderKeybindingsList(): void {
   if (enableJumpMenuCheckbox) {
     enableJumpMenuCheckbox.checked = currentKeybindings.enableJumpMenu !== false;
   }
+
+  const horizontalWrapCheckbox = document.getElementById('horizontal-wrap') as HTMLInputElement | null;
+  if (horizontalWrapCheckbox) {
+    horizontalWrapCheckbox.checked = currentKeybindings.horizontalWrap === true;
+  }
 }
 
 let recordingPending: {
@@ -1178,6 +1183,7 @@ function initEvents(): void {
           }
         };
         renderKeybindingsList();
+        cursorStore.setState({ keybindings: currentKeybindings });
       }
     });
   }
@@ -1539,6 +1545,11 @@ function initEvents(): void {
       enableJumpMenuCheckbox.checked = true;
     }
 
+    const horizontalWrapCheckbox = document.getElementById('horizontal-wrap') as HTMLInputElement | null;
+    if (horizontalWrapCheckbox) {
+      horizontalWrapCheckbox.checked = false;
+    }
+
     showToast(dict.toastKeybindingsReset);
   });
 
@@ -1553,6 +1564,13 @@ function initEvents(): void {
   document.getElementById('enable-jump-menu')?.addEventListener('change', (e) => {
     const chk = e.target as HTMLInputElement;
     currentKeybindings.enableJumpMenu = chk.checked;
+    saveKeybindings();
+  });
+
+  // 12d. 水平移動行邊界自動換行開關切換 (對應 Vim whichwrap)
+  document.getElementById('horizontal-wrap')?.addEventListener('change', (e) => {
+    const chk = e.target as HTMLInputElement;
+    currentKeybindings.horizontalWrap = chk.checked;
     saveKeybindings();
   });
 
